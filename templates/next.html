@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags-->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="Colorlib Templates">
+    <meta name="author" content="Colorlib">
+    <meta name="keywords" content="Colorlib Templates">
+
+    <!-- Title Page-->
+    <title>Train Your PET Model</title>
+
+    <!-- Icons font CSS-->
+    <link href="static/vendor/mdi-font/css/material-design-iconic-font.min.css" rel="stylesheet" media="all">
+    <link href="static/vendor/font-awesome-4.7/css/font-awesome.min.css" rel="stylesheet" media="all">
+    <!-- Font special for pages-->
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i,800,800i" rel="stylesheet">
+
+    <!-- Vendor CSS-->
+    <link href="static/vendor/select2/select2.min.css" rel="stylesheet" media="all">
+    <link href="static/vendor/datepicker/daterangepicker.css" rel="stylesheet" media="all">
+
+    <!-- Main CSS-->
+    <link href="static/css/main.css" rel="stylesheet" media="all">
+</head>
+
+<body>
+    <div class="page-wrapper bg-gra-03 p-t-45 p-b-50">
+        <div class="wrapper wrapper--w790">
+            <div class="card card-5">
+                <div class="card-heading">
+                    <h2 class="title">Train Your PET Model</h2>
+                </div>
+                <div class="card-body"id = "container">
+                      <button class="btn btn--radius-2 btn--red" id="progress-bar-trigger">Start Training</button>
+  <div id="progress-bar" style="background-color: blue; width: 0%;">&nbsp;</div>
+  <div id="progress-bar-message">Waiting for progress to start...</div>
+</div>
+<script>
+function updateProgress(progressBarElement, progressBarMessageElement, progress) {
+  progressBarElement.style.width = progress.percent + "%";
+  progressBarMessageElement.innerHTML = progress.current + ' of ' + progress.total + ' processed.';
+}
+
+var trigger = document.getElementById('progress-bar-trigger');
+trigger.addEventListener('click', function(e) {
+  var bar = document.getElementById("progress-bar");
+  var barMessage = document.getElementById("progress-bar-message");
+
+  for (var i = 0; i < 11; i++) {
+    setTimeout(updateProgress, 500 * i, bar, barMessage, {
+      percent: 10 * i,
+      current: (0.1 * {{num}}) * i,
+      total: {{ num }}
+    })
+  }
+})
+</script>
+                <style>
+#container {
+text-align: center;
+}
+#1container {
+text-align: start;
+}
+</style>
+
+  <div class="card-body" id="container">
+      <input class="btn btn--radius-2 btn--red" type='button' onclick='tableFromJson()'
+         value='Show' />
+
+  <p id='showData'></p>
+  <p id='msg'></p>
+
+
+<script>
+  let tableFromJson = () => {
+    // the json data.
+    const myBooks = [
+      {'Precision': '1', 'Recall': 'Challenging Times',
+       'F1': 'Business', 'Support': '125.60'
+      },
+      {'Precision': '2', 'Recall': 'Learn JavaScript',
+       'F1': 'Programming', 'Support': '56.00'
+      },
+        {'Precision': '2', 'Recall': 'Learn JavaScript',
+       'F1': 'Programming', 'Support': '56.00'
+      }
+
+    ]
+
+    // Extract value from table header.
+    // ('Book ID', 'Book Name', 'Category' and 'Price')
+    let col = [];
+    for (let i = 0; i < myBooks.length; i++) {
+      for (let key in myBooks[i]) {
+        if (col.indexOf(key) === -1) {
+          col.push(key);
+        }
+      }
+    }
+    // Create a table.
+    const table = document.createElement("table");
+
+    // Create table header row using the extracted headers above.
+    let tr = table.insertRow(-1);                   // table row.
+
+    for (let i = 0; i < col.length; i++) {
+      let th = document.createElement("th");      // table header.
+      th.innerHTML = col[i];
+      tr.appendChild(th);
+    }
+
+    // add json data to the table as rows.
+    for (let i = 0; i < myBooks.length; i++) {
+
+      tr = table.insertRow(-1);
+
+      for (let j = 0; j < col.length; j++) {
+        let tabCell = tr.insertCell(-1);
+        tabCell.innerHTML = myBooks[i][col[j]];
+      }
+    }
+
+    // Now, add the newly created table with json data, to a container.
+    const divShowData = document.getElementById('showData');
+    divShowData.innerHTML = "";
+    divShowData.appendChild(table);
+  }
+</script>
+      </div>
+                        <div class="form-row m-b-55">
+                            <div class="value">
+                                <div class="row row-space">
+                                    <div class="col-2">
+                                    </div>
+                                    <div class="col-2">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                            <div class="card-body" id="container">
+                                <button class="btn btn--radius-2 btn--red" id="mycontain">Run with new configuration</button>
+                            </div>
+                            <p style="font-size:50px;" align="center">Or</p>
+                            <div class="card-body" id="container">
+                                <button class="btn btn--radius-2 btn--red" id="mycontain">Annotate unseen data</button>
+                            </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Jquery JS-->
+    <script src="static/vendor/jquery/jquery.min.js"></script>
+    <!-- Vendor JS-->
+    <script src="static/vendor/select2/select2.min.js"></script>
+    <script src="static/vendor/datepicker/moment.min.js"></script>
+    <script src="static/vendor/datepicker/daterangepicker.js"></script>
+
+    <!-- Main JS-->
+    <script src="static/js/global.js"></script>
+
+</body><!-- This templates was made by Colorlib (https://colorlib.com) -->
+
+</html>
+<!-- end document-->
