@@ -11,59 +11,75 @@ from Pet import script
 from Pet.examples import custom_task_pvp, custom_task_processor
 import re
 
+
 app = FastAPI()
 
+templates = Jinja2Templates(directory="templates")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
-try:
-    templates = Jinja2Templates(directory="/fastapi/templates")  # cluster
-    app.mount("/static", StaticFiles(directory="/fastapi/static"), name="static")
-except:
-    templates = Jinja2Templates(directory="templates")  # local
-    app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 loggings = {}
 num = iter(range(20))
 def write(i, html_content):
+    """
+    Write logging steps into html file "train.html"
+    params:
+        html_content = html skeleton content to write
+        i = logging step to write
+    """
     if i not in list(loggings.values()):
         with open("templates/train.html", "w") as f:
-            step = next(num)
-            if step >= 13:
+            if i == "Training done!":
                 f.write(html_content.format(f"{i}"))
+                loggings["final"] = i
             else:
-                f.write(html_content.format(f"\tStep {step} in Training:\n{i}"))
+                step = next(num)
+                f.write(html_content.format(f"\tStep {step} in Training: {i}"))
                 loggings[step] = i
 
+
 def read(file):
+    """
+    Read training log: logging.txt and insert step 0
+    params:
+        file = logging.txt
+    """
     with open(file, "r") as f:
         lines = f.readlines()
     lines.insert(0, "Training started\n")
     return lines
+
 def iter_log(content):
+    """
+    Iterate over logging.txt and pass logging step to write()
+    params:
+        content = the html content to modify
+    """
     st = round(time.time())
     logs = []
     lines = read("logging.txt")
     while st:
-        time.sleep(10)
         try:
+            time.sleep(10)
             log, logs, lines = read_logs(logs, lines)
             write(log, content)
-            time.sleep(10)
             st = round(time.time())
+            if "Saving complete" in log:
+                st = False
         except:
-            time.sleep(5)
-            if "acc-" in log and len(lines) == 0:
-                write("{{log}}", content)
-                st = None
-            else:
-                continue
-
-@app.get("/finish", name="finish")
-def message():
-    return {"Training":"done!"}
-    #return templates.TemplateResponse("train.html", {"request": request, "log": "Training done!"})
+            pass
+    html_content = """
+    <html>
+        <body>
+            {}
+        </body>
+    </html>
+    """
+    write("Training done!", html_content)
 
 @app.get("/logging", name="logging")
-async def logging(request: Request, background_tasks:BackgroundTasks):
+async def logging(request: Request, background_tasks: BackgroundTasks):
     html_content = """
     <html>
         <head>
@@ -74,13 +90,10 @@ async def logging(request: Request, background_tasks:BackgroundTasks):
         </body>
     </html>
     """
+    write("{{log}}", html_content)
     background_tasks.add_task(iter_log, html_content)
-    if len(list(loggings.values())) >=13:
-        redirect_url = request.url_for('finish')
-        return RedirectResponse(redirect_url, status_code=303)
-        #return templates.TemplateResponse("train.html", {"request": request, "log": "Training done!"})
-    else:
-        return templates.TemplateResponse("train.html", {"request": request, "log": "Training starting.."})
+    url = request.url_for("homepage")
+    return templates.TemplateResponse("train.html", {"request": request, "log": "Training starting.."})
 
 
 def read_logs(logs, lines):
@@ -94,7 +107,7 @@ def read_logs(logs, lines):
         l: current log
         logs, updated logs list
     """
-    steps = {0: "Training started", 1:"Creating", 2:"Returning", 3:"Saving complete", 4:"OVERALL", 5:"acc-"}
+    steps = {0: "Training started", 1:"Creating", 2:"Returning", 3:"Saving complete"}
     pattern = re.pattern = ".*(?=INFO)"  # strip date format
     try:
         for line in lines:
@@ -112,16 +125,15 @@ def read_logs(logs, lines):
 
 @app.get("/")
 def main():
-    with open("logging.txt", "w") as new_file:
-        pass
-    global loggings
-    loggings = {}
-
     return {"Hello": "World"}
 
 
 @app.get("/basic", response_class=HTMLResponse, name='homepage')
 async def get_form(request: Request):
+    with open("logging.txt", "w") as new_file:
+        pass
+    global loggings
+    loggings = {}
     return templates.TemplateResponse("index.html", {"request": request})
 
 
@@ -144,12 +156,9 @@ async def kickoff(request: Request, background_tasks: BackgroundTasks):
     """
     Kicks off training by calling train method as background task with defined task name.
     """
-    try:
-        with open("data.json", "r") as f:  # local
-            data = json.load(f)
-    except:
-        with open("/fastapi/data.json", "r") as f:  # cluster
-            data = json.load(f)
+
+    with open("data.json", "r") as f:
+        data = json.load(f)
 
     '''Configure Data Preprocessor'''
     # define task name
