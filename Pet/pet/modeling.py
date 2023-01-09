@@ -21,7 +21,7 @@ from typing import List, Dict
 
 import numpy as np
 import torch
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, precision_recall_fscore_support
 from transformers.data.metrics import simple_accuracy
 
 from Pet import log
@@ -490,11 +490,15 @@ def evaluate(model: TransformerModelWrapper, eval_data: List[InputExample], conf
                          n_gpu=config.n_gpu, decoding_strategy=config.decoding_strategy, priming=config.priming)
 
     predictions = np.argmax(results['logits'], axis=1)
+    labels = np.unique(predictions)
     scores = {}
+
 
     for metric in metrics:
         if metric == 'acc':
             scores[metric] = simple_accuracy(predictions, results['labels'])
+        elif metric == "pre-rec-f1-supp":
+            scores[metric] = [score.tolist() for score in precision_recall_fscore_support(results["labels"], predictions, average=None, zero_division="warn")]
         elif metric == 'f1':
             scores[metric] = f1_score(results['labels'], predictions)
         elif metric == 'f1-macro':
@@ -512,20 +516,29 @@ def evaluate(model: TransformerModelWrapper, eval_data: List[InputExample], conf
 def _write_results(path: str, results: Dict):
     with open(path, 'w') as fh:
         for metric in results.keys():
+            mean, stdev = {}, {}
             for pattern_id, values in results[metric].items():
-                mean = statistics.mean(values)
-                stdev = statistics.stdev(values) if len(values) > 1 else 0
-                result_str = "{}-p{}: {} +- {}".format(metric, pattern_id, mean, stdev)
+                if np.ndim(values) >= 2:
+                    values = np.reshape(values, (-1, 2)).tolist()
+                    mean[metric] = [statistics.mean([val]) for metr in values for val in metr]
+                    stdev[metric] = [statistics.stdev([val]) if len([val]) > 1 else 0 for metr in values for val in metr]
+                else:
+                    mean[metric] = statistics.mean(values)
+                    stdev[metric] = statistics.stdev(values) if len(values) > 1 else 0
+                result_str = "{}-p{}: {} +- {}".format(metric, pattern_id, mean[metric], stdev[metric])
                 logger.info(result_str)
                 fh.write(result_str + '\n')
 
         for metric in results.keys():
-            all_results = [result for pattern_results in results[metric].values() for result in pattern_results]
-            all_mean = statistics.mean(all_results)
-            all_stdev = statistics.stdev(all_results) if len(all_results) > 1 else 0
-            result_str = "{}-all-p: {} +- {}".format(metric, all_mean, all_stdev)
-            logger.info(result_str)
-            fh.write(result_str + '\n')
+            if metric == "pre-rec-f1-supp":
+                pass
+            else:
+                all_results = [result for pattern_results in results[metric].values() for result in pattern_results]
+                all_mean = statistics.mean(all_results)
+                all_stdev = statistics.stdev(all_results) if len(all_results) > 1 else 0
+                result_str = "{}-all-p: {} +- {}".format(metric, all_mean, all_stdev)
+                logger.info(result_str)
+                fh.write(result_str + '\n')
 
 
 def merge_logits(logits_dir: str, output_file: str, reduction: str):

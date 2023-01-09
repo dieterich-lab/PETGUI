@@ -46,7 +46,7 @@ class MyTaskDataProcessor(DataProcessor):
     UNLABELED_FILE_NAME = "unlabeled.csv"
 
     # Set this to a list of all labels in the train + test data
-    LABELS = []
+    LABELS = None
 
     # Set this to the column of the train/test csv files containing the input's text a
     TEXT_A_COLUMN = None
@@ -129,7 +129,6 @@ class MyTaskDataProcessor(DataProcessor):
 def report():
     # register the processor for this task with its name
     PROCESSORS[MyTaskDataProcessor.TASK_NAME] = MyTaskDataProcessor
-
 
     # optional: if you have to use verbalizers that correspond to multiple tokens, uncomment the following line
     # TASK_HELPERS[MyTaskDataProcessor.TASK_NAME] = MultiMaskTaskHelper

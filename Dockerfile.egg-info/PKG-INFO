@@ -1,0 +1,12 @@
+Metadata-Version: 2.1
+Name: Dockerfile
+Version: 1.0.0
+Summary: This package contains the Dockerfile for MIEDeep webserver with included PET code
+Home-page: https://github.com/racia/pet-gui
+Author: Mingyang He, Raziye Sari
+Author-email: heseri@cl.uni-heidelberg.de, sari@cl.uni-heidelberg.de
+License: UNKNOWN
+Platform: UNKNOWN
+
+UNKNOWN
+
