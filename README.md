@@ -1,9 +1,10 @@
 # PETGUI
 A working training process in PETGUI
 ## Setup
-1. `python3 -m venv venv`
-2. `source venv/bin/activate`
-3. `pip install -r requirements.txt`
+1. Clone and change directory to repository
+2. `python3 -m venv venv`
+3. `source venv/bin/activate`
+4. `pip install -r requirements.txt`
 ## Run Training
 1. `uvicorn app.pet-gui:app --host 0.0.0.0 --port 8080`
 2. Open: http://10.250.135.122:8080/ in browser and navigate to /basic
