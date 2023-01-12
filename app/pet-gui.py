@@ -191,20 +191,36 @@ async def kickoff(request: Request, background_tasks: BackgroundTasks):
 
 
 @app.post("/basic")
-async def get_form(request: Request,sample: str = Form(...), label: str = Form(...),templates: str = Form(...),one: str = Form(...), two: str = Form(...),model_para: str = Form(...),file: UploadFile = File(...)):
+async def get_form(request: Request,file: UploadFile = File(...)):
     file_upload = tarfile.open(fileobj=file.file, mode="r:gz")
-    file_upload.extractall('./Pet/data_uploaded') # upload directly into Pet folder
-    print(f'sample:{sample}')
-    print(f'label:{label}')
-    print(f'templates:{templates}')
-    print(f'1:{one}')
-    print(f'2:{two}')
-    print(f'model_para:{model_para}')
-    para_dic = {"file": file.filename.strip(".tar.gz"), "sample":sample,"label":label,"templates":templates,"one":one,"two":two,"model_para":model_para}
+    file_upload.extractall('./data_uploaded')
+    da = await request.form()
+    da = jsonable_encoder(da)
+    templates_counter = 1
+    origin_counter = 1
+    mapping_counter = 1
+    para_dic = {"sample": da["sample"], "label": da["label"], "templates": da["templates"], "origin": da["origin"], "mapping": da["mapping"],
+                "model_para": da["model_para"]}
+    while f"templates_{str(templates_counter)}" in da:
+        template_key = f"templates_{str(templates_counter)}"
+        para_dic[template_key] = da[template_key]
+        templates_counter = templates_counter+1
+    while f"origin_{str(origin_counter)}" in da:
+        origin_key = f"origin_{str(origin_counter)}"
+        para_dic[origin_key] = da[origin_key]
+        origin_counter = origin_counter+1
+    while f"mapping_{str(mapping_counter)}" in da:
+        mapping_key = f"mapping_{str(mapping_counter)}"
+        para_dic[mapping_key] = da[mapping_key]
+        mapping_counter = mapping_counter+1
     with open('data.json', 'w') as f:
         json.dump(para_dic, f)
-    redirect_url = request.url_for('train')
+    redirect_url = request.url_for('training')
     return RedirectResponse(redirect_url, status_code=303)
+
+
+
+
 
 
 
