@@ -10,6 +10,7 @@ import json
 from Pet import script
 from Pet.examples import custom_task_pvp, custom_task_processor
 import re
+from fastapi.encoders import jsonable_encoder
 
 
 app = FastAPI()
@@ -215,7 +216,7 @@ async def get_form(request: Request,file: UploadFile = File(...)):
         mapping_counter = mapping_counter+1
     with open('data.json', 'w') as f:
         json.dump(para_dic, f)
-    redirect_url = request.url_for('training')
+    redirect_url = request.url_for('train')
     return RedirectResponse(redirect_url, status_code=303)
 
 
