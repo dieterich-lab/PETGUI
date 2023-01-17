@@ -3,6 +3,7 @@ import time
 
 from fastapi import FastAPI, File, Form, UploadFile, Request, BackgroundTasks
 from fastapi.responses import HTMLResponse, RedirectResponse
+from starlette.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import tarfile
@@ -10,6 +11,11 @@ import json
 from Pet import script
 from Pet.examples import custom_task_pvp, custom_task_processor
 import re
+import os
+from os.path import isdir, isfile
+import pathlib
+import shutil
+from fastapi.encoders import jsonable_encoder
 
 
 app = FastAPI()
@@ -18,10 +24,7 @@ templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
-
-loggings = {}
-num = iter(range(20))
-def write(i, html_content):
+def write(i, html_content, url=None):
     """
     Write logging steps into html file "train.html"
     params:
@@ -31,11 +34,11 @@ def write(i, html_content):
     if i not in list(loggings.values()):
         with open("templates/train.html", "w") as f:
             if i == "Training done!":
-                f.write(html_content.format(f"{i}"))
+                f.write(html_content.format(f"{i}<hr><a href={url}><button>See Results</button></a>"))
                 loggings["final"] = i
             else:
                 step = next(num)
-                f.write(html_content.format(f"\tStep {step} in Training: {i}"))
+                f.write(html_content.format(f"\tStep {step} in Training:<br/> {i}"))
                 loggings[step] = i
 
 
@@ -50,7 +53,7 @@ def read(file):
     lines.insert(0, "Training started\n")
     return lines
 
-def iter_log(content):
+def iter_log(content, url=None):
     """
     Iterate over logging.txt and pass logging step to write()
     params:
@@ -76,7 +79,7 @@ def iter_log(content):
         </body>
     </html>
     """
-    write("Training done!", html_content)
+    write("Training done!", html_content, url)
 
 @app.get("/logging", name="logging")
 async def logging(request: Request, background_tasks: BackgroundTasks):
@@ -91,8 +94,8 @@ async def logging(request: Request, background_tasks: BackgroundTasks):
     </html>
     """
     write("{{log}}", html_content)
-    background_tasks.add_task(iter_log, html_content)
-    url = request.url_for("homepage")
+    url = request.url_for("results")
+    background_tasks.add_task(iter_log, html_content, url)
     return templates.TemplateResponse("train.html", {"request": request, "log": "Training starting.."})
 
 
@@ -127,6 +130,57 @@ def read_logs(logs, lines):
 def main():
     return {"Hello": "World"}
 
+@app.get("/results", name="results")
+def results(request: Request):
+    """
+    Saves results.json for each pattern-iteration pair of output/final directory in a dictionary.
+    Returns:
+        html page with results & homepage redirection buttons
+    """
+    dirs = next(os.walk("output/final/"))[1]
+    scores = {}
+    for d in dirs:
+        scores[d] = {"acc": int}
+        with open(f"output/final/{d}/results.json") as f:
+            json_scores = json.load(f)
+            acc = json_scores["test_set_after_training"]["acc"]
+            scores[d]["acc"] = acc
+
+    with open("results.json", "w") as res:
+        json.dump(scores, res)
+    url_homepage, url_download = request.url_for("cleanup"), request.url_for("download")
+    return templates.TemplateResponse("results.html", {"request": request, "scores": scores,
+                                                       "url_homepage": url_homepage, "url_download": url_download})
+
+
+@app.get("/download", name="download")
+def download():
+    """
+    Returns:
+         final dict, e.g.: dict={p0-i0: {acc: 0.5, ...}, ...}
+    """
+    return FileResponse("results.json", filename="results.json")
+
+@app.get("/cleanup", name="cleanup")
+def clean(request: Request=None):
+    """
+    Iterates over created paths during PET and unlinks them.
+    Returns:
+        redirection to homepage
+    """
+    paths = ["results.json", "data.json", "output", "Pet/data_uploaded"]
+    for path in paths:
+        file_path = pathlib.Path(path)
+        if isfile(path):
+            file_path.unlink()
+        elif isdir(path):
+            shutil.rmtree(path)
+    if request:
+        url = request.url_for("homepage")
+        return RedirectResponse(url, status_code=303)
+    else:
+        return None
+
 
 @app.get("/basic", response_class=HTMLResponse, name='homepage')
 async def get_form(request: Request):
@@ -147,7 +201,7 @@ def train(file):
     """
     Starts training with params and data_uploaded in Pet directory.
     """
-    instance = script.Script("pet", [0], f"Pet/data_uploaded/{file}/", "bert", "bert-base-cased",
+    instance = script.Script("pet", [0,1], f"Pet/data_uploaded/{file}/", "bert", "bert-base-cased",
                       "yelp-task", "./output")  # set defined task names
     instance.run()
 
@@ -174,12 +228,16 @@ async def kickoff(request: Request, background_tasks: BackgroundTasks):
 
     '''Configure Verbalizers'''
     custom_task_pvp.MyTaskPVP.TASK_NAME = "yelp-task"
-    # define verbalizer for label 1
-    custom_task_pvp.MyTaskPVP.VERBALIZER["1"].append(data["one"])
-    # define verbalizer for label 2
-    custom_task_pvp.MyTaskPVP.VERBALIZER["2"].append(data["two"])
-
-    custom_task_pvp.MyTaskPVP.PATTERNS[0] = data["templates"]
+    # define label-verbalizer mappings
+    labels = recursive_json_read(data, "origin")
+    verbalizers = recursive_json_read(data, "mapping")
+    for l,v in zip(labels, verbalizers):
+        custom_task_pvp.MyTaskPVP.VERBALIZER[l] = [v]
+        print(custom_task_pvp.MyTaskPVP.VERBALIZER)
+    templates = recursive_json_read(data, "templates")
+    for i in range(len(templates)):
+        custom_task_pvp.MyTaskPVP.PATTERNS[i] = templates[i]
+        print(custom_task_pvp.MyTaskPVP.PATTERNS)
     # save entries as new task
     custom_task_pvp.report() # save task
 
@@ -189,22 +247,51 @@ async def kickoff(request: Request, background_tasks: BackgroundTasks):
     redirect_url = request.url_for('logging')
     return RedirectResponse(redirect_url, status_code=303)
 
+def recursive_json_read(data, key: str):
+    d = []
+    for i in range(5):
+        if f"{key}_{i}" in data:
+            d.append(data[f"{key}_{i}"])
+    return d
 
-@app.post("/basic")
-async def get_form(request: Request,sample: str = Form(...), label: str = Form(...),templates: str = Form(...),one: str = Form(...), two: str = Form(...),model_para: str = Form(...),file: UploadFile = File(...)):
+
+
+@app.post("/basic", name = "homepage")
+async def get_form(request: Request,file: UploadFile = File(...)):
+    global loggings, num
+    loggings = {}
+    num = iter(range(20))
+
     file_upload = tarfile.open(fileobj=file.file, mode="r:gz")
-    file_upload.extractall('./Pet/data_uploaded') # upload directly into Pet folder
-    print(f'sample:{sample}')
-    print(f'label:{label}')
-    print(f'templates:{templates}')
-    print(f'1:{one}')
-    print(f'2:{two}')
-    print(f'model_para:{model_para}')
-    para_dic = {"file": file.filename.strip(".tar.gz"), "sample":sample,"label":label,"templates":templates,"one":one,"two":two,"model_para":model_para}
+    file_upload.extractall('./Pet/data_uploaded')
+    da = await request.form()
+    da = jsonable_encoder(da)
+    templates_counter = 1
+    origin_counter = 1
+    mapping_counter = 1
+    para_dic = {"file": file.filename.strip(".tar.gz"), "sample": da["sample"], "label": da["label"], "templates_0": da["templates"], "origin_0": da["origin"],
+                "mapping_0": da["mapping"], "model_para": da["model_para"]}
+    while f"templates_{str(templates_counter)}" in da: # Template
+        template_key = f"templates_{str(templates_counter)}"
+        para_dic[template_key] = da[template_key]
+        templates_counter = templates_counter + 1
+    while f"origin_{str(origin_counter)}" in da: # Label
+        origin_key = f"origin_{str(origin_counter)}"
+        para_dic[origin_key] = da[origin_key]
+        origin_counter = origin_counter+1
+    while f"mapping_{str(mapping_counter)}" in da: # Verbalizer
+        mapping_key = f"mapping_{str(mapping_counter)}"
+        para_dic[mapping_key] = da[mapping_key]
+        mapping_counter = mapping_counter+1
     with open('data.json', 'w') as f:
         json.dump(para_dic, f)
     redirect_url = request.url_for('train')
+    print(para_dic)
     return RedirectResponse(redirect_url, status_code=303)
+
+
+
+
 
 
 
