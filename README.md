@@ -7,10 +7,14 @@ A working training process in PETGUI
 4. `pip install -r requirements.txt`
 ## Run Training
 1. `uvicorn app.pet-gui:app --host 0.0.0.0 --port 8080`
-2. Open: http://10.250.135.122:8080/(in cluster) or http://0.0.0.0:8080 (local) in browser and navigate to /basic
-3. Input training parameters (small training data found in [data](/data/yelp_review_polarity_csv.tar.gz)), e.g.: ![Bildschirmfoto vom 2023-01-02 09-15-06](https://user-images.githubusercontent.com/63499872/212850711-d52e55ca-2189-465a-b3e8-023a94d09af9.jpeg)
-More templates or more verbalizers could be added by using the "+" button. If you don't need it anymore, you can use the "-" button to delete it.
-4. Training should start and finish in new window: ![Bildschirmfoto vom 2023-01-02 08-36-02](https://user-images.githubusercontent.com/47433679/210207440-ad3f410d-3ce3-48c8-b4f6-da3c44b6d0bb.png)
-![Bildschirmfoto vom 2023-01-02 09-06-46](https://user-images.githubusercontent.com/47433679/210207594-5ba1d3a3-a633-404e-8a82-42e862d12155.png)
+2. Open: http://10.250.135.122:8080/ (in cluster) or http://0.0.0.0:8080 (local) in browser and navigate to /basic
+3. Input training parameters (small training data found in [data](/data/yelp_review_polarity_csv.tar.gz)), e.g.: ![Bildschirmfoto vom 2023-01-17 10-50-48](https://user-images.githubusercontent.com/47433679/212865883-e6188735-2af7-488b-8282-998144f3a0f6.png)
 
+  More templates or more verbalizers could be added by using the "+" button. If you don't need it anymore, you can use the "-" button to delete it.
+
+4. Training should start and finish in new window:
+![Bildschirmfoto vom 2023-01-09 12-33-00](https://user-images.githubusercontent.com/47433679/211299773-e66d94d7-be85-4af4-894e-f5754d98458e.png)
+![Bildschirmfoto vom 2023-01-09 12-36-02](https://user-images.githubusercontent.com/47433679/211299820-f2e2802c-12c6-48a6-a007-4bef817dc8f3.png)
+
+- Prompt to download results as json file: ![Bildschirmfoto vom 2023-01-09 12-36-15](https://user-images.githubusercontent.com/47433679/211300377-40097403-fd64-4858-a231-2ff3d57661ca.png)
 
