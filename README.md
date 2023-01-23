@@ -7,10 +7,18 @@ A working training process in PETGUI
 4. `pip install -r requirements.txt`
 ## Run Training
 1. `uvicorn app.pet-gui:app --host 0.0.0.0 --port 8080`
+
 2. Open: http://10.250.135.122:8080/(in cluster) or http://0.0.0.0:8080 (local) in browser and navigate to /basic
-3. Input training parameters (small training data found in [data](/data/yelp_review_polarity_csv.tar.gz)), e.g.: ![Bildschirmfoto vom 2023-01-02 09-15-06](https://user-images.githubusercontent.com/63499872/212850711-d52e55ca-2189-465a-b3e8-023a94d09af9.jpeg)
-More templates or more verbalizers could be added by using the "+" button. If you don't need it anymore, you can use the "-" button to delete it.
-4. Training should start and finish in new window: ![Bildschirmfoto vom 2023-01-02 08-36-02](https://user-images.githubusercontent.com/47433679/210207440-ad3f410d-3ce3-48c8-b4f6-da3c44b6d0bb.png)
-![Bildschirmfoto vom 2023-01-02 09-06-46](https://user-images.githubusercontent.com/47433679/210207594-5ba1d3a3-a633-404e-8a82-42e862d12155.png)
+
+3. Input training parameters (small training data found in [data](/data/yelp_review_polarity_csv.tar.gz)), e.g.: ![Bildschirmfoto vom 2023-01-23 11-50-02](https://user-images.githubusercontent.com/47433679/214032245-2f29ddd4-2bb5-4238-82eb-e311fd44e2a3.png)
+
+More templates or more verbalizers could be added by using the "+" button. If you don't need it anymore, you can use the "-" button to delete it.  
+
+4. Training should start and finish in new window: ![Bildschirmfoto vom 2023-01-23 11-54-02](https://user-images.githubusercontent.com/47433679/214032285-5865ae18-8924-4aae-bfaf-fd59d03a0ec3.png)
+
+5. Click on "See Results", where results of PET will be displayed as accuracies per pattern. Please note that filan results may take longer to be processed: ![Bildschirmfoto vom 2023-01-23 12-06-32](https://user-images.githubusercontent.com/47433679/214032841-4a808baa-f7c8-4552-951e-82feb84e159e.png)  
+Reloading page after a few minutes will complete results, hence can be downloaded as json file:  
+![Bildschirmfoto vom 2023-01-23 12-11-03](https://user-images.githubusercontent.com/47433679/214033043-74e45b3c-80ba-4af7-beed-e0be176f6205.png)
+
 
 
