@@ -17,7 +17,7 @@ More templates or more verbalizers could be added by using the "+" button. If yo
 4. Training should start and finish in new window: ![Bildschirmfoto vom 2023-01-23 11-54-02](https://user-images.githubusercontent.com/47433679/214032285-5865ae18-8924-4aae-bfaf-fd59d03a0ec3.png)
 
 5. Click on "See Results", where results of PET will be displayed as accuracies per pattern. Please note that final results may take longer to be processed: ![Bildschirmfoto vom 2023-01-23 12-06-32](https://user-images.githubusercontent.com/47433679/214032841-4a808baa-f7c8-4552-951e-82feb84e159e.png)  
-Reloading page after a few minutes will complete results, hence can be downloaded as json file:  
+Reloading page after a few minutes will display complete results, hence they can be downloaded as json file:  
 ![Bildschirmfoto vom 2023-01-23 12-11-03](https://user-images.githubusercontent.com/47433679/214033043-74e45b3c-80ba-4af7-beed-e0be176f6205.png)
 
 
