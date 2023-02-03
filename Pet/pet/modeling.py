@@ -586,7 +586,6 @@ def merge_logits_lists(logits_lists: List[LogitsList], reduction: str = 'mean') 
            training.
     :return: the merged list
     """
-    print(len(set(len(ll.logits) for ll in logits_lists)))
     assert len(set(len(ll.logits) for ll in logits_lists)) == 1
     logits = np.array([ll.logits for ll in logits_lists])
     weights = np.array([ll.score for ll in logits_lists])

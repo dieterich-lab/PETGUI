@@ -7,10 +7,7 @@ A working training process in PETGUI
 4. `pip install -r requirements.txt`
 ## Run Training
 1. `uvicorn app.pet-gui:app --host 0.0.0.0 --port 8080`
-2. Open: http://10.250.135.122:8080/ (if running on the cluster) or http://0.0.0.0:8080 (if running locally) in browser and navigate to http://0.0.0.0:8080/basic
-3. Input training parameters (small training data found in [data](/data/yelp_review_polarity_csv.tar.gz)), e.g.: ![Bildschirmfoto vom 2023-01-17 10-50-48](https://user-images.githubusercontent.com/47433679/212865883-e6188735-2af7-488b-8282-998144f3a0f6.png)  
-* Make sure to include underscore character: "_" when defining your templates, such that it acts as a placeholder.  
-E.g.:  "It was _ ." will become "It was **verbalizer1**." and "It was **verbalizer2**.", where verbalizer1 & verbalizer2 denote the two words (for example **bad** & **good**)
+
 
   More templates or more verbalizers could be added by using the "+" button. If you don't need it anymore, you can use the "-" button to delete it.
 

@@ -25,9 +25,9 @@ pipeline {
         stage('Testing') {
             steps {
                 sh '''true
-                #    . ./venv/bin/activate
-                #    export PYTHONPATH=$(pwd)
-                #    pytest --junitxml results.xml tests
+                   . ./venv/bin/activate
+                   export PYTHONPATH=$(pwd)
+                   pytest --junitxml results.xml tests
                 '''
             }
         }

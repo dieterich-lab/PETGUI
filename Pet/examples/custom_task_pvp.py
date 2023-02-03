@@ -48,21 +48,12 @@ class MyTaskPVP(PVP):
         # our language model's max sequence length.
         text = self.shortenable(example.text_a)
 
-
         # For each pattern_id, we define the corresponding pattern and return a pair of text a and text b (where text b
         # can also be empty).
-        if self.pattern_id == 0:
-            pattern = self.PATTERNS[0]
+        if isinstance(self.pattern_id, int):
+            pattern = self.PATTERNS[self.pattern_id]
             part_a, part_b = pattern.split("_")[0], pattern.split("_")[1]
-            return [f'{part_a}', self.mask, f'{part_b}', text], [] # return fully
-        elif self.pattern_id == 1:
-            pattern = self.PATTERNS[1]
-            part_a, part_b = pattern.split("_")[0], pattern.split("_")[1]
-            return [f'{part_a}', self.mask, f'{part_b}', text], [] # return fully
-        elif self.pattern_id == 2:
-            return ['Just', self.mask, "!"], [text]
-        elif self.pattern_id == 3:
-            return [text], ['In summary, the restaurant is', self.mask, '.']
+            return [f'{part_a.rstrip()}', self.mask, f'{part_b.lstrip()}', text], [] # return fully
         else:
             raise ValueError("No pattern implemented for id {}".format(self.pattern_id))
 

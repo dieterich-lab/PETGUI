@@ -45,7 +45,7 @@ var dynamicInput = [];
 function addInput(){
     var newdiv = document.createElement('div');
     newdiv.id = dynamicInput[counter];
-    newdiv.innerHTML = "Template " + (counter + 1) + " <br><input class='input--style-5 form-control' type='text' placeholder='Please enter the template text' name = templates_"+counter +" required> <br><input class='btn btn--radius-2 btn--red' type='button' value='-' onClick='removeInput("+dynamicInput[counter]+");'>";
+    newdiv.innerHTML = "Template " + (counter + 1) + " <br><input class='input--style-5 form-control' type='text' placeholder='Please enter the template text' name = template_"+counter +" required> <br><input class='btn btn--radius-2 btn--red' type='button' value='-' onClick='removeInput("+dynamicInput[counter]+");'>";
     document.getElementById('formulario').appendChild(newdiv);
     counter++;
 }
@@ -112,7 +112,7 @@ fileUploader.addEventListener('change', (event) => {
                             <div class="value">
                                 <div id="dynamicInput[0]">
                                 <div class="input-group" >
-                                    <input class="input--style-5 form-control" type="text" placeholder = "Template text here.Example:It was _" name="templates"  required>
+                                    <input class="input--style-5 form-control" type="text" placeholder = "Template text here.Example:It was_." name="template_0"  required>
                                     <button class="btn btn--radius-2 btn--red"  type ="button" onClick="addInput();">+</button><br>
                                     </div>
                                     </div>
@@ -125,12 +125,12 @@ fileUploader.addEventListener('change', (event) => {
                                 <div class="row row-space" id = 'formularmap' >
                                     <div class="col-2">
                                         <div class="input-group" >
-                                            <input class="input--style-5 form-control" type="text" placeholder="origin" name="origin" required>
+                                            <input class="input--style-5 form-control" type="text" placeholder="origin" name="origin_0" required>
                                         </div>
                                     </div>
                                     <div class="col-2">
                                         <div class="input-group">
-                                            <input class="input--style-5 form-control" type="text" placeholder="mapping" name="mapping" required>
+                                            <input class="input--style-5 form-control" type="text" placeholder="mapping" name="mapping_0" required>
                                             <button class="btn btn--radius-2 btn--red"  type ="button" onClick="addInput_map();">+</button><br>
 
                                         </div>
