@@ -7,7 +7,7 @@ from fastapi.templating import Jinja2Templates
 import tarfile
 import json
 from Pet import script
-from Pet.examples import custom_task_pvp, custom_task_processor
+from Pet.examples import custom_task_pvp, custom_task_processor,  custom_task_metric
 import re
 import os
 from os.path import isdir, isfile
@@ -169,13 +169,18 @@ def results(request: Request):
             final += f"/{finals[0]}"
         else:
             k = f"Pattern-{i} Iteration 1"
-            scores[k] = {"acc": "-"}
+            scores[k] = {"acc": "-",  "pre-rec-f1-supp": []}
             final = ""
         try:
             with open(f"output/{d}{final}/results.json") as f:
                 json_scores = json.load(f)
                 acc = round(json_scores["test_set_after_training"]["acc"], 2)
-                scores[k]["acc"] = acc
+                pre, rec, f1, supp = json_scores["test_set_after_training"]["pre-rec-f1-supp"]
+                labels = [i for i in range(len(pre))]
+                for l in labels:
+                    scores[k]["pre-rec-f1-supp"].append(f"Label: {l} pre: {pre[l]}, rec: {rec[l]}, f1: {f1[l]}, "
+                                                        f"supp: {supp[0]}")
+                    scores[k]["acc"] = acc
         except:
             pass
     with open("results.json", "w") as res:
@@ -267,6 +272,10 @@ async def kickoff(request: Request, background_tasks: BackgroundTasks):
         custom_task_pvp.MyTaskPVP.PATTERNS[i] = templates[i]
     # save entries as new task
     custom_task_pvp.report() # save task
+
+    '''Configure Metrics'''
+    custom_task_metric.TASK_NAME = "yelp-task"
+    custom_task_metric.report()
 
     '''Start PET'''
     file_name = data["file"]
