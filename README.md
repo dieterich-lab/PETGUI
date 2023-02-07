@@ -19,3 +19,4 @@ E.g.: "It was \_ ." will become "It was verbalizer1." and "It was verbalizer2.",
 
 5. Click on "See Results", where results of PET will be displayed as accuracy per pattern as well as precision, recall, f1-measure and support for each label per pattern. Please note that final results may take longer to be processed: ![image](https://user-images.githubusercontent.com/47433679/217211299-2ac3bccb-aec8-4688-8b17-7ed1805d8801.png)  
 Reloading page after a few minutes will display complete results, hence can be downloaded as json file.
+
