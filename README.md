@@ -7,13 +7,16 @@ A working training process in PETGUI
 4. `pip install -r requirements.txt`
 ## Run Training
 1. `uvicorn app.pet-gui:app --host 0.0.0.0 --port 8080`
+2. Open: http://10.250.135.122:8080/ (if running on the cluster) or http://0.0.0.0:8080 (if running locally) in the browser and navigate to http://0.0.0.0:8080/basic
 
+3. Input training parameters (small training data available in [data](/data/yelp_review_polarity_csv.tar.gz)), e.g.: ![Bildschirmfoto vom 2023-01-23 11-50-02](https://user-images.githubusercontent.com/47433679/214032245-2f29ddd4-2bb5-4238-82eb-e311fd44e2a3.png)
 
-  More templates or more verbalizers could be added by using the "+" button. If you don't need it anymore, you can use the "-" button to delete it.
+* Make sure to include the underscore character: "\_" when defining your templates, such that it acts as a placeholder.
+E.g.: "It was \_ ." will become "It was verbalizer1." and "It was verbalizer2.", where verbalizer1 & verbalizer2 denote two verbalized labels (for example bad & good)
+* More templates or more verbalizers can be added by using the "+" button. If you don't need it anymore, you can use the "-" button to delete it.  
 
-4. Training should start and finish in new window:
-![Bildschirmfoto vom 2023-01-09 12-33-00](https://user-images.githubusercontent.com/47433679/211299773-e66d94d7-be85-4af4-894e-f5754d98458e.png)
-![Bildschirmfoto vom 2023-01-09 12-36-02](https://user-images.githubusercontent.com/47433679/211299820-f2e2802c-12c6-48a6-a007-4bef817dc8f3.png)
+4. Training should start and finish in new window: ![Bildschirmfoto vom 2023-01-23 11-54-02](https://user-images.githubusercontent.com/47433679/214032285-5865ae18-8924-4aae-bfaf-fd59d03a0ec3.png)
 
-- Prompt to download results as json file: ![Bildschirmfoto vom 2023-01-09 12-36-15](https://user-images.githubusercontent.com/47433679/211300377-40097403-fd64-4858-a231-2ff3d57661ca.png)
-
+5. Click on "See Results", where results of PET will be displayed as accuracy per pattern. Please note that final results may take longer to be processed: ![Bildschirmfoto vom 2023-01-23 12-06-32](https://user-images.githubusercontent.com/47433679/214032841-4a808baa-f7c8-4552-951e-82feb84e159e.png)  
+Reloading page after a few minutes will display complete results, hence can be downloaded as json file:  
+![Bildschirmfoto vom 2023-01-23 12-11-03](https://user-images.githubusercontent.com/47433679/214033043-74e45b3c-80ba-4af7-beed-e0be176f6205.png)
