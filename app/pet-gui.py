@@ -16,6 +16,7 @@ from os.path import isdir, isfile
 import pathlib
 import shutil
 from fastapi.encoders import jsonable_encoder
+from bs4 import BeautifulSoup
 
 
 app = FastAPI()
@@ -24,7 +25,7 @@ templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
-def write(i, html_content, url=None):
+def write(i,template_data, url=None):
     """
     Write logging steps into html file "train.html"
     params:
@@ -32,26 +33,59 @@ def write(i, html_content, url=None):
         i = logging step to write
     """
     if i not in list(loggings.values()):
-        with open("templates/train.html", "w") as f:
+        with open("templates/train_test.html", "w") as f:
             if i == "Training done!":
-                f.write(html_content.format(f"{i}<hr><a href={url}><button>See Results</button></a>"))
+                tag = template_data.find(id="progress-bar-message")
+                tag.string.replace_with("Training done!")
+                f.write(template_data.prettify())
+                #f.write(html_content.format(f"{i}<hr><a href={url}><button>See Results</button></a>"))
                 loggings["final"] = i
             else:
                 step = next(num)
-                f.write(html_content.format(f"\tStep {step} in Training:<br/> {i}"))
+                tag = template_data.find(id="progress-bar-message")
+                info = i
+                tag.string.replace_with(info)
+                f.write(template_data.prettify())
+                #f.write(html_content.format(f"\tStep {step} in Training:<br/> {i}"))
                 loggings[step] = i
 
+def read_logs(logs, lines):
+    """
+    Reads in current training process as lines (list) and returns new log line as str
+    with updated log list containing line.
+    Parameters:
+         logs: list of processed log lines. [str(log), str(log),...]
+         lines: list of logging.txt file
+    Returns:
+        l: current log
+        logs, updated logs list
+    """
+    steps = {0: "Training started", 1:"Creating", 2:"Returning", 3:"Saving complete"}
+    pattern = re.pattern = ".*(?=INFO)"  # strip date format
+    try:
+        for line in lines:
+            match = re.findall(pattern, line)
+            check = any([s for s in steps.values() if s in line])
+            l = line.strip("".join(match))
+            if check and l not in logs:
+                logs.append(l)
+                lines = lines[lines.index(line) + 1:]
+                return l, logs, lines
+            else:
+                continue
+    except:
+        return "Waiting for step 1", logs, lines
 
-def read(file):
-    """
-    Read training log: logging.txt and insert step 0
-    params:
-        file = logging.txt
-    """
-    with open(file, "r") as f:
-        lines = f.readlines()
-    lines.insert(0, "Training started\n")
-    return lines
+# def read(file):
+#     """
+#     Read training log: logging.txt and insert step 0
+#     params:
+#         file = logging.txt
+#     """
+#     with open(file, "r") as f:
+#         lines = f.readlines()
+#     lines.insert(0, "Training started\n")
+#     return lines
 
 def iter_log(content, url=None):
     """
@@ -81,54 +115,125 @@ def iter_log(content, url=None):
     """
     write("Training done!", html_content, url)
 
+
+
+
+def write_tag_to_button(template_name):
+    with open(template_name, "r") as f:
+        data = f.read()
+        template_data = BeautifulSoup(data,"html.parser") # open the html parser
+    with open("logging.txt", "r") as f:  # open the logging txt
+        lines = f.readlines()
+    # read logging has a funtion
+    # tag = template_data.find(id="progress-bar-message")
+    # tag.string.replace_with("We have started the training, please wait")
+    # with open(template_name, 'w') as f:  # save the data
+    #     f.write(template_data.prettify())
+    st = round(time.time())
+    logs = []
+    while st:
+        try:
+            time.sleep(10)
+            log, logs, lines = read_logs(logs, lines)
+            #print(logs)
+            #print(log)
+            tag = template_data.find(id="progress-bar-message")
+            tag.string.replace_with(log)
+            with open(template_name, 'w') as f:  # save the data
+                f.write(template_data.prettify())
+            #write(log,template_data=template_data)
+            st = round(time.time())
+            if "Saving complete" in log:
+                st = False
+        except:
+            pass
+    # html_content = """
+    # <html>
+    #     <body>
+    #         {}
+    #     </body>
+    # </html>
+    # """
+    # write("Training done!", html_content, url)
+
+    #tag.string.replace_with("We have started the training, please wait")
+
+
+
+
+
+
+
+
+@app.get("/logging/start_train")
+def start_train(request: Request):
+    print("training_started")
+    with open("data.json", "r") as f:
+        data = json.load(f)
+
+    '''Configure Data Preprocessor'''
+    # define task name
+    custom_task_processor.MyTaskDataProcessor.TASK_NAME = "yelp-task"
+    # define labels
+    custom_task_processor.MyTaskDataProcessor.LABELS = ["1", "2"]
+    # define samples column
+    custom_task_processor.MyTaskDataProcessor.TEXT_A_COLUMN = int(data["sample"])
+    # define labels column
+    custom_task_processor.MyTaskDataProcessor.LABEL_COLUMN = int(data["label"])
+    # save entries as new task
+    custom_task_processor.report() # save task
+    #
+    # '''Configure Verbalizers'''
+    custom_task_pvp.MyTaskPVP.TASK_NAME = "yelp-task"
+    # define label-verbalizer mappings
+    labels = recursive_json_read(data, "origin")
+    verbalizers = recursive_json_read(data, "mapping")
+    for l,v in zip(labels, verbalizers):
+        custom_task_pvp.MyTaskPVP.VERBALIZER[l] = [v]
+        print(custom_task_pvp.MyTaskPVP.VERBALIZER)
+    templates = recursive_json_read(data, "templates")
+    for i in range(len(templates)):
+        custom_task_pvp.MyTaskPVP.PATTERNS[i] = templates[i]
+        print(custom_task_pvp.MyTaskPVP.PATTERNS)
+    # save entries as new task
+    custom_task_pvp.report() # save task
+
+    '''Start Training'''
+    file_name = data["file"]
+    train(file = file_name)
+    write_tag_to_button("templates/train_test.html")
+
+
+    #return templates.TemplateResponse("train_test.html", {"request": request})
+
+
+
 @app.get("/logging", name="logging")
 async def logging(request: Request, background_tasks: BackgroundTasks):
-    html_content = """
-    <html>
-        <head>
-            <meta http-equiv="refresh" content="3">
-        </head>
-        <body>
-            {}
-        </body>
-    </html>
-    """
-    write("{{log}}", html_content)
-    url = request.url_for("results")
-    background_tasks.add_task(iter_log, html_content, url)
-    return templates.TemplateResponse("train.html", {"request": request, "log": "Training starting.."})
+    # if button == "start_training":
+    #     print("Training started")
+    # html_content = """
+    # <html>
+    #     <head>
+    #         <meta http-equiv="refresh" content="3">
+    #     </head>
+    #     <body>
+    #         {}
+    #     </body>
+    # </html>
+    # """
+    # write("{{log}}", html_content)
+    # url = request.url_for("results")
+    # background_tasks.add_task(iter_log, html_content, url)
+    return templates.TemplateResponse("train_test.html", {"request": request})
 
 
-def read_logs(logs, lines):
-    """
-    Reads in current training process as lines (list) and returns new log line as str
-    with updated log list containing line.
-    Parameters:
-         logs: list of processed log lines. [str(log), str(log),...]
-         lines: list of logging.txt file
-    Returns:
-        l: current log
-        logs, updated logs list
-    """
-    steps = {0: "Training started", 1:"Creating", 2:"Returning", 3:"Saving complete"}
-    pattern = re.pattern = ".*(?=INFO)"  # strip date format
-    try:
-        for line in lines:
-            match = re.findall(pattern, line)
-            check = any([s for s in steps.values() if s in line])
-            l = line.strip("".join(match))
-            if check and l not in logs:
-                logs.append(l)
-                lines = lines[lines.index(line) + 1:]
-                return l, logs, lines
-            else:
-                continue
-    except:
-        return "Waiting for step 1", logs, lines
+
 
 @app.get("/")
 def main():
     return {"Hello": "World"}
+
 
 @app.get("/results", name="results")
 def results(request: Request):
@@ -190,6 +295,10 @@ async def get_form(request: Request):
     loggings = {}
     return templates.TemplateResponse("index.html", {"request": request})
 
+@app.get("/final", response_class=HTMLResponse, name='final')
+async def get_final_template(request: Request):
+    return templates.TemplateResponse("final_page.html", {"request": request})
+
 
 @app.get("/progress", response_class=HTMLResponse, name="progress")
 def read_item(request: Request):
@@ -203,7 +312,12 @@ def train(file):
     """
     instance = script.Script("pet", [0,1], f"Pet/data_uploaded/{file}/", "bert", "bert-base-cased",
                       "yelp-task", "./output")  # set defined task names
+    print("training started")
     instance.run()
+
+
+
+
 
 @app.get("/train", name="train")
 async def kickoff(request: Request, background_tasks: BackgroundTasks):
@@ -254,8 +368,6 @@ def recursive_json_read(data, key: str):
             d.append(data[f"{key}_{i}"])
     return d
 
-
-
 @app.post("/basic", name = "homepage")
 async def get_form(request: Request,file: UploadFile = File(...)):
     global loggings, num
@@ -288,6 +400,17 @@ async def get_form(request: Request,file: UploadFile = File(...)):
     redirect_url = request.url_for('train')
     print(para_dic)
     return RedirectResponse(redirect_url, status_code=303)
+
+
+@app.get("/good", response_class=HTMLResponse, name="good")
+def index_1(request: Request):
+  return templates.TemplateResponse("totest.html",{"request": request})
+
+
+@app.get("/totest")
+def my_link():
+  print('I got clicked!')
+
 
 
 
