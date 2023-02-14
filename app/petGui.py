@@ -81,7 +81,7 @@ def iter_log(content, url=None):
     </html>
     """
     while st:
-        time.sleep(7)
+        time.sleep(5)
         try:
             log, logs, lines = read_logs(logs, lines)
             if "OVERALL RESULTS" in log:
@@ -163,7 +163,7 @@ def results(request: Request):
         final = ""
         if "final" in d:
             k = "Final"
-            scores[k] = {"acc": "-"}
+            scores[k] = {"acc": "-", "pre-rec-f1-supp": []}
             finals = next(os.walk("output/final/"))[1]
             assert len(finals) == 1
             final += f"/{finals[0]}"
@@ -171,18 +171,15 @@ def results(request: Request):
             k = f"Pattern-{i} Iteration 1"
             scores[k] = {"acc": "-",  "pre-rec-f1-supp": []}
             final = ""
-        try:
-            with open(f"output/{d}{final}/results.json") as f:
-                json_scores = json.load(f)
-                acc = round(json_scores["test_set_after_training"]["acc"], 2)
-                pre, rec, f1, supp = json_scores["test_set_after_training"]["pre-rec-f1-supp"]
-                labels = [i for i in range(len(pre))]
-                for l in labels:
-                    scores[k]["pre-rec-f1-supp"].append(f"Label: {l} pre: {pre[l]}, rec: {rec[l]}, f1: {f1[l]}, "
-                                                        f"supp: {supp[0]}")
-                    scores[k]["acc"] = acc
-        except:
-            pass
+        with open(f"output/{d}{final}/results.json") as f:
+            json_scores = json.load(f)
+            acc = round(json_scores["test_set_after_training"]["acc"], 2)
+            pre, rec, f1, supp = json_scores["test_set_after_training"]["pre-rec-f1-supp"]
+            labels = [i for i in range(len(pre))]
+            for l in labels:
+                scores[k]["pre-rec-f1-supp"].append(f"Label: {l} pre: {pre[l]}, rec: {rec[l]}, f1: {f1[l]}, "
+                                                    f"supp: {supp[0]}")
+                scores[k]["acc"] = acc
     with open("results.json", "w") as res:
         json.dump(scores, res)
     url_homepage, url_download = request.url_for("cleanup"), request.url_for("download")
