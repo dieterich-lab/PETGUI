@@ -43,7 +43,6 @@ def write(cont, html_content, url=None):
                     loggings[step] = t
                 if cont[-1] == "PET done!":
                     texts.append(f"<hr><a href={url}><button>See Results</button></a>")
-                    loggings["final"] = cont[-1]
                 f.write(html_content.format("".join(texts)))
     else:
         if cont not in list(loggings.values()):
@@ -84,20 +83,18 @@ def iter_log(content, url=None):
         time.sleep(5)
         try:
             log, logs, lines = read_logs(logs, lines)
-            if "OVERALL RESULTS" in log:
+            if "final" in log:
                 log = "PET done!"
             cont.append(log)
             if len(cont) == 3:
-                if log == "PET done!":
-                    write(cont, html_content, url)
-                    cont.pop(0)
-                    st = False
-                else:
-                    write(cont, content)
-                    cont.pop(0)
+                write(cont, content)
+                cont.pop(0)
+            elif log == "PET done!":
+                write(cont, html_content, url)
+                cont.pop(0)
+                st = False
         except TypeError:
             pass
-    write(cont, html_content, url)
 
 
 @app.get("/logging", name="logging")
@@ -129,7 +126,7 @@ def read_logs(logs, lines):
         l: current log
         logs, updated logs list
     """
-    steps = {0: "PET started", 1: "Creating", 2: "Returning", 3: "Saving trained", 4: "Starting", 5:"OVERALL RESULTS"}
+    steps = {0: "PET started", 1: "Creating", 2: "Returning", 3: "Saving trained", 4: "Starting", 5:"./output/final/p0-i0..."}
     pattern = re.pattern = ".*(?=INFO)"  # strip date format
     try:
         for line in lines:
