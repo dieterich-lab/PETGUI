@@ -7,7 +7,7 @@ from fastapi.templating import Jinja2Templates
 import tarfile
 import json
 from Pet import script
-from Pet.examples import custom_task_pvp, custom_task_processor,  custom_task_metric
+from Pet.examples import custom_task_pvp, custom_task_processor, custom_task_metric
 import re
 import os
 from os.path import isdir, isfile
@@ -80,21 +80,23 @@ def iter_log(content, url=None):
     </html>
     """
     while st:
-        time.sleep(5)
+        time.sleep(7)
         try:
             log, logs, lines = read_logs(logs, lines)
             if "final" in log:
                 log = "PET done!"
             cont.append(log)
             if len(cont) == 3:
-                write(cont, content)
-                cont.pop(0)
-            elif log == "PET done!":
-                write(cont, html_content, url)
-                cont.pop(0)
-                st = False
+                if log == "PET done!":
+                    write(cont, html_content, url)
+                    cont.pop(0)
+                    st = False
+                else:
+                    write(cont, content)
+                    cont.pop(0)
         except TypeError:
             pass
+    write(cont, html_content, url)
 
 
 @app.get("/logging", name="logging")
@@ -126,7 +128,7 @@ def read_logs(logs, lines):
         l: current log
         logs, updated logs list
     """
-    steps = {0: "PET started", 1: "Creating", 2: "Returning", 3: "Saving trained", 4: "Starting", 5:"./output/final/p0-i0..."}
+    steps = {0: "PET started", 1: "Creating", 2: "Returning", 3: "Saving trained", 4: "Starting"}
     pattern = re.pattern = ".*(?=INFO)"  # strip date format
     try:
         for line in lines:
@@ -168,7 +170,6 @@ def results(request: Request):
             k = f"Pattern-{i} Iteration 1"
             scores[k] = {"acc": "-", "pre-rec-f1-supp": []}
             final = ""
-<<<<<<< HEAD
         try:
             with open(f"output/{d}{final}/results.json") as f:
                 json_scores = json.load(f)
@@ -181,17 +182,6 @@ def results(request: Request):
                 scores[k]["acc"] = acc
         except:
             pass
-=======
-        with open(f"output/{d}{final}/results.json") as f:
-            json_scores = json.load(f)
-            acc = round(json_scores["test_set_after_training"]["acc"], 2)
-            pre, rec, f1, supp = json_scores["test_set_after_training"]["pre-rec-f1-supp"]
-            labels = [i for i in range(len(pre))]
-            for l in labels:
-                scores[k]["pre-rec-f1-supp"].append(f"Label: {l} pre: {pre[l]}, rec: {rec[l]}, f1: {f1[l]}, "
-                                                    f"supp: {supp[0]}")
-                scores[k]["acc"] = acc
->>>>>>> Finalize_metrics
     with open("results.json", "w") as res:
         json.dump(scores, res)
     url_homepage, url_download = request.url_for("cleanup"), request.url_for("download")
