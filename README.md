@@ -17,6 +17,4 @@ E.g.: "It was \_ ." will become "It was verbalizer1." and "It was verbalizer2.",
 
 4. Training should start and finish in new window: ![Bildschirmfoto vom 2023-01-23 11-54-02](https://user-images.githubusercontent.com/47433679/214032285-5865ae18-8924-4aae-bfaf-fd59d03a0ec3.png)
 
-5. Click on "See Results", where results of PET will be displayed as accuracy per pattern. Please note that final results may take longer to be processed: ![Bildschirmfoto vom 2023-01-23 12-06-32](https://user-images.githubusercontent.com/47433679/214032841-4a808baa-f7c8-4552-951e-82feb84e159e.png)  
-Reloading page after a few minutes will display complete results, hence can be downloaded as json file:  
-![Bildschirmfoto vom 2023-01-23 12-11-03](https://user-images.githubusercontent.com/47433679/214033043-74e45b3c-80ba-4af7-beed-e0be176f6205.png)
+5. Click on "See Results", where results of PET will be displayed as accuracy per pattern as well as precision, recall, f1-measure and support per label for each pattern. Final scores are also included as "Final".![Bildschirmfoto vom 2023-02-17 14-40-29](https://user-images.githubusercontent.com/47433679/219675805-3cf2a33c-6dc5-446e-83f5-3d227ee3735f.png)-e0be176f6205.png)
