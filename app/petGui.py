@@ -7,7 +7,7 @@ from fastapi.templating import Jinja2Templates
 import tarfile
 import json
 from Pet import script
-from Pet.examples import custom_task_pvp, custom_task_processor
+from Pet.examples import custom_task_pvp, custom_task_processor, custom_task_metric
 import re
 import os
 from os.path import isdir, isfile
@@ -43,7 +43,6 @@ def write(cont, html_content, url=None):
                     loggings[step] = t
                 if cont[-1] == "PET done!":
                     texts.append(f"<hr><a href={url}><button>See Results</button></a>")
-                    loggings["final"] = cont[-1]
                 f.write(html_content.format("".join(texts)))
     else:
         if cont not in list(loggings.values()):
@@ -84,7 +83,7 @@ def iter_log(content, url=None):
         time.sleep(7)
         try:
             log, logs, lines = read_logs(logs, lines)
-            if "OVERALL RESULTS" in log:
+            if "final" in log:
                 log = "PET done!"
             cont.append(log)
             if len(cont) == 3:
@@ -129,7 +128,7 @@ def read_logs(logs, lines):
         l: current log
         logs, updated logs list
     """
-    steps = {0: "PET started", 1: "Creating", 2: "Returning", 3: "Saving trained", 4: "Starting", 5:"OVERALL RESULTS"}
+    steps = {0: "PET started", 1: "Creating", 2: "Returning", 3: "Saving trained", 4: "Starting"}
     pattern = re.pattern = ".*(?=INFO)"  # strip date format
     try:
         for line in lines:
@@ -163,18 +162,23 @@ def results(request: Request):
         final = ""
         if "final" in d:
             k = "Final"
-            scores[k] = {"acc": "-"}
+            scores[k] = {"acc": "-", "pre-rec-f1-supp": []}
             finals = next(os.walk("output/final/"))[1]
             assert len(finals) == 1
             final += f"/{finals[0]}"
         else:
             k = f"Pattern-{i} Iteration 1"
-            scores[k] = {"acc": "-"}
+            scores[k] = {"acc": "-", "pre-rec-f1-supp": []}
             final = ""
         try:
             with open(f"output/{d}{final}/results.json") as f:
                 json_scores = json.load(f)
                 acc = round(json_scores["test_set_after_training"]["acc"], 2)
+                pre, rec, f1, supp = json_scores["test_set_after_training"]["pre-rec-f1-supp"]
+                labels = [i for i in range(len(pre))]
+                for l in labels:
+                    scores[k]["pre-rec-f1-supp"].append(f"Label: {l} pre: {pre[l]}, rec: {rec[l]}, f1: {f1[l]}, "
+                                                        f"supp: {supp[0]}")
                 scores[k]["acc"] = acc
         except:
             pass
@@ -195,12 +199,19 @@ def download():
 
 
 @app.get("/cleanup", name="cleanup")
-def clean(request: Request = None):
+def clean(request: Request=None):
     """
     Iterates over created paths during PET and unlinks them.
     Returns:
         redirection to homepage
     """
+    paths = ["results.json", "data.json", "output", "Pet/data_uploaded", "templates/run.html"]
+    for path in paths:
+        file_path = pathlib.Path(path)
+        if isfile(path):
+            file_path.unlink()
+        elif isdir(path):
+            shutil.rmtree(path)
     if request:
         url = request.url_for("homepage")
         return RedirectResponse(url, status_code=303)
@@ -267,6 +278,10 @@ async def kickoff(request: Request, background_tasks: BackgroundTasks):
         custom_task_pvp.MyTaskPVP.PATTERNS[i] = templates[i]
     # save entries as new task
     custom_task_pvp.report() # save task
+
+    '''Configure Metrics'''
+    custom_task_metric.TASK_NAME = "yelp-task"
+    custom_task_metric.report()
 
     '''Start PET'''
     file_name = data["file"]
