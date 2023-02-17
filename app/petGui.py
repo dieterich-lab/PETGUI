@@ -7,7 +7,7 @@ from fastapi.templating import Jinja2Templates
 import tarfile
 import json
 from Pet import script
-from Pet.examples import custom_task_pvp, custom_task_processor, custom_task_metric
+from Pet.examples import custom_task_pvp, custom_task_processor,  custom_task_metric
 import re
 import os
 from os.path import isdir, isfile

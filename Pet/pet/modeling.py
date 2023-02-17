@@ -490,6 +490,7 @@ def evaluate(model: TransformerModelWrapper, eval_data: List[InputExample], conf
                          n_gpu=config.n_gpu, decoding_strategy=config.decoding_strategy, priming=config.priming)
 
     predictions = np.argmax(results['logits'], axis=1)
+    labels = np.unique(predictions)
     scores = {}
 
     for metric in metrics:
