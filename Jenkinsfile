@@ -30,14 +30,6 @@ pipeline {
                 '''
             }
         }
-	stage('Start app') {
-	    steps {
-		sh '''
-		. ./venv/bin/activate
-		uvicorn app.petGui:app --host 0.0.0.0 --port 8080
-		'''
-	    }
-	}
     }
     post {
         always {
