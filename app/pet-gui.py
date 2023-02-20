@@ -17,7 +17,8 @@ import pathlib
 import shutil
 from fastapi.encoders import jsonable_encoder
 from bs4 import BeautifulSoup
-
+from starlette.responses import StreamingResponse
+import asyncio
 
 app = FastAPI()
 
@@ -25,29 +26,29 @@ templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
-def write(i,template_data, url=None):
-    """
-    Write logging steps into html file "train.html"
-    params:
-        html_content = html skeleton content to write
-        i = logging step to write
-    """
-    if i not in list(loggings.values()):
-        with open("templates/train_test.html", "w") as f:
-            if i == "Training done!":
-                tag = template_data.find(id="progress-bar-message")
-                tag.string.replace_with("Training done!")
-                f.write(template_data.prettify())
-                #f.write(html_content.format(f"{i}<hr><a href={url}><button>See Results</button></a>"))
-                loggings["final"] = i
-            else:
-                step = next(num)
-                tag = template_data.find(id="progress-bar-message")
-                info = i
-                tag.string.replace_with(info)
-                f.write(template_data.prettify())
-                #f.write(html_content.format(f"\tStep {step} in Training:<br/> {i}"))
-                loggings[step] = i
+# def write(i,template_data, url=None):
+#     """
+#     Write logging steps into html file "train.html"
+#     params:
+#         html_content = html skeleton content to write
+#         i = logging step to write
+#     """
+#     if i not in list(loggings.values()):
+#         with open("templates/train_test.html", "w") as f:
+#             if i == "Training done!":
+#                 tag = template_data.find(id="progress-bar-message")
+#                 tag.string.replace_with("Training done!")
+#                 f.write(template_data.prettify())
+#                 #f.write(html_content.format(f"{i}<hr><a href={url}><button>See Results</button></a>"))
+#                 loggings["final"] = i
+#             else:
+#                 step = next(num)
+#                 tag = template_data.find(id="progress-bar-message")
+#                 info = i
+#                 tag.string.replace_with(info)
+#                 f.write(template_data.prettify())
+#                 #f.write(html_content.format(f"\tStep {step} in Training:<br/> {i}"))
+#                 loggings[step] = i
 
 def read_logs(logs, lines):
     """
@@ -118,35 +119,35 @@ def iter_log(content, url=None):
 
 
 
-def write_tag_to_button(template_name):
-    with open(template_name, "r") as f:
-        data = f.read()
-        template_data = BeautifulSoup(data,"html.parser") # open the html parser
-    with open("logging.txt", "r") as f:  # open the logging txt
-        lines = f.readlines()
-    # read logging has a funtion
-    # tag = template_data.find(id="progress-bar-message")
-    # tag.string.replace_with("We have started the training, please wait")
-    # with open(template_name, 'w') as f:  # save the data
-    #     f.write(template_data.prettify())
-    st = round(time.time())
-    logs = []
-    while st:
-        try:
-            time.sleep(10)
-            log, logs, lines = read_logs(logs, lines)
-            #print(logs)
-            #print(log)
-            tag = template_data.find(id="progress-bar-message")
-            tag.string.replace_with(log)
-            with open(template_name, 'w') as f:  # save the data
-                f.write(template_data.prettify())
-            #write(log,template_data=template_data)
-            st = round(time.time())
-            if "Saving complete" in log:
-                st = False
-        except:
-            pass
+# def write_tag_to_button(template_name):
+#     with open(template_name, "r") as f:
+#         data = f.read()
+#         template_data = BeautifulSoup(data,"html.parser") # open the html parser
+#     with open("logging.txt", "r") as f:  # open the logging txt
+#         lines = f.readlines()
+#     # read logging has a funtion
+#     # tag = template_data.find(id="progress-bar-message")
+#     # tag.string.replace_with("We have started the training, please wait")
+#     # with open(template_name, 'w') as f:  # save the data
+#     #     f.write(template_data.prettify())
+#     st = round(time.time())
+#     logs = []
+#     while st:
+#         try:
+#             time.sleep(10)
+#             log, logs, lines = read_logs(logs, lines)
+#             #print(logs)
+#             #print(log)
+#             tag = template_data.find(id="progress-bar-message")
+#             tag.string.replace_with(log)
+#             with open(template_name, 'w') as f:  # save the data
+#                 f.write(template_data.prettify())
+#             #write(log,template_data=template_data)
+#             st = round(time.time())
+#             if "Saving complete" in log:
+#                 st = False
+#         except:
+#             pass
     # html_content = """
     # <html>
     #     <body>
@@ -160,17 +161,11 @@ def write_tag_to_button(template_name):
 
 
 
-
-
-
-
-
 @app.get("/logging/start_train")
 def start_train(request: Request):
     print("training_started")
     with open("data.json", "r") as f:
         data = json.load(f)
-
     '''Configure Data Preprocessor'''
     # define task name
     custom_task_processor.MyTaskDataProcessor.TASK_NAME = "yelp-task"
@@ -201,15 +196,28 @@ def start_train(request: Request):
     '''Start Training'''
     file_name = data["file"]
     train(file = file_name)
-    write_tag_to_button("templates/train_test.html")
-
-
+    #write_tag_to_button("templates/train_test.html")
     #return templates.TemplateResponse("train_test.html", {"request": request})
+
+
+log_file = "logging.txt"
+last_pos = os.path.getsize(log_file)
+
+@app.get("/log")
+async def read_log():
+    global last_pos
+    with open(log_file, "r") as file:
+        file.seek(last_pos)
+        lines = file.readlines()
+        last_pos = file.tell()
+    info_lines = [line for line in lines if "INFO" in line and "WARNING" not in line]
+    return {"log": info_lines}
+
 
 
 
 @app.get("/logging", name="logging")
-async def logging(request: Request, background_tasks: BackgroundTasks):
+async def logging(request: Request):
     # if button == "start_training":
     #     print("Training started")
     # html_content = """
@@ -402,25 +410,17 @@ async def get_form(request: Request,file: UploadFile = File(...)):
     return RedirectResponse(redirect_url, status_code=303)
 
 
-@app.get("/good", response_class=HTMLResponse, name="good")
-def index_1(request: Request):
-  return templates.TemplateResponse("totest.html",{"request": request})
+# @app.get("/good", response_class=HTMLResponse, name="good")
+# def index_1(request: Request):
+#   return templates.TemplateResponse("totest.html",{"request": request})
 
 
-@app.get("/totest")
-def my_link():
-  print('I got clicked!')
+# @app.get("/totest")
+# def my_link():
+#   print('I got clicked!')
 
 
-
-
-
-
-
-
-
-
-    #return redirect(url_for('delete_images'))
+  #return redirect(url_for('delete_images'))
     # redirect_url = request.url_for('basic_upload')
     # return RedirectResponse(redirect_url, status_code=303)
 
