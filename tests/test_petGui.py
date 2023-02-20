@@ -63,3 +63,14 @@ class TestServer:
         response = self.client.get("/results")
         assert response.status_code == 200
         assert exists("results.json")
+
+    def test_download(self, setting):
+        response = self.client.get("/download")
+        assert b'Pattern-1 Iteration 1' in response.content
+
+    def test_cleanup(self, setting):
+        response = self.client.get("/cleanup")
+        assert response.status_code == 200
+        paths = ["results.json", "data.json", "output", "Pet/data_uploaded", "templates/run.html"]
+        for p in paths:
+            assert not exists(p)

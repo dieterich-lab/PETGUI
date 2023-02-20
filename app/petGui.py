@@ -41,7 +41,7 @@ def write(cont, html_content, url=None):
                         step = next(num)
                     texts.append(f"<b>Step {step} in PET:</b><br/> {t}<br/>")
                     loggings[step] = t
-                if cont[-1] == "PET done!":
+                if "PET done!" in cont:
                     texts.append(f"<hr><a href={url}><button>See Results</button></a>")
                 f.write(html_content.format("".join(texts)))
     else:
@@ -128,8 +128,8 @@ def read_logs(logs, lines):
         l: current log
         logs, updated logs list
     """
-    steps = {0: "PET started", 1: "Creating", 2: "Returning", 3: "Saving trained", 4: "Starting"}
-    pattern = re.pattern = ".*(?=INFO)"  # strip date format
+    steps = {0: "PET started", 1: "Creating", 2: "Returning", 3: "Saving trained", 4: "Starting", 5: "Skipping subdir"}
+    pattern = re.pattern = ".*(?=INFO|WARNING)"  # strip date format
     try:
         for line in lines:
             match = re.findall(pattern, line)
