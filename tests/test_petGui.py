@@ -66,7 +66,7 @@ class TestServer:
 
     def test_download(self, setting):
         response = self.client.get("/download")
-        assert b'Pattern-1 Iteration 1' in response.content
+        assert b'pre-rec-f1-supp' in response.content
 
     def test_cleanup(self, setting):
         response = self.client.get("/cleanup")
