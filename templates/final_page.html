@@ -52,8 +52,21 @@ text-align: start;
                             </div>
                         </div>
                             <div class="card-body" id="container">
-                                <button class="btn btn--radius-2 btn--red" id="mycontain">Upload unlabeled text as plain text</button>
+                                <label class="btn btn--radius-2 btn--red">
+                                      Upload unlabeled text as plain text
+                                <input type="file" name="file" id="file" style="display:none;">
+                                </label>
                             </div>
+                <script>
+                    document.getElementById("file").addEventListener("change", function() {
+    var file = this.files[0];
+    var formData = new FormData();
+    formData.append("file", file);
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", "/uploadfile/");
+    xhr.send(formData);
+});
+                </script>
                             <p style="font-size:50px;" align="center">Or</p>
                             <div class="card-body" id="container">
                                 <button class="btn btn--radius-2 btn--red" id="mycontain">Predict labels using PET Model</button>
