@@ -19,7 +19,10 @@ class TestServer:
             "mapping_1": "good",
             "model_para": "gbert-base"
         }
+        self.file_path = "data.json" #
         self.client = TestClient(app)
+
+
 
     def test_home(self, setting):
         response = self.client.get("/")
@@ -44,6 +47,28 @@ class TestServer:
         assert f"{response.next_request}" == f"{self.client.get('/run', follow_redirects=False).request}"
         assert exists("logging.txt")
         assert exists(f"Pet/data_uploaded/{file['file'][0]}")
+    def test_upload_data(self,setting):
+        directory = "data/yelp_review_polarity_csv"
+
+        expected_files = ["train.csv", "test.csv", "readme.txt"]
+
+        # Check if the directory exists
+        self.assertTrue(os.path.isdir(directory), f"Directory {directory} does not exist")
+
+        # Check if the expected files exist in the directory
+        for file_name in expected_files:
+            file_path = os.path.join(directory, file_name)
+            self.assertTrue(os.path.isfile(file_path), f"File {file_path} does not exist")
+
+    def test_save_dict_to_json_file(self,setting):
+        with open(file_path, 'w') as file:
+            json.dump(dict_data, file)
+
+        self.assertTrue(os.path.exists(self.file_path))
+
+        with open(self.file_path, 'r') as file:
+            loaded_dict = json.load(file)
+        self.assertDictEqual(loaded_dict, self.metadata)
 
     def test_run(self, setting):
         response = self.client.get("/run", follow_redirects=False)
@@ -64,6 +89,10 @@ class TestServer:
         assert response.status_code == 200
         assert exists("results.json")
 
+    def tearDown(self,setting):
+        if os.path.exists(self.file_path):
+            os.remove(self.file_path)
+            
     def test_download(self, setting):
         response = self.client.get("/download")
         assert b'pre-rec-f1-supp' in response.content
@@ -74,3 +103,4 @@ class TestServer:
         paths = ["results.json", "data.json", "output", "Pet/data_uploaded", "templates/run.html"]
         for p in paths:
             assert not exists(p)
+
