@@ -301,6 +301,15 @@ def recursive_json_read(data, key: str):
             d.append(data[f"{key}_{i}"])
     return d
 
+@app.post("/uploadfile/")
+async def create_upload_file(file: UploadFile = File(...)):
+    upload_folder = "data_uploaded/unlabeled"
+    os.makedirs(upload_folder, exist_ok=True)
+    file_path = os.path.join(upload_folder, file.filename)
+    with open(file_path, "wb") as file_object:
+        file_object.write(file.file.read())
+    return {"filename": file.filename, "path": file_path}
+
 
 @app.post("/basic", name="homepage")
 async def get_form(request: Request, sample: str = Form(media_type="multipart/form-data"),
