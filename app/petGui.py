@@ -145,6 +145,10 @@ def read_logs(logs, lines):
         return "Waiting for step 1", logs, lines
 
 
+@app.get("/final", response_class=HTMLResponse, name='final')
+async def get_final_template(request: Request):
+    return templates.TemplateResponse("final_page.html", {"request": request})
+
 @app.get("/")
 def main():
     return {"Hello": "World"}
