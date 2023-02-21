@@ -99,22 +99,22 @@ def iter_log(content, url=None):
     write(cont, html_content, url)
 
 
-@app.get("/logging", name="logging")
-async def logging(request: Request, background_tasks: BackgroundTasks):
-    html_content = """
-    <html>
-        <head>
-            <meta http-equiv="refresh" content="3">
-        </head>
-        <body>
-            {}
-        </body>
-    </html>
-    """
-    write("{{log}}", html_content)
-    url = request.url_for("results")
-    background_tasks.add_task(iter_log, html_content, url)
-    return templates.TemplateResponse("run.html", {"request": request, "log": "PET starting.."})
+# @app.get("/logging", name="logging")
+# async def logging(request: Request, background_tasks: BackgroundTasks):
+#     html_content = """
+#     <html>
+#         <head>
+#             <meta http-equiv="refresh" content="3">
+#         </head>
+#         <body>
+#             {}
+#         </body>
+#     </html>
+#     """
+#     write("{{log}}", html_content)
+#     url = request.url_for("results")
+#     background_tasks.add_task(iter_log, html_content, url)
+#     return templates.TemplateResponse("run.html", {"request": request, "log": "PET starting.."})
 
 
 def read_logs(logs, lines):
@@ -143,6 +143,22 @@ def read_logs(logs, lines):
                 continue
     except IndexError:
         return "Waiting for step 1", logs, lines
+
+@app.get("/log")
+async def read_log():
+    global last_pos
+    with open(log_file, "r") as file:
+        file.seek(last_pos)
+        lines = file.readlines()
+        last_pos = file.tell()
+    info_lines = [line for line in lines if "INFO" in line and "WARNING" not in line]
+    return {"log": info_lines}
+
+
+@app.get("/logging", name="logging")
+async def logging(request: Request):
+    return templates.TemplateResponse("next.html", {"request": request})
+
 
 
 @app.get("/final", response_class=HTMLResponse, name='final')
@@ -202,8 +218,8 @@ def download():
     return FileResponse("results.json", filename="results.json")
 
 
-@app.get("/cleanup", name="cleanup")
-def clean(request: Request=None):
+@app.get("/cleanup")
+def clean(request: Request):
     """
     Iterates over created paths during PET and unlinks them.
     Returns:
@@ -216,11 +232,11 @@ def clean(request: Request=None):
             file_path.unlink()
         elif isdir(path):
             shutil.rmtree(path)
-    if request:
-        url = request.url_for("homepage")
-        return RedirectResponse(url, status_code=303)
-    else:
-        return None
+    url = request.url_for("homepage")
+    # if request:
+    return RedirectResponse(url, status_code=303)
+    # else:
+    #     return None
 
 
 @app.get("/basic", response_class=HTMLResponse, name='homepage')
@@ -248,8 +264,8 @@ def train(file, templates):
     instance.run()
 
 
-@app.get("/run", name="run")
-async def kickoff(request: Request, background_tasks: BackgroundTasks):
+@app.get("/logging/start_train")
+async def kickoff(request: Request):
     """
     Kicks off PET by calling train method as background task with defined task name.
     """
@@ -289,9 +305,11 @@ async def kickoff(request: Request, background_tasks: BackgroundTasks):
 
     '''Start PET'''
     file_name = data["file"]
-    background_tasks.add_task(train, file_name, template_cnt)
-    redirect_url = request.url_for('logging')
-    return RedirectResponse(redirect_url, status_code=303)
+    train(file=file_name,templates = template_cnt)
+
+    # background_tasks.add_task(train, file_name, template_cnt)
+    # redirect_url = request.url_for('logging')
+    # return RedirectResponse(redirect_url, status_code=303)
 
 
 def recursive_json_read(data, key: str):
@@ -303,12 +321,30 @@ def recursive_json_read(data, key: str):
 
 @app.post("/uploadfile/")
 async def create_upload_file(file: UploadFile = File(...)):
-    upload_folder = "data_uploaded/unlabeled"
+    """
+    Upload function for the final page
+    """
+
+    upload_folder = "./Pet/data_uploaded/unlabeled"
     os.makedirs(upload_folder, exist_ok=True)
     file_path = os.path.join(upload_folder, file.filename)
     with open(file_path, "wb") as file_object:
         file_object.write(file.file.read())
     return {"filename": file.filename, "path": file_path}
+
+
+log_file = "logging.txt"
+last_pos = os.path.getsize(log_file)
+
+@app.get("/log")
+async def read_log():
+    global last_pos
+    with open(log_file, "r") as file:
+        file.seek(last_pos)
+        lines = file.readlines()
+        last_pos = file.tell()
+    info_lines = [line for line in lines if "INFO" in line and "WARNING" not in line]
+    return {"log": info_lines}
 
 
 @app.post("/basic", name="homepage")
@@ -348,7 +384,7 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
         mapping_counter = mapping_counter+1
     with open('data.json', 'w') as f:
         json.dump(para_dic, f)
-    redirect_url = request.url_for('run')
+    redirect_url = request.url_for('logging')
     print(para_dic)
     return RedirectResponse(redirect_url, status_code=303)
 
