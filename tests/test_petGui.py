@@ -92,3 +92,15 @@ class TestServer:
     def tearDown(self,setting):
         if os.path.exists(self.file_path):
             os.remove(self.file_path)
+            
+    def test_download(self, setting):
+        response = self.client.get("/download")
+        assert b'pre-rec-f1-supp' in response.content
+
+    def test_cleanup(self, setting):
+        response = self.client.get("/cleanup")
+        assert response.status_code == 200
+        paths = ["results.json", "data.json", "output", "Pet/data_uploaded", "templates/run.html"]
+        for p in paths:
+            assert not exists(p)
+

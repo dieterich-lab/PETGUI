@@ -21,7 +21,6 @@ from typing import List, Dict
 
 import numpy as np
 import torch
-from sklearn.metrics import f1_score
 from sklearn.metrics import f1_score, precision_recall_fscore_support
 from transformers.data.metrics import simple_accuracy
 
@@ -501,8 +500,8 @@ def evaluate(model: TransformerModelWrapper, eval_data: List[InputExample], conf
             scores[metric] = f1_score(results['labels'], predictions)
         elif metric == "pre-rec-f1-supp":
             scores[metric] = [score.tolist() for score in
-                          precision_recall_fscore_support(results["labels"], predictions, average=None,
-                                                          zero_division="warn")]
+                              precision_recall_fscore_support(results["labels"], predictions, average=None,
+                                                              zero_division="warn")]
         elif metric == 'f1-macro':
             scores[metric] = f1_score(results['labels'], predictions, average='macro')
         elif metric == 'em':

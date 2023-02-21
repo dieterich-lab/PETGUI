@@ -23,6 +23,7 @@ from typing import List
 from Pet.pet.task_helpers import MultiMaskTaskHelper
 from Pet.pet.tasks import DataProcessor, PROCESSORS, TASK_HELPERS
 from Pet.pet.utils import InputExample
+import sys
 
 
 class MyTaskDataProcessor(DataProcessor):
@@ -71,6 +72,7 @@ class MyTaskDataProcessor(DataProcessor):
         :param data_dir: the directory in which the dev data can be found
         :return: a list of dev examples
         """
+        #raise NotImplementedError()
         return self._create_examples(os.path.join(data_dir, MyTaskDataProcessor.DEV_FILE_NAME), "dev")
 
     def get_test_examples(self, data_dir) -> List[InputExample]:
@@ -80,6 +82,7 @@ class MyTaskDataProcessor(DataProcessor):
         :return: a list of test examples
         """
         raise NotImplementedError()
+        #return self._create_examples(os.path.join(data_dir, MyTaskDataProcessor.TEST_FILE_NAME), "test")
 
     def get_unlabeled_examples(self, data_dir) -> List[InputExample]:
         """
@@ -87,7 +90,8 @@ class MyTaskDataProcessor(DataProcessor):
         :param data_dir: the directory in which the unlabeled data can be found
         :return: a list of unlabeled examples
         """
-        return self.get_train_examples(data_dir)
+        return self._create_examples(os.path.join(data_dir, MyTaskDataProcessor.UNLABELED_FILE_NAME), "unlabeled")
+
 
     def get_labels(self) -> List[str]:
         """This method returns all possible labels for the task."""
