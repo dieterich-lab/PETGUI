@@ -19,6 +19,7 @@ class BaseConfig:
         Queue("celery"),
         # custom queue
         Queue("university"),
+        Queue("training"),
     )
 
     CELERY_TASK_ROUTES = (route_task,)
