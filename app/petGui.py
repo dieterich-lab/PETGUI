@@ -151,6 +151,7 @@ async def read_log():
         file.seek(last_pos)
         lines = file.readlines()
         last_pos = file.tell()
+
     info_lines = [line for line in lines if "INFO" in line and "WARNING" not in line]
     return {"log": info_lines}
 
@@ -169,7 +170,7 @@ async def get_final_template(request: Request):
 def main():
     return {"Hello": "World"}
 
-@app.get("/results", name="results")
+#@app.get("/results", name="results")
 def results(request: Request):
     """
     Saves results.json for each pattern-iteration pair of output/final directory in a dictionary.
@@ -215,7 +216,7 @@ def download():
     Returns:
          final dict, e.g.: dict={p0-i0: {acc: 0.5, ...}, ...}
     """
-    return FileResponse("results.json", filename="results.json")
+    return FileResponse("logging.txt", filename="logging.txt")
 
 
 @app.get("/cleanup")
