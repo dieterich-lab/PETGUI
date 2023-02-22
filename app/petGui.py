@@ -205,9 +205,9 @@ def results(request: Request):
             pass
     with open("results.json", "w") as res:
         json.dump(scores, res)
-    url_homepage, url_download = request.url_for("cleanup"), request.url_for("download")
-    return templates.TemplateResponse("results.html", {"request": request, "scores": scores,
-                                                       "url_homepage": url_homepage, "url_download": url_download})
+    #url_homepage, url_download = request.url_for("cleanup"), request.url_for("download")
+    # return templates.TemplateResponse("results.html", {"request": request, "scores": scores,
+    #                                                    "url_homepage": url_homepage, "url_download": url_download})
 
 
 @app.get("/download", name="download")
@@ -216,7 +216,7 @@ def download():
     Returns:
          final dict, e.g.: dict={p0-i0: {acc: 0.5, ...}, ...}
     """
-    return FileResponse("logging.txt", filename="logging.txt")
+    return FileResponse("results.json", filename="results.json")
 
 
 @app.get("/cleanup")
@@ -307,6 +307,7 @@ async def kickoff(request: Request):
     '''Start PET'''
     file_name = data["file"]
     train(file=file_name,templates = template_cnt)
+    results()
 
     # background_tasks.add_task(train, file_name, template_cnt)
     # redirect_url = request.url_for('logging')
