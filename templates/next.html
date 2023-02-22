@@ -32,6 +32,8 @@
      function startTraining() {
          const logList = document.getElementById("logList");
          logList.innerHTML = "<li>Training Started</li>"; // display "Training Started" message
+         refreshLog();
+         setInterval(refreshLog, 10000);
      }
 
      function refreshLog() {
@@ -67,12 +69,10 @@
             e.preventDefault()
             $.getJSON('/logging/start_train',
                 function(data) {
-              refreshLog();
             });
             return false;
           });
         });
-  setInterval(refreshLog, 3000);
 
  </script>
 

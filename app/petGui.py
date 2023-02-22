@@ -9,6 +9,7 @@ import json
 from Pet import script
 from Pet.examples import custom_task_pvp, custom_task_processor, custom_task_metric
 import re
+import threading
 import os
 from os.path import isdir, isfile
 import pathlib
@@ -264,6 +265,11 @@ def train(file, templates):
                              "yelp-task", "./output")  # set defined task names
     instance.run()
 
+    with open('logging.txt', 'a') as file:
+        file.write('Training Complete\n')
+    # Call results()
+    results()
+
 
 @app.get("/logging/start_train")
 async def kickoff(request: Request):
@@ -306,13 +312,11 @@ async def kickoff(request: Request):
 
     '''Start PET'''
     file_name = data["file"]
-    train(file=file_name, templates=template_cnt)
-
+    t = threading.Thread(target=train, args=(file_name, template_cnt))
+    t.start()
+    #train(file=file_name, templates=template_cnt)
     # Write to logging.txt
-    with open('logging.txt', 'a') as file:
-        file.write('Training Complete\n')
-    # Call results()
-    results()
+
 
     # background_tasks.add_task(train, file_name, template_cnt)
     # redirect_url = request.url_for('logging')
@@ -352,7 +356,6 @@ else:
 
 @app.get("/log")
 async def read_log():
-   # last_pos = int(redis_conn.get("last_pos") or 0)  # get last_pos from Redis or use 0 if not set
     global last_pos
     with open(log_file, "r") as file:
         file.seek(last_pos)
