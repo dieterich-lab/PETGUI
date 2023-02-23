@@ -62,7 +62,67 @@
         link.remove();
       }
     </script>
+<script>
+    function loadJSON() {
+      fetch('/download')
+        .then(response => response.json())
+        .then(data => showTable(data))
+        .catch(error => console.error(error));
+    }
 
+function showTable(jsonData) {
+  const container = document.getElementById("table-container");
+  const table = document.createElement("table");
+
+  // create table header
+  const header = table.createTHead();
+  const headerRow = header.insertRow();
+  const iterationHeader = headerRow.insertCell();
+  iterationHeader.innerHTML = "Pattern";
+  const accHeader = headerRow.insertCell();
+  accHeader.innerHTML = "Accuracy";
+
+  // create table body
+  const body = table.createTBody();
+  for (let iteration in jsonData) {
+    const row = body.insertRow();
+    const iterationCell = row.insertCell();
+    iterationCell.innerHTML = iteration;
+    const accCell = row.insertCell();
+    accCell.innerHTML = jsonData[iteration]["acc"];
+  }
+
+  container.appendChild(table);
+}
+  </script>
+<style>
+  #table-container {
+    text-align: center;
+    margin: auto;
+    font-size: 30px; }
+      table {
+  border-collapse: collapse;
+  margin: auto;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  color: #333;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+}
+
+th {
+  background-color: #f2f2f2;
+}
+
+tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+</style>
  <script type="text/javascript">
   $(function() {
           $('a#test').on('click', function(e) {
@@ -139,8 +199,8 @@ text-align: start;
 }
 </style>
 
-  <div class="card-body" id="container">
-       <button onclick="downloadFile()" class="btn btn--radius-2 btn--red">
+  <div class="card-body" id="table-container">
+       <button onclick="loadJSON()" class="btn btn--radius-2 btn--red">
          Download Result
       </button>
 
