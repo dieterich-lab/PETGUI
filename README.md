@@ -15,6 +15,7 @@ A working training process in PETGUI
 E.g.: "It was \_ ." will become "It was verbalizer1." and "It was verbalizer2.", where verbalizer1 & verbalizer2 denote two verbalized labels (for example bad & good)
 * More templates or more verbalizers can be added by using the "+" button. If you don't need it anymore, you can use the "-" button to delete it.  
 
-4. Training should start and finish in new window: ![Bildschirmfoto vom 2023-01-23 11-54-02](https://user-images.githubusercontent.com/47433679/214032285-5865ae18-8924-4aae-bfaf-fd59d03a0ec3.png)
+4. Training should start and finish in new window with celery task id shown: ![image](https://user-images.githubusercontent.com/47433679/220569733-9a37b87b-a71d-4f1b-819e-15808a3136ca.png)
 
-5. Click on "See Results", where results of PET will be displayed as accuracy per pattern as well as precision, recall, f1-measure and support per label for each pattern. Final scores are also included as "Final".![Bildschirmfoto vom 2023-02-17 14-40-29](https://user-images.githubusercontent.com/47433679/219675805-3cf2a33c-6dc5-446e-83f5-3d227ee3735f.png)
+
+5. Currently logging info only in terminal to see: ![image](https://user-images.githubusercontent.com/47433679/220568424-9ee5fc85-1a3a-4154-909d-46d98f2e1519.png)
