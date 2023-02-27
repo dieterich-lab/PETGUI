@@ -227,7 +227,7 @@ def clean(request: Request):
     Returns:
         redirection to homepage
     """
-    paths = ["results.json", "data.json", "output", "Pet/data_uploaded", "templates/run.html","last_pos.txt","logging.txt"]
+    paths = ["results.json", "data.json", "output", "Pet/data_uploaded", "templates/run.html","last_pos.txt"]
     for path in paths:
         file_path = pathlib.Path(path)
         if isfile(path):
@@ -245,9 +245,9 @@ def clean(request: Request):
 async def get_form(request: Request):
     with open("logging.txt", "w") as new_file:
         pass
-    global loggings, num
-    loggings = {}
-    num = iter(range(20))
+    # global loggings, num
+    # loggings = {}
+    # num = iter(range(20))
     return templates.TemplateResponse("index.html", {"request": request})
 
 
@@ -406,6 +406,10 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
         mapping_counter = mapping_counter+1
     with open('data.json', 'w') as f:
         json.dump(para_dic, f)
+    with open("logging.txt","w") as r:
+        pass
+    global last_pos
+    last_pos = 0
     redirect_url = request.url_for('logging')
     print(para_dic)
     return RedirectResponse(redirect_url, status_code=303)
