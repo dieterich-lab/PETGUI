@@ -15,6 +15,8 @@ A working training process in PETGUI
 E.g.: "It was \_ ." will become "It was verbalizer1." and "It was verbalizer2.", where verbalizer1 & verbalizer2 denote two verbalized labels (for example bad & good)
 * More templates or more verbalizers can be added by using the "+" button. If you don't need it anymore, you can use the "-" button to delete it.  
 
-4. Training should be started when clicking the start training button: ![Bildschirmfoto vom 2023-01-23 11-54-02](https://user-images.githubusercontent.com/63499872/221702542-e4ed6f19-e00b-4c50-81b9-40a2ce31929e.jpeg)
+4. After clicking "Send", we are prepared for the training!Click the "Start Training" to start the training process:![Bildschirmfoto vom 2023-01-23 11-54-02](https://user-images.githubusercontent.com/63499872/221887170-dea033d7-2272-4577-b6b6-40b377c7a512.jpeg)
 
-5. Click on "Download Results", where results of PET will be displayed as accuracy per pattern as well as precision, recall, f1-measure and support per label for each pattern. Final scores are also included as "Final".The result will also be downloaded as json data![Bildschirmfoto vom 2023-02-17 14-40-29](https://user-images.githubusercontent.com/47433679/219675805-3cf2a33c-6dc5-446e-83f5-3d227ee3735f.png)
+5. Once the training is completed,you can click on "Download Results", where results of PET will be displayed as accuracy per pattern as well as precision, recall, f1-measure and support per label for each pattern. Final scores are also included as "Final".The result will also be downloaded as json data![Bildschirmfoto vom 2023-02-17 14-40-29](https://user-images.githubusercontent.com/63499872/221890217-70bbc14c-83a1-428d-8023-ca1c80167dbd.jpeg)
+
+6. After the training, you can choose whether to run a new experiment or to use the trained model to predict new data by clicking the botton "Run with new configuration", where you will be redirected to the configuration page,  or "Annotate unseen data", where you will be redirected to a new page where you can upload data and predict:![alt text](https://user-images.githubusercontent.com/63499872/221894674-7b3ab607-943f-4df7-bac5-42e5612c1ec8.png)
