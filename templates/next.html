@@ -81,6 +81,8 @@ function showTable(jsonData) {
   iterationHeader.innerHTML = "Pattern";
   const accHeader = headerRow.insertCell();
   accHeader.innerHTML = "Accuracy";
+  const labelHeader = headerRow.insertCell();
+  labelHeader.innerHTML = "Per label performance";
 
   // create table body
   const body = table.createTBody();
@@ -90,10 +92,24 @@ function showTable(jsonData) {
     iterationCell.innerHTML = iteration;
     const accCell = row.insertCell();
     accCell.innerHTML = jsonData[iteration]["acc"];
+    const labelCell = row.insertCell();
+    const labelTable = document.createElement("table");
+    const labelBody = labelTable.createTBody();
+    for (let labelData of jsonData[iteration]["pre-rec-f1-supp"]) {
+      const labelRow = labelBody.insertRow();
+      const labelNameCell = labelRow.insertCell();
+      const labelPerfCell = labelRow.insertCell();
+      const labelDataArr = labelData.split(" ");
+      labelNameCell.innerHTML = labelDataArr[0] + " " + labelDataArr[1];
+      labelPerfCell.innerHTML = labelDataArr.slice(2).join(" ");
+    }
+    labelCell.appendChild(labelTable);
   }
 
   container.appendChild(table);
 }
+
+
   </script>
 <style>
   #table-container {
