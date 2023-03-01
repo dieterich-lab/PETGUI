@@ -1,13 +1,11 @@
 import time
-from fastapi import FastAPI, File, Form, UploadFile, Request, BackgroundTasks
-from fastapi.responses import HTMLResponse, RedirectResponse
-from starlette.responses import FileResponse
+from fastapi import FastAPI, File, Form, UploadFile, Request, APIRouter, HTTPException, Depends
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import tarfile
 import json
 from Pet import script
-#from Pet.examples import custom_task_pvp, custom_task_processor, custom_task_metric
 import re
 import os
 from os.path import isdir, isfile
@@ -16,6 +14,11 @@ import shutil
 from fastapi.encoders import jsonable_encoder
 from config.celery_utils import create_celery
 from routers import university, training
+from celery_tasks.tasks import get_run_task, get_logging_task
+from config.celery_utils import get_task_info
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from ldap3 import Server, Connection, ALL, Tls, AUTO_BIND_TLS_BEFORE_BIND
+from ssl import PROTOCOL_TLSv1_2
 
 
 def create_app() -> FastAPI:
@@ -37,15 +40,51 @@ celery = app.celery_app
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-from celery import group
-from fastapi import APIRouter
-from starlette.responses import JSONResponse
-
-from celery_tasks.tasks import get_run_task, get_logging_task
-from config.celery_utils import get_task_info
-
 router = APIRouter(prefix='', tags=['Training'], responses={404: {"description": "Not found"}})
 
+security = HTTPBasic()
+
+LDAP_SERVER = 'ldap://ldap2.dieterichlab.org'
+CA_FILE = 'DieterichLab_CA.pem'
+USER_BASE = 'ou=Users,dc=dieterichlab,dc=org'
+LDAP_SEARCH_FILTER = '(&({name_attribute}={name})(objectClass={object_class}))'
+
+def authenticate_ldap(username: str, password: str) -> bool:
+    try:
+        tls = Tls(ca_certs_file=CA_FILE, version=PROTOCOL_TLSv1_2)
+        server = Server(LDAP_SERVER, get_info=ALL, tls = tls)
+        conn = Connection(server, user=f"cn={username},{USER_BASE}", password=password,
+                          auto_bind=AUTO_BIND_TLS_BEFORE_BIND, raise_exceptions=True)
+        conn.bind()
+        conn.search(USER_BASE, LDAP_SEARCH_FILTER.format(name_attribute="cn", name=username, object_class="person"))
+        if len(conn.entries) == 1:
+            return True
+        else:
+            return False
+    except Exception as e:
+        print(str(e))
+        return False
+
+
+# Endpoint to render login form
+@app.get('/login', response_class=HTMLResponse)
+async def login_form(request: Request, error=None):
+    return templates.TemplateResponse('login.html', {'request': request, 'error': error})
+
+
+# Endpoint to authenticate users
+@app.post("/login")
+async def login(username: str = Form(...), password: str = Form(...)):
+    if not authenticate_ldap(username=username, password=password):
+        error = 'Invalid username or password'
+        return {'message': f'{error}'}
+    # Return success message if authentication succeeds
+    return {'message': f'Hello, {username}'}
+
+
+@app.get("/protected", name = "protected")
+async def get_protected(username: str = Depends(security)):
+    return {'message': f'Hello, {username}'}
 
 @app.get("/run", name="run")
 @router.get("/run")
