@@ -24,7 +24,153 @@
 
     <!-- Main CSS-->
     <link href="static/css/main.css" rel="stylesheet" media="all">
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+
 </head>
+
+ <script>
+     function startTraining() {
+         const logList = document.getElementById("logList");
+         logList.innerHTML = "<li>Training Started</li>"; // display "Training Started" message
+         refreshLog();
+         setInterval(refreshLog, 10000);
+     }
+
+     function refreshLog() {
+         fetch("/log")
+                 .then(response => response.json())
+                 .then(data => {
+                     const logList = document.getElementById("logList");
+                     data.log.forEach(line => {
+                         const li = document.createElement("li");
+                         li.textContent = line;
+                         logList.appendChild(li);
+                     });
+                 });
+     }
+ </script>
+    <script>
+      async function downloadFile() {
+        const response = await fetch("/download");
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "results.json";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      }
+    </script>
+<script>
+    function loadJSON() {
+      fetch('/download')
+        .then(response => response.json())
+        .then(data => showTable(data))
+        .catch(error => console.error(error));
+    }
+
+function showTable(jsonData) {
+  const container = document.getElementById("table-container");
+  const table = document.createElement("table");
+
+  // create table header
+  const header = table.createTHead();
+  const headerRow = header.insertRow();
+  const iterationHeader = headerRow.insertCell();
+  iterationHeader.innerHTML = "Pattern";
+  const accHeader = headerRow.insertCell();
+  accHeader.innerHTML = "Accuracy";
+  const labelHeader = headerRow.insertCell();
+  labelHeader.innerHTML = "Per label performance";
+
+  // create table body
+  const body = table.createTBody();
+  for (let iteration in jsonData) {
+    const row = body.insertRow();
+    const iterationCell = row.insertCell();
+    iterationCell.innerHTML = iteration;
+    const accCell = row.insertCell();
+    accCell.innerHTML = jsonData[iteration]["acc"];
+    const labelCell = row.insertCell();
+    const labelTable = document.createElement("table");
+    const labelBody = labelTable.createTBody();
+    for (let labelData of jsonData[iteration]["pre-rec-f1-supp"]) {
+      const labelRow = labelBody.insertRow();
+      const labelNameCell = labelRow.insertCell();
+      const labelPerfCell = labelRow.insertCell();
+      const labelDataArr = labelData.split(" ");
+      labelNameCell.innerHTML = labelDataArr[0] + " " + labelDataArr[1];
+      labelPerfCell.innerHTML = labelDataArr.slice(2).join(" ");
+    }
+    labelCell.appendChild(labelTable);
+  }
+
+  container.appendChild(table);
+}
+
+
+  </script>
+<style>
+  #table-container {
+    text-align: center;
+    margin: auto;
+    font-size: 30px; }
+      table {
+  border-collapse: collapse;
+  margin: auto;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  color: #333;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+}
+
+th {
+  background-color: #f2f2f2;
+}
+
+tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+</style>
+ <script type="text/javascript">
+  $(function() {
+          $('a#test').on('click', function(e) {
+            e.preventDefault()
+            $.getJSON('/logging/start_train',
+                function(data) {
+            });
+            return false;
+          });
+        });
+
+ </script>
+
+ <style>
+     #logList {
+         height: 100px;
+         overflow: auto;
+     }
+ </style>
+<script>
+      function redirect() {
+        window.location.href = "/final";
+      }
+    </script>
+<script>
+    function runPythonCode() {
+        fetch('/cleanup').then(response => {
+            console.log('Python code executed successfully');
+            window.location.href = '/basic';
+        });
+    }
+</script>
 
 <body>
     <div class="page-wrapper bg-gra-03 p-t-45 p-b-50">
@@ -33,11 +179,13 @@
                 <div class="card-heading">
                     <h2 class="title">Train Your PET Model</h2>
                 </div>
-                <div class="card-body"id = "container">
-                      <button class="btn btn--radius-2 btn--red" id="progress-bar-trigger">Start Training</button>
-  <div id="progress-bar" style="background-color: blue; width: 0%;">&nbsp;</div>
-  <div id="progress-bar-message">Waiting for progress to start...</div>
-</div>
+                     <div class="card-body" id="container">
+      <a href="#" id="test">
+       <button onclick="startTraining()" class="btn btn--radius-2 btn--red">
+        Start Training
+       </button>
+       <ul id="logList"></ul>
+      </a>
 <script>
 function updateProgress(progressBarElement, progressBarMessageElement, progress) {
   progressBarElement.style.width = progress.percent + "%";
@@ -67,13 +215,20 @@ text-align: start;
 }
 </style>
 
-  <div class="card-body" id="container">
-      <input class="btn btn--radius-2 btn--red" type='button' onclick='tableFromJson()'
-         value='Show' />
+  <div class="card-body" id="table-container">
+       <button onclick="loadJSON()" class="btn btn--radius-2 btn--red">
+         Download Result
+      </button>
 
   <p id='showData'></p>
   <p id='msg'></p>
+<script>
+    const button = document.getElementById("another");
 
+button.addEventListener("click", function() {
+  window.location.href = "/final";
+});
+</script>
 
 <script>
   let tableFromJson = () => {
@@ -142,11 +297,11 @@ text-align: start;
                             </div>
                         </div>
                             <div class="card-body" id="container">
-                                <button class="btn btn--radius-2 btn--red" id="mycontain">Run with new configuration</button>
+                                <button class="btn btn--radius-2 btn--red" id="mycontain" onclick="runPythonCode()">Run with new configuration</button>
                             </div>
                             <p style="font-size:50px;" align="center">Or</p>
                             <div class="card-body" id="container">
-                                <button class="btn btn--radius-2 btn--red" id="mycontain">Annotate unseen data</button>
+                                <button class="btn btn--radius-2 btn--red" id="another" onclick="redirect()">Annotate unseen data</button>
                             </div>
                 </div>
             </div>
