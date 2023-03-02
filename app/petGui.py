@@ -12,7 +12,6 @@ import pathlib
 import shutil
 from fastapi.encoders import jsonable_encoder
 from config.celery_utils import create_celery
-from routers import training
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from ldap3 import Server, Connection, ALL, Tls, AUTO_BIND_TLS_BEFORE_BIND
 from ssl import PROTOCOL_TLSv1_2
@@ -26,7 +25,6 @@ def create_app() -> FastAPI:
                           version="1.0.0", )
 
     current_app.celery_app = create_celery()
-    current_app.include_router(training.router)
     return current_app
 
 
