@@ -75,14 +75,52 @@ class TestServer:
         assert response.status_code == 303
         assert f"{response.next_request}" == f"{self.client.get('/logging', follow_redirects=False).request}"
 
-    def test_logging(self, setting):
-        response = self.client.get("/logging")
+    def test_logging(self,setting):
+        request = Request({"type": "http", "method": "GET", "url": "http://testserver/logging"})
+        response = client.get("/logging", headers={"accept": "text/html"})
         assert response.status_code == 200
-        assert exists("data.json")
-        assert exists("output")
-        assert exists("templates/run.html")
-        assert exists("templates/results.html")
-        assert b"PET done!" in response.content
+        assert b"Next Page" in response.content
+        assert response.headers["content-type"] == "text/html; charset=utf-8"
+        assert response.template.name == "next.html"
+        assert response.template.context["request"] == request
+
+    # def test_logging(self, setting):
+    #     response = self.client.get("/logging")
+    #     assert response.status_code == 200
+    #     assert exists("data.json")
+    #     assert exists("output")
+    #     assert exists("templates/run.html")
+    #     assert exists("templates/results.html")
+    #     assert b"PET done!" in response.content
+
+    def test_read_log(self,setting):
+        log_content = """This is line 1.
+        Creating an object.
+        This is line 3.
+        Saving the object.
+        Starting evaluation.
+        This is line 6.
+        Training Complete.
+        This is line 8.
+        """
+        with tempfile.NamedTemporaryFile(mode="w", delete=False) as log_file:
+            log_file.write(log_content)
+            log_file.flush()
+            last_pos_file = log_file.name + ".pos"
+            with open(last_pos_file, "w") as pos_file:
+                pos_file.write("0")
+            response = client.get("/log")
+            assert response.status_code == 200
+            assert response.json() == {"log": [
+                "Creating an object.",
+                "Saving the object.",
+                "Starting evaluation.",
+                "Training Complete."
+            ]}
+            with open(last_pos_file, "r") as pos_file:
+                assert int(pos_file.read()) == len(log_content)
+        os.unlink(log_file.name)
+        os.unlink(last_pos_file)
 
     def test_results(self, setting):
         response = self.client.get("/results")
