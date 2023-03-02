@@ -18,7 +18,6 @@ class BaseConfig:
         # default queue
         Queue("celery"),
         # custom queue
-        Queue("university"),
         Queue("training"),
     )
 

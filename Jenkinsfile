@@ -7,20 +7,10 @@ pipeline {
                     python3 -m venv venv
                     . ./venv/bin/activate
                     pip install -r requirements_dev.txt
-		    pip install -Ur requirements.txt
-		    pip install .
+		    pip install -r requirements.txt
                 '''
             }
 
-        }
-        stage('Linting') {
-            steps {
-                sh '''
-                    . ./venv/bin/activate
-                    flake8 hello.py --max-line-length 140
-
-                '''
-            }
         }
         stage('Testing') {
             steps {
@@ -31,13 +21,6 @@ pipeline {
                 '''
             }
         }
-	stage('Start app') {
-	    steps {
-		sh '''
-		uvicorn app.pet-gui:app --host 0.0.0.0 --port 8080
-		'''
-	    }
-	}
     }
     post {
         always {

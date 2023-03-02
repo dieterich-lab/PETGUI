@@ -16,6 +16,7 @@ def create_celery():
     celery_app.conf.update(worker_send_task_events=False)
     celery_app.conf.update(worker_prefetch_multiplier=1)
 
+
     return celery_app
 
 

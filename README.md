@@ -15,7 +15,9 @@ A working training process in PETGUI
 E.g.: "It was \_ ." will become "It was verbalizer1." and "It was verbalizer2.", where verbalizer1 & verbalizer2 denote two verbalized labels (for example bad & good)
 * More templates or more verbalizers can be added by using the "+" button. If you don't need it anymore, you can use the "-" button to delete it.  
 
-4. Training should start and finish in new window with celery task id shown: ![image](https://user-images.githubusercontent.com/47433679/220569733-9a37b87b-a71d-4f1b-819e-15808a3136ca.png)
+4. After clicking "Send", we are prepared for the training!Click the "Start Training" to start the training process:![Bildschirmfoto vom 2023-01-23 11-54-02](https://user-images.githubusercontent.com/63499872/221887170-dea033d7-2272-4577-b6b6-40b377c7a512.jpeg)
 
+5. Once the training is completed,you can click on "Download Results", where results of PET will be displayed as accuracy per pattern as well as precision, recall, f1-measure and support per label for each pattern. Final scores are also included as "Final".The result will also be downloaded as json data![Bildschirmfoto vom 2023-02-17 14-40-29](https://user-images.githubusercontent.com/63499872/221966737-b871dfa5-3d15-486f-ab1d-fb72f3544312.jpeg)
 
-5. Currently logging info only in terminal to see: ![image](https://user-images.githubusercontent.com/47433679/220568424-9ee5fc85-1a3a-4154-909d-46d98f2e1519.png)
+6. After the training, you can choose whether to run a new experiment or to use the trained model to predict new data by clicking the botton "Run with new configuration", where you will be redirected to the configuration page,  or "Annotate unseen data", where you will be redirected to a new page where you can upload data and predict:![alt text](https://user-images.githubusercontent.com/63499872/221894674-7b3ab607-943f-4df7-bac5-42e5612c1ec8.png)
+

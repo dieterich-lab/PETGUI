@@ -1,25 +1,14 @@
-from typing import List
 from celery import shared_task
-import universities
 from Pet.examples import custom_task_pvp, custom_task_processor, custom_task_metric
-from fastapi import Request
-from fastapi.responses import RedirectResponse
 import json
 
-uni = universities.API()
-
-
-@shared_task(bind=True,autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={"max_retries": 5},
-             name='university:get_university_task')
-def get_university_task(self, cnt: str):
-        data : dict = {}
-        data[cnt] = list(uni.search(country = cnt))
-        return data
-
-@shared_task(bind=True,autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={"max_retries": 5},
-             name='training:get_run_task')
-def get_run_task(self):
-    from app.petGui import recursive_json_read, train
+@shared_task(bind=False, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={"max_retries": 5},
+             name='training:kickoff')
+def kickoff():
+    """
+    Kicks off PET by calling train method as background task with defined task name.
+    """
+    from app.petGui import train, recursive_json_read
 
     with open("data.json", "r") as f:
         data = json.load(f)
@@ -35,7 +24,6 @@ def get_run_task(self):
     custom_task_processor.MyTaskDataProcessor.LABEL_COLUMN = int(data["label"])
     # save entries as new task
     custom_task_processor.report()  # save task
-
     '''Configure Verbalizers'''
     custom_task_pvp.MyTaskPVP.TASK_NAME = "yelp-task"
     # define label-verbalizer mappings
@@ -56,25 +44,7 @@ def get_run_task(self):
 
     '''Start PET'''
     file_name = data["file"]
+    #t = threading.Thread(target=train, args=(file_name, template_cnt))
+    #t.start()
     train(file_name, template_cnt)
-    #redirect_url = request.url_for('logging')
-    #return RedirectResponse(redirect_url, status_code=303)
-
-
-@shared_task(bind=True,autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={"max_retries": 5},
-             name='logging:get_logging_task')
-def get_logging_task(self, url, loggings, num):
-    from app.petGui import iter_log, write
-    html_content = """
-    <html>
-        <head>
-            <meta http-equiv="refresh" content="3">
-        </head>
-        <body>
-            {}
-        </body>
-    </html>
-    """
-    write("{{log}}", html_content, loggings = loggings, num = num)
-    iter_log(html_content, url)
 
