@@ -1,167 +1,46 @@
-import time
-
-import uvicorn
-from fastapi import FastAPI, File, Form, UploadFile, Request, BackgroundTasks
+from fastapi import FastAPI, File, Form, UploadFile, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from starlette.responses import FileResponse
+from starlette.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import tarfile
 import json
 from Pet import script
-from Pet.examples import custom_task_pvp, custom_task_processor, custom_task_metric
-import re
-import threading
 import os
 from os.path import isdir, isfile
 import pathlib
 import shutil
 from fastapi.encoders import jsonable_encoder
+from config.celery_utils import create_celery
+from celery_tasks.tasks import kickoff
 
-app = FastAPI()
+
+def create_app() -> FastAPI:
+    current_app = FastAPI(title="Asynchronous tasks processing with Celery and RabbitMQ",
+                          description="Sample FastAPI Application to demonstrate Event "
+                                      "driven architecture with Celery and RabbitMQ",
+                          version="1.0.0", )
+
+    current_app.celery_app = create_celery()
+    return current_app
+
+
+app = create_app()
+celery = app.celery_app
 
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+@app.get("/logging/start_train")
+async def get_run() -> dict:
+    task = kickoff.apply_async()
+    return JSONResponse({"task_id": task.id})
 
-# def write(cont, html_content, url=None):
-#     """
-#     Write logging steps into html file "run.html"
-#     params:
-#         html_content = html skeleton content to write
-#         cont: str/list = logging content (either list or str) to write
-#     """
-#     if isinstance(cont, list):
-#         if any([c not in list(loggings.values()) for c in cont]):
-#             with open("templates/run.html", "w") as f:
-#                 texts = []
-#                 for t in cont:
-#                     if t in loggings.values():
-#                         step = [str(k) for k in loggings.keys() if loggings[k] == t]
-#                         step = int("".join(step))
-#                     else:
-#                         step = next(num)
-#                     texts.append(f"<b>Step {step} in PET:</b><br/> {t}<br/>")
-#                     loggings[step] = t
-#                 if "PET done!" in cont:
-#                     texts.append(f"<hr><a href={url}><button>See Results</button></a>")
-#                 f.write(html_content.format("".join(texts)))
-#     else:
-#         if cont not in list(loggings.values()):
-#             with open("templates/run.html", "w") as f:
-#                 step = next(num)
-#                 f.write(html_content.format(f"<b>Step {step} in PET:</b><br/> {cont}<br/>"))
-#             loggings[step] = cont
-
-# def read(file):
-#     """
-#     Read PET log: logging.txt and insert step 0
-#     params:
-#         file = logging.txt
-#     """
-#     with open(file, "r") as f:
-#         lines = f.readlines()
-#     lines.insert(0, "PET started\n")
-#     return lines
-
-
-# def iter_log(content, url=None):
-#     """
-#     Iterate over logging.txt and pass logging step to write()
-#     params:
-#         content = the html content to modify
-#     """
-#     st = round(time.time())
-#     logs, cont = [], []
-#     lines = read("logging.txt")
-#     html_content = """
-#     <html>
-#         <body>
-#             {}
-#         </body>
-#     </html>
-#     """
-#     while st:
-#         time.sleep(7)
-#         try:
-#             log, logs, lines = read_logs(logs, lines)
-#             if "final" in log:
-#                 log = "PET done!"
-#             cont.append(log)
-#             if len(cont) == 3:
-#                 if log == "PET done!":
-#                     write(cont, html_content, url)
-#                     cont.pop(0)
-#                     st = False
-#                 else:
-#                     write(cont, content)
-#                     cont.pop(0)
-#         except TypeError:
-#             pass
-#     write(cont, html_content, url)
-
-
-# @app.get("/logging", name="logging")
-# async def logging(request: Request, background_tasks: BackgroundTasks):
-#     html_content = """
-#     <html>
-#         <head>
-#             <meta http-equiv="refresh" content="3">
-#         </head>
-#         <body>
-#             {}
-#         </body>
-#     </html>
-#     """
-#     write("{{log}}", html_content)
-#     url = request.url_for("results")
-#     background_tasks.add_task(iter_log, html_content, url)
-#     return templates.TemplateResponse("run.html", {"request": request, "log": "PET starting.."})
-
-
-# def read_logs(logs, lines):
-#     """
-#     Reads in current PET progress as lines (list) and returns new log line as str
-#     with updated log list containing line.
-#     Parameters:
-#          logs: list of processed log lines. [str(log), str(log),...]
-#          lines: list of logging.txt file
-#     Returns:
-#         l: current log
-#         logs, updated logs list
-#     """
-#     steps = {0: "PET started", 1: "Creating", 2: "Returning", 3: "Saving trained", 4: "Starting", 5: "Skipping subdir"}
-#     pattern = re.pattern = ".*(?=INFO|WARNING)"  # strip date format
-#     try:
-#         for line in lines:
-#             match = re.findall(pattern, line)
-#             check = any([s for s in steps.values() if s in line])
-#             l = line.strip("".join(match))
-#             if check and line not in logs:
-#                 logs.append(line)
-#                 lines = lines[lines.index(line):]
-#                 return l, logs, lines
-#             else:
-#                 continue
-#     except IndexError:
-#         return "Waiting for step 1", logs, lines
-
-# @app.get("/log")
-# async def read_log():
-#     global last_pos
-#     with open(log_file, "r") as file:
-#         file.seek(last_pos)
-#         lines = file.readlines()
-#         last_pos = file.tell()
-#
-#     info_lines = [line for line in lines if "INFO" in line and "WARNING" not in line]
-#     return {"log": info_lines}
 
 
 @app.get("/logging", name="logging")
 async def logging(request: Request):
     return templates.TemplateResponse("next.html", {"request": request})
-
 
 
 @app.get("/final", response_class=HTMLResponse, name='final')
@@ -172,7 +51,6 @@ async def get_final_template(request: Request):
 def main():
     return {"Hello": "World"}
 
-#@app.get("/results", name="results")
 def results():
     """
     Saves results.json for each pattern-iteration pair of output/final directory in a dictionary.
@@ -200,17 +78,14 @@ def results():
                 pre, rec, f1, supp = json_scores["test_set_after_training"]["pre-rec-f1-supp"]
                 labels = [i for i in range(len(pre))]
                 for l in labels:
-                    scores[k]["pre-rec-f1-supp"].append(f"Label: {l} pre: {pre[l]}, rec: {rec[l]}, f1: {f1[l]}, "
-                                                        f"supp: {supp[0]}")
+                    scores[k]["pre-rec-f1-supp"].append(f"Label: {l} Pre: {round(pre[l], 2)}, Rec: {round(rec[l], 2)},"
+                                                        f"F1: {round(f1[l], 2)}, Supp: {supp[0]}")
                 scores[k]["acc"] = acc
+            scores[k]["pre-rec-f1-supp"] = [round(float(scr), 2) for l in scores.values() for scr in l]
         except:
             pass
     with open("results.json", "w") as res:
         json.dump(scores, res)
-    #url_homepage, url_download = request.url_for("cleanup"), request.url_for("download")
-    # return templates.TemplateResponse("results.html", {"request": request, "scores": scores,
-    #                                                    "url_homepage": url_homepage, "url_download": url_download})
-
 
 @app.get("/download", name="download")
 def download():
@@ -244,11 +119,6 @@ def clean(request: Request):
 
 @app.get("/basic", response_class=HTMLResponse, name='homepage')
 async def get_form(request: Request):
-    with open("logging.txt", "w") as new_file:
-        pass
-    # global loggings, num
-    # loggings = {}
-    # num = iter(range(20))
     return templates.TemplateResponse("index.html", {"request": request})
 
 
@@ -270,58 +140,6 @@ def train(file, templates):
         file.write('Training Complete\n')
     # Call results()
     results()
-
-
-@app.get("/logging/start_train")
-async def kickoff(request: Request):
-    """
-    Kicks off PET by calling train method as background task with defined task name.
-    """
-
-    with open("data.json", "r") as f:
-        data = json.load(f)
-
-    '''Configure Data Preprocessor'''
-    # define task name
-    custom_task_processor.MyTaskDataProcessor.TASK_NAME = "yelp-task"
-    # define labels
-    custom_task_processor.MyTaskDataProcessor.LABELS = ["1", "2"]
-    # define samples column
-    custom_task_processor.MyTaskDataProcessor.TEXT_A_COLUMN = int(data["sample"])
-    # define labels column
-    custom_task_processor.MyTaskDataProcessor.LABEL_COLUMN = int(data["label"])
-    # save entries as new task
-    custom_task_processor.report() # save task
-
-    '''Configure Verbalizers'''
-    custom_task_pvp.MyTaskPVP.TASK_NAME = "yelp-task"
-    # define label-verbalizer mappings
-    labels = recursive_json_read(data, "origin")
-    verbalizers = recursive_json_read(data, "mapping")
-    for l, v in zip(labels, verbalizers):
-        custom_task_pvp.MyTaskPVP.VERBALIZER[l] = [v]
-    templates = recursive_json_read(data, "template")
-    template_cnt = list(range(len(templates)))
-    for i in template_cnt:
-        custom_task_pvp.MyTaskPVP.PATTERNS[i] = templates[i]
-    # save entries as new task
-    custom_task_pvp.report() # save task
-
-    '''Configure Metrics'''
-    custom_task_metric.TASK_NAME = "yelp-task"
-    custom_task_metric.report()
-
-    '''Start PET'''
-    file_name = data["file"]
-    t = threading.Thread(target=train, args=(file_name, template_cnt))
-    t.start()
-    #train(file=file_name, templates=template_cnt)
-    # Write to logging.txt
-
-
-    # background_tasks.add_task(train, file_name, template_cnt)
-    # redirect_url = request.url_for('logging')
-    # return RedirectResponse(redirect_url, status_code=303)
 
 
 def recursive_json_read(data, key: str):
@@ -355,7 +173,7 @@ if os.path.exists(last_pos_file):
 else:
     last_pos = 0
 
-@app.get("/log")
+@app.get("/log", name = "log")
 async def read_log():
     global last_pos
     with open(log_file, "r") as file:
@@ -407,63 +225,8 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
         mapping_counter = mapping_counter+1
     with open('data.json', 'w') as f:
         json.dump(para_dic, f)
-    with open("logging.txt","w") as r:
-        pass
     global last_pos
     last_pos = 0
     redirect_url = request.url_for('logging')
     print(para_dic)
     return RedirectResponse(redirect_url, status_code=303)
-
-
-
-
-
-
-
-
-
-
-    # redirect_url = request.url_for('basic_upload')
-    # return RedirectResponse(redirect_url, status_code=303)
-
-    # return {"filename": file.filename,"info":"upload successful"}
-
-    #return templates.TemplateResponse("basic_upload.html", {"request": request})
-
-
-# <input type='file' .... onchange='this.form.submit();'><br><br>
-
-#
-#
-#
-#
-#
-#
-# from transformers import T5Tokenizer, T5ForConditionalGeneration
-# @app.post("/translate_the_text")
-# def translate_text(file: UploadFile = File(...)):
-#     contents = file.file.read()
-#     with open(file.filename,'wb') as f:
-#         f.write(contents)
-#     with open(file.filename) as file:
-#         tras_data = file.read()
-#     tokenizer = T5Tokenizer.from_pretrained('t5-small')
-#     model = T5ForConditionalGeneration.from_pretrained('t5-small', return_dict=True)
-#     input_ids = tokenizer("translate English to German: "+tras_data, return_tensors="pt").input_ids  # Batch size 1
-#     outputs = model.generate(input_ids)
-#     decoded = tokenizer.decode(outputs[0], skip_special_tokens=True)
-#     with open("translated_text.txt","w") as q:
-#         q.write(decoded)
-#     file_location = "translated_text.txt"
-#     return FileResponse(file_location, media_type='text/txt', filename="translated_text.txt")
-   # # return {
-   #          "input_text": tras_data,
-   #          "translation_text": decoded
-   #         }
-
-# @app.get("/download-file")
-# def download_file(upload_file):
-#     file_path = upload_file.filename
-#     return FileResponse(path=file_path, filename=file_path)
-

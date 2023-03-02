@@ -4,6 +4,7 @@ import sys
 from fastapi.testclient import TestClient
 from app.petGui import app
 import pytest
+import os
 from os.path import exists
 
 class TestServer:
@@ -13,6 +14,8 @@ class TestServer:
             "sample": "1",
             "label": "0",
             "template_0": "It was _ .",
+            "template_1": "All in all _ .",
+            "template_2": "Just _ .",
             "origin_0": "1",
             "mapping_0": "bad",
             "origin_1": "2",
@@ -47,6 +50,7 @@ class TestServer:
         assert f"{response.next_request}" == f"{self.client.get('/run', follow_redirects=False).request}"
         assert exists("logging.txt")
         assert exists(f"Pet/data_uploaded/{file['file'][0]}")
+
     def test_upload_data(self,setting):
         directory = "data/yelp_review_polarity_csv"
 
@@ -80,9 +84,8 @@ class TestServer:
         assert response.status_code == 200
         assert exists("data.json")
         assert exists("output")
-        assert exists("templates/run.html")
-        assert exists("templates/results.html")
-        assert b"PET done!" in response.content
+        assert exists("templates/next.html")
+        assert exists("logging.txt")
 
     def test_results(self, setting):
         response = self.client.get("/results")
