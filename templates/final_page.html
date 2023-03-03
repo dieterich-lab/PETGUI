@@ -56,7 +56,9 @@ text-align: start;
                                       Upload unlabeled text as plain text
                                 <input type="file" name="file" id="file" style="display:none;">
                                 </label>
+                                <div id="feedback"></div>
                             </div>
+
                 <script>
                     document.getElementById("file").addEventListener("change", function() {
     var file = this.files[0];
@@ -64,6 +66,13 @@ text-align: start;
     formData.append("file", file);
     var xhr = new XMLHttpRequest();
     xhr.open("POST", "/uploadfile/");
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                document.getElementById("feedback").textContent = "File uploaded successfully. File name: " + file.name;
+            } else if (xhr.readyState === 4 && xhr.status !== 200) {
+                document.getElementById("feedback").textContent = "Error uploading file.";
+            }
+        };
     xhr.send(formData);
 });
                 </script>
