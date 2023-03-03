@@ -169,7 +169,8 @@ async def get_final_template(request: Request):
 
 @app.get("/")
 def main():
-    return {"Hello": "World"}
+    return RedirectResponse(url="/basic")
+    #return {"Hello": "World"}
 
 #@app.get("/results", name="results")
 def results():

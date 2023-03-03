@@ -7,7 +7,7 @@ A working training process in PETGUI
 4. `pip install -r requirements.txt`
 ## Run Training
 1. `uvicorn app.pet-gui:app --host 0.0.0.0 --port 8080`
-2. Open: http://10.250.135.122:8080/ (if running on the cluster) or http://0.0.0.0:8080 (if running locally) in the browser and navigate to http://0.0.0.0:8080/basic
+2. Open: http://10.250.135.122:8080/ (if running on the cluster) or http://0.0.0.0:8080 (if running locally) in the browser and it will navigate to http://0.0.0.0:8080/basic automatically
 
 3. Input training parameters (small training data available in [data](/data/yelp_review_polarity_csv.tar.gz)), e.g.: ![Bildschirmfoto vom 2023-01-23 11-50-02](https://user-images.githubusercontent.com/47433679/214032245-2f29ddd4-2bb5-4238-82eb-e311fd44e2a3.png)
 
@@ -19,4 +19,6 @@ E.g.: "It was \_ ." will become "It was verbalizer1." and "It was verbalizer2.",
 
 5. Upon completion of the training, you may select "Download Results" to view the PET results. The results will display accuracy per pattern, as well as precision, recall, f1-measure, and support per label for each pattern. The final scores are also included as "Final". Furthermore, the results will be available for download as JSON data.![Bildschirmfoto vom 2023-02-17 14-40-29](https://user-images.githubusercontent.com/63499872/221966737-b871dfa5-3d15-486f-ab1d-fb72f3544312.jpeg)
 
-6. After the training, you can choose whether to run a new experiment or to use the trained model to predict new data by clicking the botton "Run with new configuration", where you will be redirected to the configuration page,  or "Annotate unseen data", where you will be redirected to a new page where you can upload data and predict:![alt text](https://user-images.githubusercontent.com/63499872/221894674-7b3ab607-943f-4df7-bac5-42e5612c1ec8.png)
+6. Following the completion of the training, you will have the option to either conduct a new experiment or leverage the trained model to predict new data. This can be done by selecting either the "Run with new configuration" button, which will redirect you to the configuration page, or the "Annotate unseen data" button, which will redirect you to a new page where you can upload data and make predictions.![alt text](https://user-images.githubusercontent.com/63499872/222561012-ac69c03a-1778-4e49-9b74-30bf1d1c30d3.jpeg)
+
+7. When making predictions on new data, you may utilize the "Upload Unlabeled Text as Plain Text" button to upload the data. It is important that the data is in the same CSV format as the data used during training. To initiate the prediction process, please select "Predict Labels Using PET Model". Upon completion of the prediction process, you can download the predicted file by clicking "Download Predicted Data".![alt text](https://user-images.githubusercontent.com/63499872/222576045-f5e28b41-1ab8-4861-814e-74aa03a0c759.jpeg)
