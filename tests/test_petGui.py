@@ -25,8 +25,9 @@ class TestServer:
 
     def test_home(self, setting):
         response = self.client.get("/")
-        assert response.status_code == 200
-        assert response.json() == {"Hello":"World"}
+        response = client.get("/")
+        assert response.status_code == 307  # expect temporary redirect status code
+        assert response.headers["location"] == "/basic"  # expect redirection to /basic URL
 
     def test_basic(self, setting):
         with open("data/yelp_review_polarity_csv.tar.gz", "rb") as f:
