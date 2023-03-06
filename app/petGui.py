@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, Form, UploadFile, Request, Depends
+from fastapi import FastAPI, File, Form, UploadFile, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from starlette.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -12,7 +12,6 @@ import pathlib
 import shutil
 from fastapi.encoders import jsonable_encoder
 from config.celery_utils import create_celery
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from ldap3 import Server, Connection, ALL, Tls, AUTO_BIND_TLS_BEFORE_BIND
 from ssl import PROTOCOL_TLSv1_2
 from celery_tasks.tasks import kickoff
@@ -34,7 +33,6 @@ celery = app.celery_app
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-security = HTTPBasic()
 
 LDAP_SERVER = 'ldap://ldap2.dieterichlab.org'
 CA_FILE = 'DieterichLab_CA.pem'
@@ -58,7 +56,7 @@ def authenticate_ldap(username: str, password: str) -> bool:
         return False
 
 
-# Endpoint to render login form
+#Endpoint to render login form
 @app.get('/login', response_class=HTMLResponse)
 async def login_form(request: Request, error=None):
     return templates.TemplateResponse('login.html', {'request': request, 'error': error})
@@ -66,17 +64,13 @@ async def login_form(request: Request, error=None):
 
 # Endpoint to authenticate users
 @app.post("/login")
-async def login(username: str = Form(...), password: str = Form(...)):
+async def login(request: Request, username: str = Form(...), password: str = Form(...)):
     if not authenticate_ldap(username=username, password=password):
         error = 'Invalid username or password'
-        return {'message': f'{error}'}
+        return templates.TemplateResponse('login.html', {'request': request, 'error': error})
     # Return success message if authentication succeeds
-    return {'message': f'Hello, {username}'}
-
-
-@app.get("/protected", name = "protected")
-async def get_protected(username: str = Depends(security)):
-    return {'message': f'Hello, {username}'}
+    url = request.url_for("homepage")
+    return RedirectResponse(url, status_code=303)
 
 
 @app.get("/logging/start_train")
