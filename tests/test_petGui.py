@@ -112,7 +112,7 @@ class TestServer:
             last_pos_file = log_file.name + ".pos"
             with open(last_pos_file, "w") as pos_file:
                 pos_file.write("0")
-            response = client.get("/log")
+            response = self.client.get("/log")
             assert response.status_code == 200
             assert response.json() == {"log": [
                 "Creating an object.",
@@ -170,7 +170,7 @@ class TestServer:
             range(len(data.keys())) - 3))  # Exclude "file", "model_para", and "label" keys from template_cnt
 
     def test_get_final_template(self,setting):
-        response = client.get("/final")
+        response = self.client.get("/final")
         assert response.status_code == 200
         assert "text/html" in response.headers["Content-Type"]
         assert "Final Page" in response.text
