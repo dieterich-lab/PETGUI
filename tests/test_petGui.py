@@ -10,6 +10,7 @@ import os
 import json
 import unittest
 import shutil
+from io import BytesIO
 from fastapi import UploadFile
 from unittest.mock import MagicMock, patch
 
@@ -55,7 +56,7 @@ class TestServer:
         assert exists(f"Pet/data_uploaded/{file['file'][0]}")
 
     def test_upload_data(self,setting):
-        directory = "./Pet/data/yelp_review_polarity_csv.tar.gz"
+        directory = "./Pet/data_uploaded/yelp_review_polarity_csv"
 
         expected_files = ["train.csv", "test.csv", "readme.txt"]
 
