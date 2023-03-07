@@ -54,7 +54,7 @@ class TestServer:
         assert exists(f"Pet/data_uploaded/{file['file'][0]}")
 
     def test_upload_data(self,setting):
-        directory = "data/yelp_review_polarity_csv.tar.gz"
+        directory = "./data/yelp_review_polarity_csv.tar.gz"
 
         expected_files = ["train.csv", "test.csv", "readme.txt"]
 
@@ -69,11 +69,11 @@ class TestServer:
     def test_save_dict_to_json_file(self,setting):
         with open(self.file_path, 'w') as file:
             json.dump(self.metadata, file)
-        assertTrue(os.path.exists(self.file_path))
-
+        assert os.path.exists(self.file_path)
         with open(self.file_path, 'r') as file:
             loaded_dict = json.load(file)
-        assertDictEqual(loaded_dict, self.metadata)
+        assert loaded_dict == self.metadata
+
 
     # def test_run(self, setting):
     #     response = self.client.get("/run", follow_redirects=False)
