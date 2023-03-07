@@ -55,7 +55,7 @@ class TestServer:
         assert exists(f"Pet/data_uploaded/{file['file'][0]}")
 
     def test_upload_data(self,setting):
-        directory = "./data/yelp_review_polarity_csv.tar.gz"
+        directory = "./Pet/data/yelp_review_polarity_csv.tar.gz"
 
         expected_files = ["train.csv", "test.csv", "readme.txt"]
 
