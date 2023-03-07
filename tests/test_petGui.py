@@ -3,6 +3,7 @@ import sys
 
 from fastapi.testclient import TestClient
 from app.petGui import app
+from app.petGui import train
 import pytest
 import tempfile
 from unittest.mock import MagicMock, patch
@@ -27,7 +28,6 @@ class TestServer:
 
     def test_home(self, setting):
         response = self.client.get("/")
-        response = client.get("/")
         assert response.status_code == 307  # expect temporary redirect status code
         assert response.headers["location"] == "/basic"  # expect redirection to /basic URL
 
@@ -151,19 +151,9 @@ class TestServer:
     @patch("app.custom_task_pvp.report")
     @patch("app.custom_task_metric.report")
     @patch("app.train")
-    def test_kickoff(train_mock, metric_report_mock, pvp_report_mock, task_report_mock, json_load_mock, open_mock):
+    def test_kickoff(self,setting,train_mock, metric_report_mock, pvp_report_mock, task_report_mock, json_load_mock, open_mock):
         # Prepare test data
-        data = {
-            "sample": "1",
-            "label": "0",
-            "template_0": "It was _ .",
-            "origin_0": "1",
-            "mapping_0": "bad",
-            "origin_1": "2",
-            "mapping_1": "good",
-            "model_para": "gbert-base"
-        }
-        json_load_mock.return_value = data
+        json_load_mock.return_value = self.metadata
 
         # Call the API
         response = client.get("/logging/start_train")
@@ -178,6 +168,34 @@ class TestServer:
         metric_report_mock.assert_called_once()
         train_mock.assert_called_once_with(data["file"], list(
             range(len(data.keys())) - 3))  # Exclude "file", "model_para", and "label" keys from template_cnt
+
+    def test_get_final_template(self,setting):
+        response = client.get("/final")
+        assert response.status_code == 200
+        assert "text/html" in response.headers["Content-Type"]
+        assert "Final Page" in response.text
+
+
+    def test_create_upload_file(self,setting):
+        # make sure upload folder exists and is empty
+        upload_folder = "./Pet/data_uploaded/unlabeled"
+        os.makedirs(upload_folder, exist_ok=True)
+        shutil.rmtree(upload_folder)
+        os.makedirs(upload_folder, exist_ok=True)
+
+        # call the API endpoint with the test file
+        response = client.post("/uploadfile/", files={"file": test_file})
+
+        # check that the API returned the expected response
+        assert response.status_code == 200
+        assert response.json() == {"filename": "test.csv", "path": os.path.join(upload_folder, "test.txt")}
+
+        # check that the file was actually saved to the upload folder
+        with open(os.path.join(upload_folder, "test.csv"), "rb") as f:
+            assert f.read() == test_file_content
+
+
+
 
 
 
