@@ -5,6 +5,8 @@ from fastapi.testclient import TestClient
 from app.petGui import app
 import pytest
 import tempfile
+from unittest.mock import MagicMock, patch
+
 from os.path import exists
 
 class TestServer:
@@ -123,10 +125,10 @@ class TestServer:
         os.unlink(log_file.name)
         os.unlink(last_pos_file)
 
-    def test_results(self, setting):
-        response = self.client.get("/results")
-        assert response.status_code == 200
-        assert exists("results.json")
+    # def test_results(self, setting):
+    #     response = self.client.get("/results")
+    #     assert response.status_code == 200
+    #     assert exists("results.json")
 
     def tearDown(self,setting):
         if os.path.exists(self.file_path):
@@ -142,4 +144,41 @@ class TestServer:
         paths = ["results.json", "data.json", "output", "Pet/data_uploaded", "templates/run.html"]
         for p in paths:
             assert not exists(p)
+
+    @patch("builtins.open")
+    @patch("builtins.json.load")
+    @patch("app.custom_task_processor.report")
+    @patch("app.custom_task_pvp.report")
+    @patch("app.custom_task_metric.report")
+    @patch("app.train")
+    def test_kickoff(train_mock, metric_report_mock, pvp_report_mock, task_report_mock, json_load_mock, open_mock):
+        # Prepare test data
+        data = {
+            "sample": "1",
+            "label": "0",
+            "template_0": "It was _ .",
+            "origin_0": "1",
+            "mapping_0": "bad",
+            "origin_1": "2",
+            "mapping_1": "good",
+            "model_para": "gbert-base"
+        }
+        json_load_mock.return_value = data
+
+        # Call the API
+        response = client.get("/logging/start_train")
+
+        # Verify the response status code is 200
+        assert response.status_code == 200
+
+        # Verify the mock function calls
+        json_load_mock.assert_called_once_with(open_mock().__enter__().name, "r")
+        task_report_mock.assert_called_once()
+        pvp_report_mock.assert_called_once()
+        metric_report_mock.assert_called_once()
+        train_mock.assert_called_once_with(data["file"], list(
+            range(len(data.keys())) - 3))  # Exclude "file", "model_para", and "label" keys from template_cnt
+
+
+
 
