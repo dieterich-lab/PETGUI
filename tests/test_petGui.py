@@ -54,7 +54,7 @@ class TestServer:
         assert exists(f"Pet/data_uploaded/{file['file'][0]}")
 
     def test_upload_data(self,setting):
-        directory = "data/yelp_review_polarity_csv"
+        directory = "data/yelp_review_polarity_csv.tar.gz"
 
         expected_files = ["train.csv", "test.csv", "readme.txt"]
 
@@ -68,8 +68,7 @@ class TestServer:
 
     def test_save_dict_to_json_file(self,setting):
         with open(self.file_path, 'w') as file:
-            json.dump(dict_data, file)
-
+            json.dump(self.metadata, file)
         assertTrue(os.path.exists(self.file_path))
 
         with open(self.file_path, 'r') as file:
@@ -142,7 +141,7 @@ class TestServer:
         }
 
         # Write the test dictionary to a JSON file
-        with open("test_results.json", "w") as f:
+        with open("results.json", "w") as f:
             json.dump(test_dict, f)
 
         # Make a GET request to the /download endpoint
@@ -207,7 +206,7 @@ class TestServer:
         os.makedirs(upload_folder, exist_ok=True)
 
         # call the API endpoint with the test file
-        response = client.post("/uploadfile/", files={"file": test_file})
+        response = self.client.post("/uploadfile/", files={"file": test_file})
 
         # check that the API returned the expected response
         assert response.status_code == 200
