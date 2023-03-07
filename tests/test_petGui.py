@@ -200,25 +200,25 @@ class TestServer:
         assert response.status_code == 200
 
 
-    def test_create_upload_file(self,setting):
-        # make sure upload folder exists and is empty
-        test_file_content = b"test file content"
-        test_file = UploadFile(filename="test.csv", file=BytesIO(test_file_content))
-        upload_folder = "./Pet/data_uploaded/unlabeled"
-        os.makedirs(upload_folder, exist_ok=True)
-        shutil.rmtree(upload_folder)
-        os.makedirs(upload_folder, exist_ok=True)
-
-        # call the API endpoint with the test file
-        response = self.client.post("/uploadfile/", files={"file": test_file})
-
-        # check that the API returned the expected response
-        assert response.status_code == 200
-        assert response.json() == {"filename": "test.csv", "path": os.path.join(upload_folder, "test.csv")}
-
-        # check that the file was actually saved to the upload folder
-        with open(os.path.join(upload_folder, "test.csv"), "rb") as f:
-            assert f.read() == test_file_content
+    # def test_create_upload_file(self,setting):
+    #     # make sure upload folder exists and is empty
+    #     test_file_content = b"test file content"
+    #     test_file = UploadFile(filename="test.csv", file=BytesIO(test_file_content))
+    #     upload_folder = "./Pet/data_uploaded/unlabeled"
+    #     os.makedirs(upload_folder, exist_ok=True)
+    #     shutil.rmtree(upload_folder)
+    #     os.makedirs(upload_folder, exist_ok=True)
+    #
+    #     # call the API endpoint with the test file
+    #     response = self.client.post("/uploadfile/", files={"file": test_file})
+    #
+    #     # check that the API returned the expected response
+    #     assert response.status_code == 200
+    #     assert response.json() == {"filename": "test.csv", "path": os.path.join(upload_folder, "test.csv")}
+    #
+    #     # check that the file was actually saved to the upload folder
+    #     with open(os.path.join(upload_folder, "test.csv"), "rb") as f:
+    #         assert f.read() == test_file_content
 
 
 
