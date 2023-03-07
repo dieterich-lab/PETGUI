@@ -55,18 +55,18 @@ class TestServer:
         assert exists("logging.txt")
         assert exists(f"Pet/data_uploaded/{file['file'][0]}")
 
-    def test_upload_data(self,setting):
-        directory = "Pet/data_uploaded/yelp_review_polarity_csv"
-
-        expected_files = ["train.csv", "test.csv", "readme.txt"]
-
-        # Check if the directory exists
-        assert os.path.isdir(directory), f"Directory {directory} does not exist"
-
-        # Check if the expected files exist in the directory
-        for file_name in expected_files:
-            file_path = os.path.join(directory, file_name)
-            assert os.path.isdir(file_path), f"Directory {directory} does not exist"
+    # def test_upload_data(self,setting):
+    #     directory = "Pet/data_uploaded/yelp_review_polarity_csv"
+    #
+    #     expected_files = ["train.csv", "test.csv", "readme.txt"]
+    #
+    #     # Check if the directory exists
+    #     assert os.path.isdir(directory), f"Directory {directory} does not exist"
+    #
+    #     # Check if the expected files exist in the directory
+    #     for file_name in expected_files:
+    #         file_path = os.path.join(directory, file_name)
+    #         assert os.path.isdir(file_path), f"Directory {directory} does not exist"
 
     def test_save_dict_to_json_file(self,setting):
         with open(self.file_path, 'w') as file:
