@@ -10,6 +10,7 @@ import os
 import json
 import unittest
 import shutil
+from fastapi import UploadFile
 from unittest.mock import MagicMock, patch
 
 from os.path import exists
@@ -54,7 +55,7 @@ class TestServer:
         assert exists(f"Pet/data_uploaded/{file['file'][0]}")
 
     def test_upload_data(self,setting):
-        directory = "./data/yelp_review_polarity_csv.tar.gz"
+        directory = "./Pet/data/yelp_review_polarity_csv.tar.gz"
 
         expected_files = ["train.csv", "test.csv", "readme.txt"]
 
@@ -200,6 +201,8 @@ class TestServer:
 
     def test_create_upload_file(self,setting):
         # make sure upload folder exists and is empty
+        test_file_content = b"test file content"
+        test_file = UploadFile(filename="test.csv", file=BytesIO(test_file_content))
         upload_folder = "./Pet/data_uploaded/unlabeled"
         os.makedirs(upload_folder, exist_ok=True)
         shutil.rmtree(upload_folder)
@@ -210,7 +213,7 @@ class TestServer:
 
         # check that the API returned the expected response
         assert response.status_code == 200
-        assert response.json() == {"filename": "test.csv", "path": os.path.join(upload_folder, "test.txt")}
+        assert response.json() == {"filename": "test.csv", "path": os.path.join(upload_folder, "test.csv")}
 
         # check that the file was actually saved to the upload folder
         with open(os.path.join(upload_folder, "test.csv"), "rb") as f:
