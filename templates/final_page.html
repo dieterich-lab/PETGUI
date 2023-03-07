@@ -76,18 +76,53 @@ text-align: start;
     xhr.send(formData);
 });
                 </script>
+                <script>
+                    function startPrediction() {
+  fetch('/final/start_prediction')
+    .then(response => response.json())
+    .then(data => console.log(data))
+    .catch(error => console.error(error));
+}
+                </script>
 
-                            <div class="card-body" id="container">
-                                <button class="btn btn--radius-2 btn--red" id="mycontain">Predict labels using PET Model</button>
-                            </div>
+    <div class="card-body" id="container">
+        <button class="btn btn--radius-2 btn--red" id="mycontain" onclick="startPrediction()">Predict labels using PET Model</button>
+        <div id="status"></div>
+    </div>
+    <script>
+        function startPrediction() {
+            document.getElementById("status").innerHTML = "Prediction started";
+            fetch('/final/start_prediction')
+                .then(response => {
+                    document.getElementById("status").innerHTML = "Prediction finished";
+                });
+        }
+    </script>
 
                                             <div class="card-body" id="container">
-                                <button class="btn btn--radius-2 btn--red" id="mycontain">Download Predicted data</button>
+                                <button class="btn btn--radius-2 btn--red" id="mycontain_download">Download Predicted data</button>
                             </div>
                 </div>
             </div>
         </div>
     </div>
+    <script>
+  const downloadButton = document.getElementById('mycontain_download');
+  downloadButton.addEventListener('click', () => {
+    const url = '/download_prediction'; // The URL of your FastAPI endpoint
+    fetch(url)
+      .then(response => {
+        const filename = response.headers.get('Content-Disposition').split('filename=')[1];
+        response.blob().then(blob => {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          a.click();
+        });
+      });
+  });
+</script>
 
     <!-- Jquery JS-->
     <script src="static/vendor/jquery/jquery.min.js"></script>
