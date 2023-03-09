@@ -122,6 +122,8 @@ class TestServer:
         else:
             last_pos = 0
 
+
+
         # Call the endpoint
 
         response = self.client.get("/log")
@@ -138,6 +140,7 @@ class TestServer:
                 "Returning result",
             ]
         }
+
 
         assert response.json() == expected_output
 
