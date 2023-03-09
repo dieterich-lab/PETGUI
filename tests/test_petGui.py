@@ -111,7 +111,7 @@ class TestServer:
             log_file.flush()
             last_pos_file = log_file.name + ".pos"
             with open(last_pos_file, "w") as pos_file:
-                pos_file.write("0")
+                pos_file.write(0)
             response = self.client.get("/log")
             assert response.status_code == 200
             assert response.json() == {"log": [
