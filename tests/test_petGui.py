@@ -101,10 +101,10 @@ class TestServer:
         # Clean up test files
         log_file = "test_log.txt"
         last_pos_file = "test_last_pos.txt"
-        if os.path.exists(log_file):
-            os.remove(log_file)
-        if os.path.exists(last_pos_file):
-            os.remove(last_pos_file)
+        # if os.path.exists(log_file):
+        #     os.remove(log_file)
+        # if os.path.exists(last_pos_file):
+        #     os.remove(last_pos_file)
 
         # Prepare test data
         with open(log_file, "w") as f:
@@ -123,8 +123,8 @@ class TestServer:
             last_pos = 0
 
         # Call the endpoint
-        with TestClient(app) as client:
-            response = self.client.get("/log")
+
+        response = self.client.get("/log")
 
         # Check the response
         assert response.status_code == 200
