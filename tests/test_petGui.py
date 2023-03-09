@@ -122,7 +122,7 @@ class TestServer:
         else:
             last_pos = 0
         # Call the endpoint
-        global last_pos
+
 
         response = self.client.get("/log")
 
@@ -255,7 +255,5 @@ class TestServer:
 
 
 
-if __name__ == '__main__':
-    unittest.main()
 
 
