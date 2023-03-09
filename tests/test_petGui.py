@@ -95,36 +95,64 @@ class TestServer:
     #     assert exists("templates/run.html")
     #     assert exists("templates/results.html")
     #     assert b"PET done!" in response.content
+    log_file = "test_log.txt"
+    last_pos_file = "test_last_pos.txt"
 
     def test_read_log(self,setting):
-        log_content = """This is line 1.
-        Creating an object.
-        This is line 3.
-        Saving the object.
-        Starting evaluation.
-        This is line 6.
-        Training Complete.
-        This is line 8.
-        """
-        with tempfile.NamedTemporaryFile(mode="w", delete=False) as log_file:
-            log_file.write(log_content)
-            log_file.flush()
-            last_pos_file = log_file.name + ".pos"
-            with open(last_pos_file, "w") as pos_file:
-                pos_file.write(str(len(log_content)))
-                #pos_file.write("0")
+        # Clean up test files
+        if os.path.exists(log_file):
+            os.remove(log_file)
+        if os.path.exists(last_pos_file):
+            os.remove(last_pos_file)
+
+        # Prepare test data
+        with open(log_file, "w") as f:
+            f.write("Creating object A\n")
+            f.write("Training Complete\n")
+            f.write("Creating object B\n")
+            f.write("Saving model\n")
+            f.write("Starting evaluation\n")
+            f.write("Returning result\n")
+
+        # Initialize last_pos to the value stored in last_pos.txt, or 0 if the file does not exist
+        if os.path.exists(last_pos_file):
+            with open(last_pos_file, "r") as file:
+                last_pos = int(file.read())
+        else:
+            last_pos = 0
+
+        # Call the endpoint
+        with TestClient(app) as client:
             response = self.client.get("/log")
-            assert response.status_code == 200
-            assert response.json() == {"log": [
-                "Creating an object.",
-                "Saving the object.",
-                "Starting evaluation.",
-                "Training Complete."
-            ]}
-            with open(last_pos_file, "r") as pos_file:
-                assert int(pos_file.read()) == len(log_content)
-        os.unlink(log_file.name)
-        os.unlink(last_pos_file)
+
+        # Check the response
+        assert response.status_code == 200
+
+        expected_output = {
+            "log": [
+                "Creating object A",
+                "Training Complete",
+                "Saving model",
+                "Starting evaluation",
+                "Returning result",
+            ]
+        }
+
+        assert response.json() == expected_output
+
+        # Check that last_pos has been updated correctly
+        with open(log_file, "r") as file:
+            file.seek(last_pos)
+            lines = file.readlines()
+            last_pos = file.tell()
+        with open(last_pos_file, "w") as file:
+            file.write(str(last_pos))
+
+        assert last_pos == len(expected_output["log"][-1]) + 1
+
+        # Clean up test files
+        os.remove(log_file)
+        os.remove(last_pos_file)
 
     # def test_results(self, setting):
     #     response = self.client.get("/results")
@@ -224,6 +252,7 @@ class TestServer:
 
 
 
-
+if __name__ == '__main__':
+    unittest.main()
 
 
