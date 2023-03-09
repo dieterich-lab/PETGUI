@@ -96,34 +96,34 @@ class TestServer:
     #     assert exists("templates/results.html")
     #     assert b"PET done!" in response.content
 
-    # def test_read_log(self,setting):
-    #     log_content = """This is line 1.
-    #     Creating an object.
-    #     This is line 3.
-    #     Saving the object.
-    #     Starting evaluation.
-    #     This is line 6.
-    #     Training Complete.
-    #     This is line 8.
-    #     """
-    #     with tempfile.NamedTemporaryFile(mode="w", delete=False) as log_file:
-    #         log_file.write(log_content)
-    #         log_file.flush()
-    #         last_pos_file = log_file.name + ".pos"
-    #         with open(last_pos_file, "w") as pos_file:
-    #             pos_file.write("0")
-    #         response = self.client.get("/log")
-    #         assert response.status_code == 200
-    #         assert response.json() == {"log": [
-    #             "Creating an object.",
-    #             "Saving the object.",
-    #             "Starting evaluation.",
-    #             "Training Complete."
-    #         ]}
-    #         with open(last_pos_file, "r") as pos_file:
-    #             assert int(pos_file.read()) == len(log_content)
-    #     os.unlink(log_file.name)
-    #     os.unlink(last_pos_file)
+    def test_read_log(self,setting):
+        log_content = """This is line 1.
+        Creating an object.
+        This is line 3.
+        Saving the object.
+        Starting evaluation.
+        This is line 6.
+        Training Complete.
+        This is line 8.
+        """
+        with tempfile.NamedTemporaryFile(mode="w", delete=False) as log_file:
+            log_file.write(log_content)
+            log_file.flush()
+            last_pos_file = log_file.name + ".pos"
+            with open(last_pos_file, "w") as pos_file:
+                pos_file.write("0")
+            response = self.client.get("/log")
+            assert response.status_code == 200
+            assert response.json() == {"log": [
+                "Creating an object.",
+                "Saving the object.",
+                "Starting evaluation.",
+                "Training Complete."
+            ]}
+            with open(last_pos_file, "r") as pos_file:
+                assert int(pos_file.read()) == len(log_content)
+        os.unlink(log_file.name)
+        os.unlink(last_pos_file)
 
     # def test_results(self, setting):
     #     response = self.client.get("/results")
@@ -171,29 +171,29 @@ class TestServer:
         for p in paths:
             assert not exists(p)
 
-    # @patch("builtins.open")
-    # @patch("builtins.json.load")
-    # @patch("app.custom_task_processor.report")
-    # @patch("app.custom_task_pvp.report")
-    # @patch("app.custom_task_metric.report")
-    # @patch("app.train")
-    # def test_kickoff(self,setting,train_mock, metric_report_mock, pvp_report_mock, task_report_mock, json_load_mock, open_mock):
-    #     # Prepare test data
-    #     json_load_mock.return_value = self.metadata
-    #
-    #     # Call the API
-    #     response = client.get("/logging/start_train")
-    #
-    #     # Verify the response status code is 200
-    #     assert response.status_code == 200
-    #
-    #     # Verify the mock function calls
-    #     json_load_mock.assert_called_once_with(open_mock().__enter__().name, "r")
-    #     task_report_mock.assert_called_once()
-    #     pvp_report_mock.assert_called_once()
-    #     metric_report_mock.assert_called_once()
-    #     train_mock.assert_called_once_with(data["file"], list(
-    #         range(len(data.keys())) - 3))  # Exclude "file", "model_para", and "label" keys from template_cnt
+    @patch("builtins.open")
+    @patch("builtins.json.load")
+    @patch("app.custom_task_processor.report")
+    @patch("app.custom_task_pvp.report")
+    @patch("app.custom_task_metric.report")
+    @patch("app.train")
+    def test_kickoff(self,setting,train_mock, metric_report_mock, pvp_report_mock, task_report_mock, json_load_mock, open_mock):
+        # Prepare test data
+        json_load_mock.return_value = self.metadata
+
+        # Call the API
+        response = self.client.get("/logging/start_train")
+
+        # Verify the response status code is 200
+        assert response.status_code == 200
+
+        # Verify the mock function calls
+        json_load_mock.assert_called_once_with(open_mock().__enter__().name, "r")
+        task_report_mock.assert_called_once()
+        pvp_report_mock.assert_called_once()
+        metric_report_mock.assert_called_once()
+        train_mock.assert_called_once_with(data["file"], list(
+            range(len(data.keys())) - 3))  # Exclude "file", "model_para", and "label" keys from template_cnt
 
     def test_get_final_template(self,setting):
         response = self.client.get("/final")
