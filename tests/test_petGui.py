@@ -95,11 +95,12 @@ class TestServer:
     #     assert exists("templates/run.html")
     #     assert exists("templates/results.html")
     #     assert b"PET done!" in response.content
-    log_file = "test_log.txt"
-    last_pos_file = "test_last_pos.txt"
+
 
     def test_read_log(self,setting):
         # Clean up test files
+        log_file = "test_log.txt"
+        last_pos_file = "test_last_pos.txt"
         if os.path.exists(log_file):
             os.remove(log_file)
         if os.path.exists(last_pos_file):
