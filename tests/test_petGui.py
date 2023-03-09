@@ -134,6 +134,7 @@ class TestServer:
             "log": [
                 "Creating object A",
                 "Training Complete",
+                "Creating object B",
                 "Saving model",
                 "Starting evaluation",
                 "Returning result",
