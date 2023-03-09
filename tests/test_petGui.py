@@ -99,8 +99,8 @@ class TestServer:
 
     def test_read_log(self,setting):
         # Clean up test files
-        log_file = "test_log.txt"
-        last_pos_file = "test_last_pos.txt"
+        log_file =  "logging.txt"
+        last_pos_file = "last_pos.txt"
         # if os.path.exists(log_file):
         #     os.remove(log_file)
         # if os.path.exists(last_pos_file):
@@ -121,12 +121,11 @@ class TestServer:
                 last_pos = int(file.read())
         else:
             last_pos = 0
-
-
-
         # Call the endpoint
+        global last_pos
 
         response = self.client.get("/log")
+
 
         # Check the response
         assert response.status_code == 200
