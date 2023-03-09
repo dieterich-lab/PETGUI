@@ -371,6 +371,7 @@ async def read_log():
     with open(log_file, "r") as file:
         file.seek(last_pos)
         lines = file.readlines()
+        print(lines)
         last_pos = file.tell()
     with open(last_pos_file, "w") as file:
         file.write(str(last_pos))
