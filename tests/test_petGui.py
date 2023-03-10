@@ -20,6 +20,7 @@ class TestServer:
     @pytest.fixture()
     def setting(self):
         self.metadata = {
+            "file": "yelp_review_polarity_csv",
             "sample": "1",
             "label": "0",
             "template_0": "It was _ .",
