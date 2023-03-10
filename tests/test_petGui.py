@@ -209,6 +209,8 @@ class TestServer:
         # Prepare test data
 
         # Call the API
+        with open(self.file_path,"w") as file:
+            json.dump(self.metadata, file)
         response = self.client.get("/logging/start_train")
 
         # Verify the response status code is 200
