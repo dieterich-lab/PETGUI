@@ -294,18 +294,18 @@ def download_predict():
     return FileResponse("predictions.csv", filename="predictions.csv")
 
 
-def clean():
-    """
-    Iterates over created paths during PET and unlinks them.
-    Returns:
-        redirection to homepage
-    """
-    paths = ["logging.txt", "last_pos.txt", "output", "results.json", "data.json", "data_uploaded"]
-    for path in paths:
-        file_path = pathlib.Path(path)
-        if isfile(path):
-            file_path.unlink()
-        elif isdir(path):
+# def clean():
+#     """
+#     Iterates over created paths during PET and unlinks them.
+#     Returns:
+#         redirection to homepage
+#     """
+#     paths = ["logging.txt", "last_pos.txt", "output", "results.json", "data.json", "data_uploaded"]
+#     for path in paths:
+#         file_path = pathlib.Path(path)
+#         if isfile(path):
+#             file_path.unlink()
+#         elif isdir(path):
 
 #atexit.register(clean)
 
