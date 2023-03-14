@@ -13,18 +13,20 @@ import shutil
 from fastapi.encoders import jsonable_encoder
 from ldap3 import Server, Connection, ALL, Tls, AUTO_BIND_TLS_BEFORE_BIND
 from ssl import PROTOCOL_TLSv1_2
-from Pet.examples import custom_task_pvp, custom_task_processor, custom_task_metric
 import threading
 import subprocess
 import time
 from pydantic import BaseModel
 from fastapi import HTTPException, FastAPI, Response, Depends
 from uuid import UUID, uuid4
-
 from fastapi_sessions.backends.implementations import InMemoryBackend
 from fastapi_sessions.session_verifier import SessionVerifier
 from fastapi_sessions.frontends.implementations import SessionCookie, CookieParameters
 import atexit
+import torch
+from transformers import BertTokenizer, BertForSequenceClassification
+import pandas as pd
+
 
 class SessionData(BaseModel):
     username: str
@@ -85,13 +87,17 @@ verifier = BasicVerifier(
     auth_http_exception=HTTPException(status_code=403, detail="invalid session"),
 )
 
-################ START ##################
+
 app = FastAPI()
 
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
+@app.get("/", name="start")
+def main():
+    return RedirectResponse(url="/basic")
+  
 
 @app.get("/whoami", dependencies=[Depends(cookie)])
 async def whoami(session_data: SessionData = Depends(verifier)):
@@ -235,9 +241,7 @@ async def logging(request: Request):
 async def get_final_template(request: Request):
     return templates.TemplateResponse("final_page.html", {"request": request})
 
-@app.get("/", name="start")
-def main():
-    return {"Hello": "World"}
+
 
 def results():
     """
@@ -274,6 +278,7 @@ def results():
             pass
     with open("results.json", "w") as res:
         json.dump(scores, res)
+        
 
 @app.get("/download", name="download")
 def download():
@@ -284,26 +289,25 @@ def download():
     return FileResponse("results.json", filename="results.json")
 
 
-@app.get("/cleanup")
-def clean(request: Request = None):
+@app.get("/download_prediction", name="download_prediction")
+def download_predict():
+    return FileResponse("predictions.csv", filename="predictions.csv")
+
+
+def clean():
     """
     Iterates over created paths during PET and unlinks them.
     Returns:
         redirection to homepage
     """
-    #paths = ["results.json", "data.json", "output", "Pet/data_uploaded", "templates/run.html", "last_pos.txt"]
-    paths = ["logging.txt", "last_pos.txt", "output"]
+    paths = ["logging.txt", "last_pos.txt", "output", "results.json", "data.json", "data_uploaded"]
     for path in paths:
         file_path = pathlib.Path(path)
         if isfile(path):
             file_path.unlink()
         elif isdir(path):
-            shutil.rmtree(path)
-    if request:
-        url = request.url_for("homepage")
-        return RedirectResponse(url, status_code=303)
 
-atexit.register(clean)
+#atexit.register(clean)
 
 @app.get("/basic", response_class=HTMLResponse, name='homepage')
 async def get_form(request: Request):
@@ -347,6 +351,7 @@ async def read_log():
     with open(log_file, "r") as file:
         file.seek(last_pos)
         lines = file.readlines()
+        print(lines)
         last_pos = file.tell()
     with open(last_pos_file, "w") as file:
         file.write(str(last_pos))
@@ -398,3 +403,32 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
     redirect_url = request.url_for('logging')
     print(para_dic)
     return RedirectResponse(redirect_url, status_code=303)
+
+
+@app.get("/final/start_prediction")
+async def label_prediction(request: Request):
+    df = pd.read_csv("Pet/data_uploaded/yelp_review_polarity_csv/unlabeled.csv", header=None, names=['label', 'text'])
+    tokenizer = BertTokenizer.from_pretrained('output/final/p0-i0')
+    model = BertForSequenceClassification.from_pretrained('output/final/p0-i0')
+    input_ids = []
+    attention_masks = []
+    for text in df['text']:
+        encoded_dict = tokenizer.encode_plus(
+            text,
+            add_special_tokens=True,
+            max_length=64,
+            pad_to_max_length=True,
+            return_attention_mask=True,
+            return_tensors='pt'
+        )
+        input_ids.append(encoded_dict['input_ids'])
+        attention_masks.append(encoded_dict['attention_mask'])
+    input_ids = torch.cat(input_ids, dim=0)
+    attention_masks = torch.cat(attention_masks, dim=0)
+    labels = torch.tensor(df['label'].values)
+    with torch.no_grad():
+        outputs = model(input_ids, attention_mask=attention_masks)
+    logits = outputs[0]
+    predictions = torch.argmax(logits, dim=1)
+    df['label'] = predictions
+    df.to_csv('predictions.csv', index=False)
