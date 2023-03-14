@@ -5,56 +5,244 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import tarfile
 import json
-from Pet import script
 import os
 from os.path import isdir, isfile
 import pathlib
 import shutil
 from fastapi.encoders import jsonable_encoder
-from config.celery_utils import create_celery
-from celery_tasks.tasks import kickoff
+from ldap3 import Server, Connection, ALL, Tls, AUTO_BIND_TLS_BEFORE_BIND
+from ssl import PROTOCOL_TLSv1_2
+import threading
+import subprocess
+import time
+from pydantic import BaseModel
+from fastapi import HTTPException, FastAPI, Response, Depends
+from uuid import UUID, uuid4
+from fastapi_sessions.backends.implementations import InMemoryBackend
+from fastapi_sessions.session_verifier import SessionVerifier
+from fastapi_sessions.frontends.implementations import SessionCookie, CookieParameters
+import atexit
+from Pet import script
 import torch
 from transformers import BertTokenizer, BertForSequenceClassification
 import pandas as pd
 
 
 
-def create_app() -> FastAPI:
-    current_app = FastAPI(title="Asynchronous tasks processing with Celery and RabbitMQ",
-                          description="Sample FastAPI Application to demonstrate Event "
-                                      "driven architecture with Celery and RabbitMQ",
-                          version="1.0.0", )
-
-    current_app.celery_app = create_celery()
-    return current_app
+class SessionData(BaseModel):
+    username: str
 
 
-app = create_app()
-celery = app.celery_app
+cookie_params = CookieParameters()
+
+# Uses UUID
+cookie = SessionCookie(
+    cookie_name="cookie",
+    identifier="general_verifier",
+    auto_error=True,
+    secret_key="DONOTUSE",
+    cookie_params=cookie_params,
+)
+backend = InMemoryBackend[UUID, SessionData]()
+
+
+class BasicVerifier(SessionVerifier[UUID, SessionData]):
+    def __init__(
+        self,
+        *,
+        identifier: str,
+        auto_error: bool,
+        backend: InMemoryBackend[UUID, SessionData],
+        auth_http_exception: HTTPException,
+    ):
+        self._identifier = identifier
+        self._auto_error = auto_error
+        self._backend = backend
+        self._auth_http_exception = auth_http_exception
+
+    @property
+    def identifier(self):
+        return self._identifier
+
+    @property
+    def backend(self):
+        return self._backend
+
+    @property
+    def auto_error(self):
+        return self._auto_error
+
+    @property
+    def auth_http_exception(self):
+        return self._auth_http_exception
+
+    def verify_session(self, model: SessionData) -> bool:
+        """If the session exists, it is valid"""
+        return True
+
+
+verifier = BasicVerifier(
+    identifier="general_verifier",
+    auto_error=True,
+    backend=backend,
+    auth_http_exception=HTTPException(status_code=403, detail="invalid session"),
+)
+
+
+app = FastAPI()
 
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-@app.get("/logging/start_train")
-async def get_run() -> dict:
-    task = kickoff.apply_async()
-    return JSONResponse({"task_id": task.id})
+
+@app.get("/", name="start")
+def main():
+    return RedirectResponse(url="/basic")
+  
+
+@app.get("/whoami", dependencies=[Depends(cookie)])
+async def whoami(session_data: SessionData = Depends(verifier)):
+    return session_data.username
 
 
+LDAP_SERVER = 'ldap://ldap2.dieterichlab.org'
+CA_FILE = 'DieterichLab_CA.pem'
+USER_BASE = 'dc=dieterichlab,dc=org'
+LDAP_SEARCH_FILTER = '({name_attribute}={name})'
 
-@app.get("/logging", name="logging")
+
+def authenticate_ldap(username: str) -> bool:
+    try:
+        tls = Tls(ca_certs_file=CA_FILE, version=PROTOCOL_TLSv1_2)
+        server = Server(LDAP_SERVER, get_info=ALL, tls=tls)
+        conn = Connection(server, auto_bind=AUTO_BIND_TLS_BEFORE_BIND, raise_exceptions=True)
+        conn.bind()
+        conn.search(USER_BASE, LDAP_SEARCH_FILTER.format(name_attribute="uid", name=username))
+        if len(conn.entries) == 1:
+            return True
+        else:
+            return False
+    except Exception as e:
+        print(str(e))
+        return False
+
+
+#Endpoint to render login form
+@app.get('/login', response_class=HTMLResponse)
+async def login_form(request: Request, error=None):
+    return templates.TemplateResponse('login.html', {'request': request, 'error': error})
+
+async def create_session(name: str, response: Response):
+
+    session = uuid4()
+    data = SessionData(username=name)
+    await backend.create(session, data)
+    cookie.attach_to_response(response, session)
+    print(session)
+
+
+# Endpoint to authenticate users
+@app.post("/login")
+async def login(request: Request, username: str = Form(...)):
+    if not authenticate_ldap(username=username):
+        error = 'Invalid username or password'
+        return templates.TemplateResponse('login.html', {'request': request, 'error': error})
+    response = RedirectResponse(url=request.url_for("homepage"), status_code=303)
+    await create_session(username, response)
+    return response
+
+@app.get("/logging/start_train", dependencies=[Depends(cookie)])
+async def run(session_data: SessionData = Depends(verifier)):
+    """
+    Kicks off PET by calling train method.
+    """
+    '''Start PET'''
+    t = threading.Thread(target=submit_job, args=(session_data,))
+    t.start()
+
+
+# Set the SLURM cluster name or IP address
+cluster_name = 'cluster.dieterichlab.org'
+ssh_key = '~/.ssh/id_rsa'
+remote_loc = '/home/{user}/'
+remote_loc_pet = '/home/{user}/pet/'
+
+
+def submit_job(session_data):
+    # Copy the SLURM script file to the remote cluster
+    print("Submitting job..")
+    user = session_data.username
+    files = ["pet", "data.json", "script.sh", "data_uploaded"]
+    for f in files:
+        if f != "pet":
+            loc = remote_loc_pet
+        else:
+            loc = remote_loc
+        scp_cmd = ['scp', '-r', '-i', ssh_key, f,
+               f'{user}@{cluster_name}:{loc.format(user = user)}']
+        try:
+            subprocess.run(scp_cmd, check=True)
+        except:
+            choice = input(f"Connection to server {cluster_name} failed. \nRetry? (y)es/(n)o?")
+            if choice.lower() in any(["yes", "y"]):
+                subprocess.run(scp_cmd, check=True)
+            else:
+                print("Stopping process..")
+                os.kill(os.getpid(), 15)
+
+    # Submit the SLURM job via SSH
+    ssh_cmd = ['ssh', '-i', ssh_key, f'{user}@{cluster_name}',
+               f'sbatch {remote_loc_pet.format(user=user)}script.sh']
+    submit_process = subprocess.run(ssh_cmd, check=True, capture_output=True)
+    # Get the job ID from the output of the sbatch command
+    job_id = submit_process.stdout.decode('utf-8').strip().split()[-1]
+    check_job_status(job_id, session_data)
+
+
+def check_job_status(job_id: str, session_data: SessionData = Depends(verifier)):
+    user = session_data.username
+    while True:
+        cmd = ['ssh', '-i', ssh_key, f'{user}@{cluster_name}', f"squeue -j {job_id} -h -t all | awk '{{print $5}}'"]
+        status = subprocess.check_output(cmd, shell=False).decode().strip()
+        if status == "R":
+            pass
+        elif status == "CD":
+            with open('logging.txt', 'a') as file:
+                file.write('Training Complete\n')
+            ssh_cmd = ['ssh', '-i', ssh_key,
+                       f'{user}@{cluster_name}', f'cd {remote_loc_pet.format(user=user)}',
+                       f'&& find . -name "results.json" -type f']
+            files = subprocess.run(ssh_cmd, check=True, capture_output=True)
+            files = files.stdout.decode("utf-8")
+            for f in files.split("\n"):
+                scp_cmd = ['rsync', '--relative', f'{user}@{cluster_name}:{remote_loc_pet.format(user=user)}{f}', '.']
+                subprocess.run(scp_cmd, check=True)
+
+            '''Call Results'''
+            results()
+            return {"status": "finished"}
+
+        time.sleep(5)
+
+        ssh_cmd = ['ssh', '-i', ssh_key, f'{user}@{cluster_name}',
+                   f'cat {remote_loc.format(user=user)}{log_file}']
+        log_process = subprocess.run(ssh_cmd, check=True, capture_output=True)
+        log_contents = log_process.stdout.decode('utf-8')
+
+        # Update the log file on the local machine
+        with open(f"{log_file}", 'w') as f:
+            f.write(log_contents)
+
+@app.get("/logging", name="logging", dependencies=[Depends(cookie)])
 async def logging(request: Request):
     return templates.TemplateResponse("next.html", {"request": request})
 
 
-@app.get("/final", response_class=HTMLResponse, name='final')
+@app.get("/final", response_class=HTMLResponse, name='final', dependencies=[Depends(cookie)])
 async def get_final_template(request: Request):
     return templates.TemplateResponse("final_page.html", {"request": request})
 
-@app.get("/")
-def main():
-    return RedirectResponse(url="/basic")
-    #return {"Hello": "World"}
+
 
 def results():
     """
@@ -91,6 +279,7 @@ def results():
             pass
     with open("results.json", "w") as res:
         json.dump(scores, res)
+        
 
 @app.get("/download", name="download")
 def download():
@@ -100,33 +289,27 @@ def download():
     """
     return FileResponse("results.json", filename="results.json")
 
+
 @app.get("/download_prediction", name="download_prediction")
 def download_predict():
     return FileResponse("predictions.csv", filename="predictions.csv")
 
 
-
-
-@app.get("/cleanup")
-def clean(request: Request):
+def clean():
     """
     Iterates over created paths during PET and unlinks them.
     Returns:
         redirection to homepage
     """
-    paths = ["results.json", "data.json", "output", "Pet/data_uploaded", "templates/run.html","last_pos.txt"]
+    paths = ["logging.txt", "last_pos.txt", "output", "results.json", "data.json", "data_uploaded"]
     for path in paths:
         file_path = pathlib.Path(path)
         if isfile(path):
             file_path.unlink()
         elif isdir(path):
             shutil.rmtree(path)
-    url = request.url_for("homepage")
-    # if request:
-    return RedirectResponse(url, status_code=303)
-    # else:
-    #     return None
 
+#atexit.register(clean)
 
 @app.get("/basic", response_class=HTMLResponse, name='homepage')
 async def get_form(request: Request):
@@ -139,26 +322,6 @@ def read_item(request: Request):
     return templates.TemplateResponse("progress.html", {"request": request, "max_num": max_num})
 
 
-def train(file, templates):
-    """
-    Starts training+testing with params and data_uploaded in Pet directory.
-    """
-    instance = script.Script("pet", templates, f"Pet/data_uploaded/{file}/", "bert", "bert-base-cased",
-                             "yelp-task", "./output")  # set defined task names
-    instance.run()
-
-    with open('logging.txt', 'a') as file:
-        file.write('Training Complete\n')
-    # Call results()
-    results()
-
-
-def recursive_json_read(data, key: str):
-    d = []
-    for i in range(5):
-        if f"{key}_{i}" in data:
-            d.append(data[f"{key}_{i}"])
-    return d
 
 @app.post("/uploadfile/")
 async def create_upload_file(file: UploadFile = File(...)):
@@ -166,7 +329,7 @@ async def create_upload_file(file: UploadFile = File(...)):
     Upload function for the final page
     """
 
-    upload_folder = "./Pet/data_uploaded/unlabeled"
+    upload_folder = "./data_uploaded/unlabeled"
     os.makedirs(upload_folder, exist_ok=True)
     file_path = os.path.join(upload_folder, file.filename)
     with open(file_path, "wb") as file_object:
@@ -212,7 +375,7 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
                    template_0: str = Form(media_type="multipart/form-data")):
 
     file_upload = tarfile.open(fileobj=file.file, mode="r:gz")
-    file_upload.extractall('./Pet/data_uploaded')
+    file_upload.extractall('./data_uploaded')
     da = await request.form()
     da = jsonable_encoder(da)
     #template_0 = da["template_0"]
@@ -273,48 +436,12 @@ async def label_prediction(request: Request):
     df.to_csv('predictions.csv', index=False)
 
 
-    #return redirect(url_for('delete_images'))
-    # redirect_url = request.url_for('basic_upload')
-    # return RedirectResponse(redirect_url, status_code=303)
 
-    # return {"filename": file.filename,"info":"upload successful"}
+def train(file, templates):
+    """
+    Starts training+testing with params and data_uploaded in Pet directory.
+    """
+    instance = script.Script("pet", templates, f"Pet/data_uploaded/{file}/", "bert", "bert-base-cased",
+                             "yelp-task", "./output")  # set defined task names
+    instance.run()
 
-    #return templates.TemplateResponse("basic_upload.html", {"request": request})
-
-
-# <input type='file' .... onchange='this.form.submit();'><br><br>
-
-#
-#
-#
-#
-#
-#
-# from transformers import T5Tokenizer, T5ForConditionalGeneration
-# @app.post("/translate_the_text")
-# def translate_text(file: UploadFile = File(...)):
-#     contents = file.file.read()
-#     with open(file.filename,'wb') as f:
-#         f.write(contents)
-#     with open(file.filename) as file:
-#         tras_data = file.read()
-#     tokenizer = T5Tokenizer.from_pretrained('t5-small')
-#     model = T5ForConditionalGeneration.from_pretrained('t5-small', return_dict=True)
-#     input_ids = tokenizer("translate English to German: "+tras_data, return_tensors="pt").input_ids  # Batch size 1
-#     outputs = model.generate(input_ids)
-#     decoded = tokenizer.decode(outputs[0], skip_special_tokens=True)
-#     with open("translated_text.txt","w") as q:
-#         q.write(decoded)
-#     file_location = "translated_text.txt"
-#     return FileResponse(file_location, media_type='text/txt', filename="translated_text.txt")
-   # # return {
-   #          "input_text": tras_data,
-   #          "translation_text": decoded
-   #         }
-
-# @app.get("/download-file")
-# def download_file(upload_file):
-#     file_path = upload_file.filename
-#     return FileResponse(path=file_path, filename=file_path)
-
->>>>>>> d999f30846fa5f593202989da5eee27e25c1a662

@@ -58,8 +58,10 @@ class TestServer:
         assert exists("logging.txt")
         assert exists(f"Pet/data_uploaded/{file['file'][0]}")
 
+
     def test_upload_data(self,setting):
         directory = "data/yelp_review_polarity_csv"
+
 
     # def test_upload_data(self,setting):
     #     directory = "Pet/data_uploaded/yelp_review_polarity_csv"
@@ -95,6 +97,10 @@ class TestServer:
         assert exists("output")
         assert exists("templates/next.html")
         assert exists("logging.txt")
+
+
+    def test_results(self, setting):
+        response = self.client.get("/results")
         assert response.template.name == "next.html"
 
     # def test_logging(self, setting):
