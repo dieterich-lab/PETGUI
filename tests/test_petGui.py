@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 from app.petGui import app
 from app.petGui import train
 import pytest
+import os
 import tempfile
 import os
 import json
@@ -13,7 +14,6 @@ import shutil
 from io import BytesIO
 from fastapi import UploadFile
 from unittest.mock import MagicMock, patch
-
 from os.path import exists
 
 class TestServer:
@@ -24,6 +24,8 @@ class TestServer:
             "sample": "1",
             "label": "0",
             "template_0": "It was _ .",
+            "template_1": "All in all _ .",
+            "template_2": "Just _ .",
             "origin_0": "1",
             "mapping_0": "bad",
             "origin_1": "2",
@@ -56,6 +58,11 @@ class TestServer:
         assert exists("logging.txt")
         assert exists(f"Pet/data_uploaded/{file['file'][0]}")
 
+
+    def test_upload_data(self,setting):
+        directory = "data/yelp_review_polarity_csv"
+        
+
     # def test_upload_data(self,setting):
     #     directory = "Pet/data_uploaded/yelp_review_polarity_csv"
     #
@@ -86,6 +93,13 @@ class TestServer:
     def test_logging(self,setting):
         response = self.client.get("/logging")
         assert response.status_code == 200
+        assert exists("data.json")
+        assert exists("output")
+        assert exists("templates/next.html")
+        assert exists("logging.txt")
+
+    def test_results(self, setting):
+        response = self.client.get("/results")
         assert response.template.name == "next.html"
 
     # def test_logging(self, setting):

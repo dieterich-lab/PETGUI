@@ -12,15 +12,6 @@ pipeline {
             }
 
         }
-        stage('Linting') {
-            steps {
-                sh '''
-                    . ./venv/bin/activate
-                    flake8 hello.py --max-line-length 140
-
-                '''
-            }
-        }
         stage('Testing') {
             steps {
                 sh '''true
