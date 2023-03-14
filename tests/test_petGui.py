@@ -229,7 +229,91 @@ class TestServer:
         response = self.client.get("/final")
         assert response.status_code == 200
 
+    def test_predictions(self,setting):
+        # Define the path to the test CSV file
+        test_csv_path = "Pet/data_uploaded/yelp_review_polarity_csv/unlabeled.csv"
+        # Create a test dataframe with some sample text
+        test_df = pd.DataFrame({'text': ['This is a test review', 'Another test review']})
+        # Save the test dataframe to a CSV file
+        test_df.to_csv(test_csv_path, index=False)
+        # Load the CSV file using the code we want to test
+        tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+        model = BertForSequenceClassification.from_pretrained('bert-base-uncased')
+        df = pd.read_csv(test_csv_path, header=None, names=['label', 'text'])
+        input_ids = []
+        attention_masks = []
+        for text in df['text']:
+            encoded_dict = tokenizer.encode_plus(
+                text,
+                add_special_tokens=True,
+                max_length=64,
+                pad_to_max_length=True,
+                return_attention_mask=True,
+                return_tensors='pt'
+            )
+            input_ids.append(encoded_dict['input_ids'])
+            attention_masks.append(encoded_dict['attention_mask'])
+        input_ids = torch.cat(input_ids, dim=0)
+        attention_masks = torch.cat(attention_masks, dim=0)
+        with torch.no_grad():
+            outputs = model(input_ids, attention_mask=attention_masks)
+        logits = outputs[0]
+        predictions = torch.argmax(logits, dim=1)
+        df['label'] = predictions
+        df.to_csv('test_predictions.csv', index=False)
+        # Load the test predictions CSV file
+        test_predictions_df = pd.read_csv('test_predictions.csv')
+        # Verify that the predicted labels are integers between 0 and 1
+        for label in test_predictions_df['label']:
+            assert isinstance(label, int)
+            assert label == 0 or label == 1
 
+        # Test the API endpoint
+
+        response = self.client.get("/final/start_prediction")
+        assert response.status_code == 200
+        assert response.json() == {"message": "Predictions generated successfully."}
+
+    @mock.patch('builtins.open', mock.mock_open(read_data=json.dumps({
+        "test_set_after_training": {
+            "acc": 0.9,
+            "pre-rec-f1-supp": [
+                [0.8, 0.7, 0.75, 100],
+                [0.9, 0.8, 0.85, 150]
+            ]
+        }
+    })))
+    @mock.patch('os.walk')
+    def test_results_function(self, mock_walk):
+        mock_walk.return_value = ("output/", ["final", "pattern-1"], [])
+        mock_walk.side_effect = [
+            ("output/final/", [], []),
+            ("output/pattern-1/", ["iteration-1"], []),
+            ("output/pattern-1/iteration-1", [], ["results.json"]),
+        ]
+        result = results()
+
+        expected_scores = {
+            "Final": {
+                "acc": 0.9,
+                "pre-rec-f1-supp": [
+                    "Label: 0 pre: 0.8, rec: 0.7, f1: 0.75, supp: 100",
+                    "Label: 1 pre: 0.9, rec: 0.8, f1: 0.85, supp: 100"
+                ]
+            },
+            "Pattern-1 Iteration 1": {
+                "acc": 0.9,
+                "pre-rec-f1-supp": [
+                    "Label: 0 pre: 0.8, rec: 0.7, f1: 0.75, supp: 100",
+                    "Label: 1 pre: 0.9, rec: 0.8, f1: 0.85, supp: 100"
+                ]
+            }
+        }
+
+        assert result == expected_scores
+
+
+    #
     # def test_create_upload_file(self,setting):
     #     # make sure upload folder exists and is empty
     #     test_file_content = b"test file content"
