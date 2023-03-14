@@ -13,6 +13,10 @@ import shutil
 from fastapi.encoders import jsonable_encoder
 from config.celery_utils import create_celery
 from celery_tasks.tasks import kickoff
+import torch
+from transformers import BertTokenizer, BertForSequenceClassification
+import pandas as pd
+
 
 
 def create_app() -> FastAPI:
@@ -49,7 +53,8 @@ async def get_final_template(request: Request):
 
 @app.get("/")
 def main():
-    return {"Hello": "World"}
+    return RedirectResponse(url="/basic")
+    #return {"Hello": "World"}
 
 def results():
     """
@@ -94,6 +99,12 @@ def download():
          final dict, e.g.: dict={p0-i0: {acc: 0.5, ...}, ...}
     """
     return FileResponse("results.json", filename="results.json")
+
+@app.get("/download_prediction", name="download_prediction")
+def download_predict():
+    return FileResponse("predictions.csv", filename="predictions.csv")
+
+
 
 
 @app.get("/cleanup")
@@ -179,6 +190,7 @@ async def read_log():
     with open(log_file, "r") as file:
         file.seek(last_pos)
         lines = file.readlines()
+        print(lines)
         last_pos = file.tell()
     with open(last_pos_file, "w") as file:
         file.write(str(last_pos))
@@ -230,3 +242,79 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
     redirect_url = request.url_for('logging')
     print(para_dic)
     return RedirectResponse(redirect_url, status_code=303)
+
+
+@app.get("/final/start_prediction")
+async def label_prediction(request: Request):
+    df = pd.read_csv("Pet/data_uploaded/yelp_review_polarity_csv/unlabeled.csv", header=None, names=['label', 'text'])
+    tokenizer = BertTokenizer.from_pretrained('output/final/p0-i0')
+    model = BertForSequenceClassification.from_pretrained('output/final/p0-i0')
+    input_ids = []
+    attention_masks = []
+    for text in df['text']:
+        encoded_dict = tokenizer.encode_plus(
+            text,
+            add_special_tokens=True,
+            max_length=64,
+            pad_to_max_length=True,
+            return_attention_mask=True,
+            return_tensors='pt'
+        )
+        input_ids.append(encoded_dict['input_ids'])
+        attention_masks.append(encoded_dict['attention_mask'])
+    input_ids = torch.cat(input_ids, dim=0)
+    attention_masks = torch.cat(attention_masks, dim=0)
+    labels = torch.tensor(df['label'].values)
+    with torch.no_grad():
+        outputs = model(input_ids, attention_mask=attention_masks)
+    logits = outputs[0]
+    predictions = torch.argmax(logits, dim=1)
+    df['label'] = predictions
+    df.to_csv('predictions.csv', index=False)
+
+
+    #return redirect(url_for('delete_images'))
+    # redirect_url = request.url_for('basic_upload')
+    # return RedirectResponse(redirect_url, status_code=303)
+
+    # return {"filename": file.filename,"info":"upload successful"}
+
+    #return templates.TemplateResponse("basic_upload.html", {"request": request})
+
+
+# <input type='file' .... onchange='this.form.submit();'><br><br>
+
+#
+#
+#
+#
+#
+#
+# from transformers import T5Tokenizer, T5ForConditionalGeneration
+# @app.post("/translate_the_text")
+# def translate_text(file: UploadFile = File(...)):
+#     contents = file.file.read()
+#     with open(file.filename,'wb') as f:
+#         f.write(contents)
+#     with open(file.filename) as file:
+#         tras_data = file.read()
+#     tokenizer = T5Tokenizer.from_pretrained('t5-small')
+#     model = T5ForConditionalGeneration.from_pretrained('t5-small', return_dict=True)
+#     input_ids = tokenizer("translate English to German: "+tras_data, return_tensors="pt").input_ids  # Batch size 1
+#     outputs = model.generate(input_ids)
+#     decoded = tokenizer.decode(outputs[0], skip_special_tokens=True)
+#     with open("translated_text.txt","w") as q:
+#         q.write(decoded)
+#     file_location = "translated_text.txt"
+#     return FileResponse(file_location, media_type='text/txt', filename="translated_text.txt")
+   # # return {
+   #          "input_text": tras_data,
+   #          "translation_text": decoded
+   #         }
+
+# @app.get("/download-file")
+# def download_file(upload_file):
+#     file_path = upload_file.filename
+#     return FileResponse(path=file_path, filename=file_path)
+
+>>>>>>> d999f30846fa5f593202989da5eee27e25c1a662
