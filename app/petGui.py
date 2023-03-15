@@ -10,7 +10,7 @@ from os.path import isdir, isfile
 import pathlib
 import shutil
 from fastapi.encoders import jsonable_encoder
-from ldap3 import Server, Connection, ALL, Tls, AUTO_BIND_TLS_BEFORE_BIND
+from ldap3 import Server, Connection, ALL, Tls, AUTO_BIND_TLS_BEFORE_BIND, core
 from ssl import PROTOCOL_TLSv1_2
 import threading
 import subprocess
@@ -31,6 +31,7 @@ import pandas as pd
 
 class SessionData(BaseModel):
     username: str
+    password: str
 
 
 cookie_params = CookieParameters()
@@ -97,7 +98,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/", name="start")
 def main():
-    return RedirectResponse(url="/basic")
+    return RedirectResponse(url="/login")
   
 
 @app.get("/whoami", dependencies=[Depends(cookie)])
@@ -109,17 +110,24 @@ LDAP_SERVER = 'ldap://ldap2.dieterichlab.org'
 CA_FILE = 'DieterichLab_CA.pem'
 USER_BASE = 'dc=dieterichlab,dc=org'
 LDAP_SEARCH_FILTER = '({name_attribute}={name})'
+attributes = ['cn']
 
 
-def authenticate_ldap(username: str) -> bool:
+def authenticate_ldap(username: str, password: str):
     try:
         tls = Tls(ca_certs_file=CA_FILE, version=PROTOCOL_TLSv1_2)
         server = Server(LDAP_SERVER, get_info=ALL, tls=tls)
         conn = Connection(server, auto_bind=AUTO_BIND_TLS_BEFORE_BIND, raise_exceptions=True)
         conn.bind()
         conn.search(USER_BASE, LDAP_SEARCH_FILTER.format(name_attribute="uid", name=username))
-        if len(conn.entries) == 1:
-            return True
+        if conn.result['result'] == 0:
+            user_dn = conn.response[0]['dn']
+            try:
+                conn = Connection(server, user_dn, password, auto_bind=AUTO_BIND_TLS_BEFORE_BIND)
+                return "User authentication successful!"
+            except core.exceptions.LDAPBindError:
+                print("User authentication failed.")
+                return False
         else:
             return False
     except Exception as e:
@@ -132,23 +140,23 @@ def authenticate_ldap(username: str) -> bool:
 async def login_form(request: Request, error=None):
     return templates.TemplateResponse('login.html', {'request': request, 'error': error})
 
-async def create_session(name: str, response: Response):
+async def create_session(name: str, passw: str, response: Response):
 
     session = uuid4()
-    data = SessionData(username=name)
+    data = SessionData(username=name, password=passw)
     await backend.create(session, data)
     cookie.attach_to_response(response, session)
-    print(session)
 
 
 # Endpoint to authenticate users
 @app.post("/login")
-async def login(request: Request, username: str = Form(...)):
-    if not authenticate_ldap(username=username):
+async def login(request: Request, username: str = Form(...), password: str = Form(...)):
+    if not authenticate_ldap(username=username, password=password):
         error = 'Invalid username or password'
         return templates.TemplateResponse('login.html', {'request': request, 'error': error})
     response = RedirectResponse(url=request.url_for("homepage"), status_code=303)
-    await create_session(username, response)
+    passw = authenticate_ldap(username=username, password=password)
+    await create_session(username, passw, response)
     return response
 
 @app.get("/logging/start_train", dependencies=[Depends(cookie)])
@@ -201,6 +209,7 @@ def submit_job(session_data):
 
 def check_job_status(job_id: str, session_data: SessionData = Depends(verifier)):
     user = session_data.username
+    print(session_data.password)
     while True:
         cmd = ['ssh', '-i', ssh_key, f'{user}@{cluster_name}', f"squeue -j {job_id} -h -t all | awk '{{print $5}}'"]
         status = subprocess.check_output(cmd, shell=False).decode().strip()
@@ -217,6 +226,12 @@ def check_job_status(job_id: str, session_data: SessionData = Depends(verifier))
             for f in files.split("\n"):
                 scp_cmd = ['rsync', '--relative', f'{user}@{cluster_name}:{remote_loc_pet.format(user=user)}{f}', '.']
                 subprocess.run(scp_cmd, check=True)
+                if "final" in f:
+                    scp_cmd = ['scp', '-r', '-i', ssh_key,
+                               f'{user}@{cluster_name}:{remote_loc_pet.format(user=user)}{f.strip("results.json")}',
+                               "./output/final"]
+                    subprocess.run(scp_cmd, check=True)
+
 
             '''Call Results'''
             results()
@@ -353,7 +368,6 @@ async def read_log():
     with open(log_file, "r") as file:
         file.seek(last_pos)
         lines = file.readlines()
-        print(lines)
         last_pos = file.tell()
     with open(last_pos_file, "w") as file:
         file.write(str(last_pos))
@@ -373,7 +387,6 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
                    model_para: str = Form(media_type="multipart/form-data"),
                    file: UploadFile = File(...),
                    template_0: str = Form(media_type="multipart/form-data")):
-
     file_upload = tarfile.open(fileobj=file.file, mode="r:gz")
     file_upload.extractall('./data_uploaded')
     da = await request.form()

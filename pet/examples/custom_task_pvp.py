@@ -33,13 +33,8 @@ class MyTaskPVP(PVP):
 
     # Set this to the verbalizer for the given task: a mapping from the task's labels (which can be obtained using
     # the corresponding DataProcessor's get_labels method) to tokens from the language model's vocabulary
-    VERBALIZER = {
-        "1": ["World"],
-        "2": ["Sports"],
-        "3": ["Business"],
-        "4": ["Tech"]
-    }
-
+    VERBALIZER = {}
+    '''save pattern string as whole string in k, v pairs, e.g. 1: [It was _ .]'''
     PATTERNS = {}
 
     def get_parts(self, example: InputExample):
@@ -51,23 +46,19 @@ class MyTaskPVP(PVP):
 
         # We tell the tokenizer that both text_a and text_b can be truncated if the resulting sequence is longer than
         # our language model's max sequence length.
-        text_a = self.shortenable(example.text_a)
-        text_b = self.shortenable(example.text_b)
+        text = self.shortenable(example.text_a)
 
         # For each pattern_id, we define the corresponding pattern and return a pair of text a and text b (where text b
         # can also be empty).
-        if self.pattern_id == 0:
-            # this corresponds to the pattern [MASK]: a b
-            return [self.mask, ':', text_a, text_b], []
-        elif self.pattern_id == 1:
-            # this corresponds to the pattern [MASK] News: a || (b)
-            return [self.mask, 'News:', text_a], ['(', text_b, ')']
+        if isinstance(self.pattern_id, int):
+            pattern = self.PATTERNS[self.pattern_id]
+            part_a, part_b = pattern.split("_")[0], pattern.split("_")[1]
+            return [f'{part_a.rstrip()}', self.mask, f'{part_b.lstrip()}', text], [] # return fully
         else:
             raise ValueError("No pattern implemented for id {}".format(self.pattern_id))
 
     def verbalize(self, label) -> List[str]:
         return MyTaskPVP.VERBALIZER[label]
-
 
 def report():
     # register the PVP for this task with its name
