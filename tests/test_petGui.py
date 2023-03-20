@@ -12,6 +12,7 @@ import json
 import unittest
 import shutil
 from io import BytesIO
+import mock
 from fastapi import UploadFile
 from unittest.mock import MagicMock, patch
 from os.path import exists
@@ -91,8 +92,9 @@ class TestServer:
     #     assert f"{response.next_request}" == f"{self.client.get('/logging', follow_redirects=False).request}"
 
     def test_logging(self,setting):
-        response = self.client.get("/logging")
-        assert response.status_code == 200
+
+        response = self.client.get("/logging") # call the logging
+        assert response.status_code == 200 # Check if it is
         assert exists("data.json")
         assert exists("output")
         assert exists("templates/next.html")
