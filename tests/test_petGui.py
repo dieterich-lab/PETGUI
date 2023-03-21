@@ -56,7 +56,7 @@ class TestServer:
         assert response.status_code == 303
         assert f"{response.next_request}" == f"{self.client.get('/logging', follow_redirects=False).request}"
         assert exists("logging.txt")
-        assert exists(f"Pet/data_uploaded/{file['file'][0]}")
+        assert exists(f"data_uploaded/{file['file'][0]}")
 
 
     def test_upload_data(self,setting):

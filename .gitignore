@@ -1,5 +1,2 @@
-venv
+venv/
 *__pycache__*
-logging.txt
-data/archive/
-

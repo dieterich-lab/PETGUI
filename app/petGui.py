@@ -14,6 +14,7 @@ from ldap3 import Server, Connection, ALL, Tls, AUTO_BIND_TLS_BEFORE_BIND, core
 from ssl import PROTOCOL_TLSv1_2
 import threading
 import subprocess
+from subprocess import Popen, PIPE
 import time
 from pydantic import BaseModel
 from fastapi import HTTPException, FastAPI, Response, Depends
@@ -23,15 +24,14 @@ from fastapi_sessions.session_verifier import SessionVerifier
 from fastapi_sessions.frontends.implementations import SessionCookie, CookieParameters
 import atexit
 from Pet import script
-import torch
-from transformers import BertTokenizer, BertForSequenceClassification
-import pandas as pd
-
 
 
 class SessionData(BaseModel):
     username: str
-    password: str
+    remote_loc: str
+    remote_loc_pet: str
+    cluster_name = 'cluster.dieterichlab.org'
+
 
 
 cookie_params = CookieParameters()
@@ -102,15 +102,14 @@ def main():
   
 
 @app.get("/whoami", dependencies=[Depends(cookie)])
-async def whoami(session_data: SessionData = Depends(verifier)):
-    return session_data.username
+async def whoami(session_id: UUID = Depends(cookie)):
+    return session_id
 
 
 LDAP_SERVER = 'ldap://ldap2.dieterichlab.org'
 CA_FILE = 'DieterichLab_CA.pem'
 USER_BASE = 'dc=dieterichlab,dc=org'
 LDAP_SEARCH_FILTER = '({name_attribute}={name})'
-attributes = ['cn']
 
 
 def authenticate_ldap(username: str, password: str):
@@ -124,7 +123,7 @@ def authenticate_ldap(username: str, password: str):
             user_dn = conn.response[0]['dn']
             try:
                 conn = Connection(server, user_dn, password, auto_bind=AUTO_BIND_TLS_BEFORE_BIND)
-                return "User authentication successful!"
+                return True
             except core.exceptions.LDAPBindError:
                 print("User authentication failed.")
                 return False
@@ -140,10 +139,12 @@ def authenticate_ldap(username: str, password: str):
 async def login_form(request: Request, error=None):
     return templates.TemplateResponse('login.html', {'request': request, 'error': error})
 
-async def create_session(name: str, passw: str, response: Response):
+async def create_session(user: str, response: Response):
 
     session = uuid4()
-    data = SessionData(username=name, password=passw)
+    remote_loc = f'/home/{user}/{hash(session)}/'
+    remote_loc_pet = f'/home/{user}/{hash(session)}/pet/'
+    data = SessionData(username=user, remote_loc=remote_loc, remote_loc_pet=remote_loc_pet)
     await backend.create(session, data)
     cookie.attach_to_response(response, session)
 
@@ -154,9 +155,9 @@ async def login(request: Request, username: str = Form(...), password: str = For
     if not authenticate_ldap(username=username, password=password):
         error = 'Invalid username or password'
         return templates.TemplateResponse('login.html', {'request': request, 'error': error})
+    os.environ[f"{username}"] = password
     response = RedirectResponse(url=request.url_for("homepage"), status_code=303)
-    passw = authenticate_ldap(username=username, password=password)
-    await create_session(username, passw, response)
+    await create_session(username, response)
     return response
 
 @app.get("/logging/start_train", dependencies=[Depends(cookie)])
@@ -169,84 +170,125 @@ async def run(session_data: SessionData = Depends(verifier)):
     t.start()
 
 
-# Set the SLURM cluster name or IP address
-cluster_name = 'cluster.dieterichlab.org'
-ssh_key = '~/.ssh/id_rsa'
-remote_loc = '/home/{user}/'
-remote_loc_pet = '/home/{user}/pet/'
 
-
-def submit_job(session_data):
+def submit_job(session_data, predict: bool = False):
     # Copy the SLURM script file to the remote cluster
     print("Submitting job..")
+
     user = session_data.username
-    files = ["pet", "data.json", "script.sh", "data_uploaded"]
-    for f in files:
-        if f != "pet":
-            loc = remote_loc_pet
-        else:
-            loc = remote_loc
-        scp_cmd = ['scp', '-r', '-i', ssh_key, f,
-               f'{user}@{cluster_name}:{loc.format(user = user)}']
-        try:
-            subprocess.run(scp_cmd, check=True)
-        except:
-            choice = input(f"Connection to server {cluster_name} failed. \nRetry? (y)es/(n)o?")
-            if choice.lower() in any(["yes", "y"]):
-                subprocess.run(scp_cmd, check=True)
+    remote_loc = session_data.remote_loc
+    remote_loc_pet = session_data.remote_loc_pet
+    cluster_name = session_data.cluster_name
+
+    if predict:
+        ssh_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}',
+                   f'sbatch {remote_loc_pet.format(user=user)}predict.sh {remote_loc.split("/")[-2]}']
+        proc = subprocess.Popen(" ".join(ssh_cmd), env={"SSHPASS": os.environ[f"{user}"]}, shell=True,
+                                stdout=PIPE, stderr=PIPE)
+        outs, errs = proc.communicate()
+        print("Prediction: ", outs)
+        # Get the job ID from the output of the sbatch command
+        job_id = outs.decode('utf-8').strip().split()[-1]
+        check_job_status(job_id, session_data, predict=True)
+    else:
+        scp_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}', f'mkdir {remote_loc}']
+        proc = subprocess.Popen(scp_cmd, env={"SSHPASS": os.environ[f"{user}"]}, shell=False, stdout=PIPE, stderr=PIPE)
+        outs, errs = proc.communicate()
+        print(outs, errs)
+        files = ["pet", "data.json", "train.sh", "data_uploaded", "predict.sh"]
+        for f in files:
+            if f != "pet":
+                loc = remote_loc_pet
             else:
-                print("Stopping process..")
-                os.kill(os.getpid(), 15)
+                loc = remote_loc
+            scp_cmd = ['sshpass', '-e', 'scp', '-r', f,
+                   f'{user}@{cluster_name}:{loc.format(user = user)}']
+            try:
+                proc = subprocess.Popen(" ".join(scp_cmd), env={"SSHPASS": os.environ[f"{user}"]}, shell=True,
+                                        stdout=subprocess.PIPE, stderr=PIPE)
+                outs, errs = proc.communicate()
+                print(outs, errs)
+            except:
+                choice = input(f"Connection to server {cluster_name} failed. \nRetry? (y)es/(n)o?")
+                if choice.lower() in ["yes", "y"]:
+                    subprocess.run(scp_cmd, check=True)
+                else:
+                    print("Stopping process..")
+                    os.kill(os.getpid(), 15)
+        # Submit the SLURM job via SSH
+        ssh_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}',
+                   f'sbatch {remote_loc_pet.format(user=user)}train.sh {remote_loc.split("/")[-2]}']
+        proc = subprocess.Popen(" ".join(ssh_cmd), env={"SSHPASS": os.environ[f"{user}"]}, shell=True,
+                                          stdout=PIPE, stderr=PIPE)
+        outs, errs = proc.communicate()
+        print("Training: ", outs)
+        # Get the job ID from the output of the sbatch command
+        job_id = outs.decode('utf-8').strip().split()[-1]
+        check_job_status(job_id, session_data)
 
-    # Submit the SLURM job via SSH
-    ssh_cmd = ['ssh', '-i', ssh_key, f'{user}@{cluster_name}',
-               f'sbatch {remote_loc_pet.format(user=user)}script.sh']
-    submit_process = subprocess.run(ssh_cmd, check=True, capture_output=True)
-    # Get the job ID from the output of the sbatch command
-    job_id = submit_process.stdout.decode('utf-8').strip().split()[-1]
-    check_job_status(job_id, session_data)
 
-
-def check_job_status(job_id: str, session_data: SessionData = Depends(verifier)):
+def check_job_status(job_id: str, session_data: SessionData = Depends(verifier), predict: bool = False):
     user = session_data.username
-    print(session_data.password)
+    remote_loc = session_data.remote_loc
+    remote_loc_pet = session_data.remote_loc_pet
+    cluster_name = session_data.cluster_name
     while True:
-        cmd = ['ssh', '-i', ssh_key, f'{user}@{cluster_name}', f"squeue -j {job_id} -h -t all | awk '{{print $5}}'"]
-        status = subprocess.check_output(cmd, shell=False).decode().strip()
+        cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}', f"squeue -j {job_id} -h -t all | awk '{{print $5}}'"]
+        proc = subprocess.Popen(" ".join(cmd), env={"SSHPASS": os.environ[f"{user}"]}, shell=True, stdout=PIPE,
+                                stderr=PIPE)
+        outs, errs = proc.communicate()
+        print(outs, errs)
+        status = outs.decode("utf-8").strip().split()[-1]
         if status == "R":
             pass
         elif status == "CD":
-            with open('logging.txt', 'a') as file:
-                file.write('Training Complete\n')
-            ssh_cmd = ['ssh', '-i', ssh_key,
-                       f'{user}@{cluster_name}', f'cd {remote_loc_pet.format(user=user)}',
-                       f'&& find . -name "results.json" -type f']
-            files = subprocess.run(ssh_cmd, check=True, capture_output=True)
-            files = files.stdout.decode("utf-8")
-            for f in files.split("\n"):
-                scp_cmd = ['rsync', '--relative', f'{user}@{cluster_name}:{remote_loc_pet.format(user=user)}{f}', '.']
-                subprocess.run(scp_cmd, check=True)
-                if "final" in f:
-                    scp_cmd = ['scp', '-r', '-i', ssh_key,
-                               f'{user}@{cluster_name}:{remote_loc_pet.format(user=user)}{f.strip("results.json")}',
-                               "./output/final"]
-                    subprocess.run(scp_cmd, check=True)
-
-
-            '''Call Results'''
-            results()
-            return {"status": "finished"}
+            if predict:
+                scp_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}',
+                           f'cat {remote_loc_pet.format(user=user)}predictions.csv', f'> ./output/predictions.csv']
+                proc = subprocess.Popen(" ".join(scp_cmd), env={"SSHPASS": os.environ[f"{user}"]}, shell=True,
+                                        stdout=PIPE,
+                                        stderr=PIPE)
+                outs, errs = proc.communicate()
+                print(outs, errs)
+                return {"status": "finished"}
+            else:
+                with open('logging.txt', 'a') as file:
+                    file.write('Training Complete\n')
+                ssh_cmd = ['sshpass', '-e', 'ssh',
+                           f'{user}@{cluster_name}', f'cd {remote_loc_pet.format(user=user)} '
+                                                     f'&& find . -name "results.json" -type f']
+                proc = subprocess.Popen(ssh_cmd, env={"SSHPASS": os.environ[f"{user}"]}, shell=False, stdout=PIPE,
+                                        stderr=PIPE)
+                outs, errs = proc.communicate()
+                print(outs, errs)
+                files = outs.decode("utf-8")
+                for f in files.rstrip().split("\n"):
+                    print(f)
+                    os.makedirs(f".{f.strip('results.json')}", exist_ok=True)
+                    scp_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}',
+                               f'cat {remote_loc_pet.format(user=user)}{f}', f'> {f}']
+                    proc = subprocess.Popen(" ".join(scp_cmd), env={"SSHPASS": os.environ[f"{user}"]}, shell=True,
+                                            stdout=PIPE,
+                                            stderr=PIPE)
+                    outs, errs = proc.communicate()
+                    print(outs, errs)
+                '''Call Results'''
+                results()
+                return {"status": "finished"}
 
         time.sleep(5)
 
-        ssh_cmd = ['ssh', '-i', ssh_key, f'{user}@{cluster_name}',
-                   f'cat {remote_loc.format(user=user)}{log_file}']
-        log_process = subprocess.run(ssh_cmd, check=True, capture_output=True)
-        log_contents = log_process.stdout.decode('utf-8')
+        ssh_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}',
+                   f'cat /home/{user}/{log_file}']
+        proc = subprocess.Popen(" ".join(ssh_cmd), env={"SSHPASS": os.environ[f"{user}"]}, shell=True, stdout=PIPE,
+                                stderr=PIPE)
+        outs, errs = proc.communicate()
+        log_contents = outs.decode('utf-8')
 
         # Update the log file on the local machine
         with open(f"{log_file}", 'w') as f:
             f.write(log_contents)
+
 
 @app.get("/logging", name="logging", dependencies=[Depends(cookie)])
 async def logging(request: Request):
@@ -279,19 +321,17 @@ def results():
             k = f"Pattern-{i} Iteration 1"
             scores[k] = {"acc": "-", "pre-rec-f1-supp": []}
             final = ""
-        try:
-            with open(f"output/{d}{final}/results.json") as f:
-                json_scores = json.load(f)
-                acc = round(json_scores["test_set_after_training"]["acc"], 2)
-                pre, rec, f1, supp = json_scores["test_set_after_training"]["pre-rec-f1-supp"]
-                labels = [i for i in range(len(pre))]
-                for l in labels:
-                    scores[k]["pre-rec-f1-supp"].append(f"Label: {l} Pre: {round(pre[l], 2)}, Rec: {round(rec[l], 2)},"
-                                                        f"F1: {round(f1[l], 2)}, Supp: {supp[0]}")
-                scores[k]["acc"] = acc
-            scores[k]["pre-rec-f1-supp"] = [round(float(scr), 2) for l in scores.values() for scr in l]
-        except:
-            pass
+        with open(f"output/{d}{final}/results.json") as f:
+            json_scores = json.load(f)
+            acc = round(json_scores["test_set_after_training"]["acc"], 2)
+            pre, rec, f1, supp = json_scores["test_set_after_training"]["pre-rec-f1-supp"]
+            labels = [i for i in range(len(pre))]
+            for l in labels:
+                scores[k]["pre-rec-f1-supp"].append(f"Label: {l} Pre: {round(pre[l], 2)}, Rec: {round(rec[l], 2)},"
+                                                    f"F1: {round(f1[l], 2)}, Supp: {supp[0]}")
+            scores[k]["acc"] = acc
+            #scores[k]["pre-rec-f1-supp"] = [round(float(scr), 2) for l in scores.values() for scr in l]
+
     with open("results.json", "w") as res:
         json.dump(scores, res)
         
@@ -307,7 +347,7 @@ def download():
 
 @app.get("/download_prediction", name="download_prediction")
 def download_predict():
-    return FileResponse("predictions.csv", filename="predictions.csv")
+    return FileResponse("./output/predictions.csv", filename="predictions.csv")
 
 
 def clean():
@@ -324,7 +364,7 @@ def clean():
         elif isdir(path):
             shutil.rmtree(path)
 
-#atexit.register(clean)
+atexit.register(clean)
 
 @app.get("/basic", response_class=HTMLResponse, name='homepage')
 async def get_form(request: Request):
@@ -420,33 +460,13 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
     return RedirectResponse(redirect_url, status_code=303)
 
 
-@app.get("/final/start_prediction")
-async def label_prediction(request: Request):
-    df = pd.read_csv("Pet/data_uploaded/yelp_review_polarity_csv/unlabeled.csv", header=None, names=['label', 'text'])
-    tokenizer = BertTokenizer.from_pretrained('output/final/p0-i0')
-    model = BertForSequenceClassification.from_pretrained('output/final/p0-i0')
-    input_ids = []
-    attention_masks = []
-    for text in df['text']:
-        encoded_dict = tokenizer.encode_plus(
-            text,
-            add_special_tokens=True,
-            max_length=64,
-            pad_to_max_length=True,
-            return_attention_mask=True,
-            return_tensors='pt'
-        )
-        input_ids.append(encoded_dict['input_ids'])
-        attention_masks.append(encoded_dict['attention_mask'])
-    input_ids = torch.cat(input_ids, dim=0)
-    attention_masks = torch.cat(attention_masks, dim=0)
-    labels = torch.tensor(df['label'].values)
-    with torch.no_grad():
-        outputs = model(input_ids, attention_mask=attention_masks)
-    logits = outputs[0]
-    predictions = torch.argmax(logits, dim=1)
-    df['label'] = predictions
-    df.to_csv('predictions.csv', index=False)
+@app.get("/final/start_prediction", dependencies=[Depends(cookie)])
+async def label_prediction(session_data: SessionData = Depends(verifier)):
+    '''Start Predict'''
+    t = threading.Thread(target=submit_job, args=(session_data, True))
+    t.start()
+    t.join()
+
 
 
 

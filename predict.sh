@@ -7,5 +7,5 @@
 
 pwd
 . /beegfs/biosw/petgui/dev/env/bin/activate
-cd pet/
-python3 run.py
+cd "$1"/pet/
+python3 predict.py
