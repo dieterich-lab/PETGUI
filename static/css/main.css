@@ -200,6 +200,7 @@ fieldset, legend {
 li > ol,
 li > ul {
   margin-bottom: 0;
+  text-decoration: none
 }
 
 /**
@@ -426,6 +427,14 @@ h6 {
 
 .btn--green:hover {
   background: #4dae3c;
+}
+
+.btn--orange {
+  background: #d77443;
+}
+
+.btn--orange:hover {
+  background: #cd8738;
 }
 
 .btn--blue {
@@ -787,3 +796,4 @@ input[type = 'button']{
     padding-bottom: 50px;
   }
 }
+

@@ -24,6 +24,7 @@
 
     <!-- Main CSS-->
     <link href="static/css/main.css" rel="stylesheet" media="all">
+
 </head>
 
 <body>
@@ -77,24 +78,60 @@ text-align: start;
 });
                 </script>
                 <script>
-                    function startPrediction() {
-  fetch('/final/start_prediction')
-    .then(response => response.json())
-    .then(data => console.log(data))
-    .catch(error => console.error(error));
-}
+    function disableButton(buttonId) {
+		    document.getElementById(buttonId).disabled = true;
+		}
+
+    function showLoading(spinnerId) {
+			document.getElementById(spinnerId).style.display = "block";
+		}
+	function hideLoading(spinnerId) {
+			document.getElementById(spinnerId).style.display = "none";
+		}
+    function changeButtonColor(buttonId, color) {
+			document.getElementById(buttonId).setAttribute("class", "btn btn--radius-2 btn--"+color);
+		}
+
+    function changeButtonText(buttonId, text) {
+            const button = document.getElementById(buttonId);
+            button.textContent = text;
+     }
+
                 </script>
 
     <div class="card-body" id="container">
-        <button class="btn btn--radius-2 btn--red" id="mycontain" onclick="startPrediction()">Predict labels using PET Model</button>
-        <div id="status"></div>
+        <button class="btn btn--radius-2 btn--red" id="mycontain" onclick="startPrediction(); disableButton(id)">Predict labels using PET Model</button>
     </div>
+    <div id="loading" style="display: none;">
+      <div class="spinner"></div>
+    </div>
+                        <style>
+        .spinner {
+  position: relative;
+  top: 90%;
+  left: 50%;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-left-color: #636767;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+    </style>
     <script>
         function startPrediction() {
-            document.getElementById("status").innerHTML = "Prediction started";
+            changeButtonText("mycontain", "Prediction Started..");
+            showLoading("loading");
             fetch('/final/start_prediction')
                 .then(response => {
-                    document.getElementById("status").innerHTML = "Prediction finished";
+                    hideLoading("loading");
+                    changeButtonColor("mycontain", "blue");
+                    changeButtonText("mycontain", "Prediction Finished");
                 });
         }
     </script>

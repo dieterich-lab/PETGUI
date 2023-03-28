@@ -23,7 +23,6 @@ from fastapi_sessions.backends.implementations import InMemoryBackend
 from fastapi_sessions.session_verifier import SessionVerifier
 from fastapi_sessions.frontends.implementations import SessionCookie, CookieParameters
 import atexit
-from Pet import script
 
 
 class SessionData(BaseModel):
@@ -102,7 +101,12 @@ def main():
   
 
 @app.get("/whoami", dependencies=[Depends(cookie)])
-async def whoami(session_id: UUID = Depends(cookie)):
+async def whoami(request: Request, session_id: UUID = Depends(cookie)):
+    return who(session_id)
+    #return RedirectResponse(request.url_for("who"), status_code=303)
+
+@app.get("/who", dependencies=[Depends(cookie)], name="who")
+def who(session_id: UUID = Depends(cookie)):
     return session_id
 
 
@@ -161,17 +165,17 @@ async def login(request: Request, username: str = Form(...), password: str = For
     return response
 
 @app.get("/logging/start_train", dependencies=[Depends(cookie)])
-async def run(session_data: SessionData = Depends(verifier)):
+async def run(session_data: SessionData = Depends(verifier), session_id: UUID = Depends(cookie)):
     """
     Kicks off PET by calling train method.
     """
     '''Start PET'''
-    t = threading.Thread(target=submit_job, args=(session_data,))
+    t = threading.Thread(target=submit_job, args=(session_data, False, session_id))
     t.start()
 
 
-
-def submit_job(session_data, predict: bool = False):
+@app.get("/submit_job", dependencies=[Depends(cookie)])
+def submit_job(session_data, predict: bool = False, session_id: UUID = Depends(cookie)):
     # Copy the SLURM script file to the remote cluster
     print("Submitting job..")
 
@@ -183,28 +187,32 @@ def submit_job(session_data, predict: bool = False):
     if predict:
         ssh_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}',
                    f'sbatch {remote_loc_pet.format(user=user)}predict.sh {remote_loc.split("/")[-2]}']
-        proc = subprocess.Popen(" ".join(ssh_cmd), env={"SSHPASS": os.environ[f"{user}"]}, shell=True,
+        proc = subprocess.Popen(ssh_cmd, env={"SSHPASS": os.environ[f"{user}"]}, shell=False,
                                 stdout=PIPE, stderr=PIPE)
         outs, errs = proc.communicate()
         print("Prediction: ", outs)
         # Get the job ID from the output of the sbatch command
         job_id = outs.decode('utf-8').strip().split()[-1]
-        check_job_status(job_id, session_data, predict=True)
+        check_job_status(job_id, session_data, True, session_id)
     else:
         scp_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}', f'mkdir {remote_loc}']
         proc = subprocess.Popen(scp_cmd, env={"SSHPASS": os.environ[f"{user}"]}, shell=False, stdout=PIPE, stderr=PIPE)
         outs, errs = proc.communicate()
         print(outs, errs)
+        dir = hash(session_id)
+        print(dir)
         files = ["pet", "data.json", "train.sh", "data_uploaded", "predict.sh"]
+        files = [str(dir)+"/"+f if f == "data.json" or f == "data_uploaded" else f for f in files]
+        print(files)
         for f in files:
-            if f != "pet":
+            if "pet" not in f:
                 loc = remote_loc_pet
             else:
                 loc = remote_loc
             scp_cmd = ['sshpass', '-e', 'scp', '-r', f,
                    f'{user}@{cluster_name}:{loc.format(user = user)}']
             try:
-                proc = subprocess.Popen(" ".join(scp_cmd), env={"SSHPASS": os.environ[f"{user}"]}, shell=True,
+                proc = subprocess.Popen(scp_cmd, env={"SSHPASS": os.environ[f"{user}"]}, shell=False,
                                         stdout=subprocess.PIPE, stderr=PIPE)
                 outs, errs = proc.communicate()
                 print(outs, errs)
@@ -218,23 +226,24 @@ def submit_job(session_data, predict: bool = False):
         # Submit the SLURM job via SSH
         ssh_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}',
                    f'sbatch {remote_loc_pet.format(user=user)}train.sh {remote_loc.split("/")[-2]}']
-        proc = subprocess.Popen(" ".join(ssh_cmd), env={"SSHPASS": os.environ[f"{user}"]}, shell=True,
+        proc = subprocess.Popen(ssh_cmd, env={"SSHPASS": os.environ[f"{user}"]}, shell=False,
                                           stdout=PIPE, stderr=PIPE)
         outs, errs = proc.communicate()
         print("Training: ", outs)
         # Get the job ID from the output of the sbatch command
         job_id = outs.decode('utf-8').strip().split()[-1]
-        check_job_status(job_id, session_data)
+        check_job_status(job_id, session_data, False, session_id)
 
-
-def check_job_status(job_id: str, session_data: SessionData = Depends(verifier), predict: bool = False):
+@app.get("/check_job_status", dependencies=[Depends(cookie)])
+def check_job_status(job_id: str, session_data: SessionData = Depends(verifier), predict: bool = False,
+                     session_id: UUID = Depends(cookie)):
     user = session_data.username
     remote_loc = session_data.remote_loc
     remote_loc_pet = session_data.remote_loc_pet
     cluster_name = session_data.cluster_name
     while True:
         cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}', f"squeue -j {job_id} -h -t all | awk '{{print $5}}'"]
-        proc = subprocess.Popen(" ".join(cmd), env={"SSHPASS": os.environ[f"{user}"]}, shell=True, stdout=PIPE,
+        proc = subprocess.Popen(cmd, env={"SSHPASS": os.environ[f"{user}"]}, shell=False, stdout=PIPE,
                                 stderr=PIPE)
         outs, errs = proc.communicate()
         print(outs, errs)
@@ -244,7 +253,7 @@ def check_job_status(job_id: str, session_data: SessionData = Depends(verifier),
         elif status == "CD":
             if predict:
                 scp_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}',
-                           f'cat {remote_loc_pet.format(user=user)}predictions.csv', f'> ./output/predictions.csv']
+                           f'cat {remote_loc_pet.format(user=user)}predictions.csv', f'> {hash(session_id)}/output/predictions.csv']
                 proc = subprocess.Popen(" ".join(scp_cmd), env={"SSHPASS": os.environ[f"{user}"]}, shell=True,
                                         stdout=PIPE,
                                         stderr=PIPE)
@@ -252,7 +261,7 @@ def check_job_status(job_id: str, session_data: SessionData = Depends(verifier),
                 print(outs, errs)
                 return {"status": "finished"}
             else:
-                with open('logging.txt', 'a') as file:
+                with open(f'{hash(session_id)}/logging.txt', 'a') as file:
                     file.write('Training Complete\n')
                 ssh_cmd = ['sshpass', '-e', 'ssh',
                            f'{user}@{cluster_name}', f'cd {remote_loc_pet.format(user=user)} '
@@ -263,30 +272,32 @@ def check_job_status(job_id: str, session_data: SessionData = Depends(verifier),
                 print(outs, errs)
                 files = outs.decode("utf-8")
                 for f in files.rstrip().split("\n"):
-                    print(f)
-                    os.makedirs(f".{f.strip('results.json')}", exist_ok=True)
+                    f = f.lstrip("./")
+                    os.makedirs(f"{hash(session_id)}/{f.rstrip('results.json')}", exist_ok=True)
+                    while not os.path.exists(f"{hash(session_id)}/{f.rstrip('results.json')}"):
+                        time.sleep(1)
                     scp_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}',
-                               f'cat {remote_loc_pet.format(user=user)}{f}', f'> {f}']
+                               f'cat {remote_loc_pet.format(user=user)}{f} > {hash(session_id)}/{f}']
                     proc = subprocess.Popen(" ".join(scp_cmd), env={"SSHPASS": os.environ[f"{user}"]}, shell=True,
                                             stdout=PIPE,
                                             stderr=PIPE)
                     outs, errs = proc.communicate()
                     print(outs, errs)
                 '''Call Results'''
-                results()
-                return {"status": "finished"}
+                results(session_id)
+                return {"Pet": "finished"}
 
         time.sleep(5)
 
         ssh_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}',
-                   f'cat /home/{user}/{log_file}']
-        proc = subprocess.Popen(" ".join(ssh_cmd), env={"SSHPASS": os.environ[f"{user}"]}, shell=True, stdout=PIPE,
+                   f'cat /home/{user}{log_file.format(session_id="")}']
+        proc = subprocess.Popen(ssh_cmd, env={"SSHPASS": os.environ[f"{user}"]}, shell=False, stdout=PIPE,
                                 stderr=PIPE)
         outs, errs = proc.communicate()
         log_contents = outs.decode('utf-8')
 
         # Update the log file on the local machine
-        with open(f"{log_file}", 'w') as f:
+        with open(f"{log_file.format(session_id=hash(session_id))}", 'w') as f:
             f.write(log_contents)
 
 
@@ -300,28 +311,28 @@ async def get_final_template(request: Request):
     return templates.TemplateResponse("final_page.html", {"request": request})
 
 
-
-def results():
+@app.get("/results", dependencies=[Depends(cookie)])
+def results(session_id: UUID = Depends(cookie)):
     """
     Saves results.json for each pattern-iteration pair of output/final directory in a dictionary.
     Returns:
         html page with results & homepage redirection buttons
     """
-    dirs = next(os.walk("output/"))[1]
+    dirs = next(os.walk(f"{hash(session_id)}/output/"))[1]
     scores = {}
     for i, d in enumerate(dirs, 1):
         final = ""
         if "final" in d:
             k = "Final"
             scores[k] = {"acc": "-", "pre-rec-f1-supp": []}
-            finals = next(os.walk("output/final/"))[1]
+            finals = next(os.walk(f"{hash(session_id)}/output/final/"))[1]
             assert len(finals) == 1
             final += f"/{finals[0]}"
         else:
             k = f"Pattern-{i} Iteration 1"
             scores[k] = {"acc": "-", "pre-rec-f1-supp": []}
             final = ""
-        with open(f"output/{d}{final}/results.json") as f:
+        with open(f"{hash(session_id)}/output/{d}{final}/results.json") as f:
             json_scores = json.load(f)
             acc = round(json_scores["test_set_after_training"]["acc"], 2)
             pre, rec, f1, supp = json_scores["test_set_after_training"]["pre-rec-f1-supp"]
@@ -332,31 +343,32 @@ def results():
             scores[k]["acc"] = acc
             #scores[k]["pre-rec-f1-supp"] = [round(float(scr), 2) for l in scores.values() for scr in l]
 
-    with open("results.json", "w") as res:
+    with open(f"{hash(session_id)}/results.json", "w") as res:
         json.dump(scores, res)
         
 
-@app.get("/download", name="download")
-def download():
+@app.get("/download", name="download", dependencies=[Depends(cookie)])
+def download(session_id: UUID = Depends(cookie)):
     """
     Returns:
          final dict, e.g.: dict={p0-i0: {acc: 0.5, ...}, ...}
     """
-    return FileResponse("results.json", filename="results.json")
+    return FileResponse(f"{hash(session_id)}/results.json", filename="results.json")
 
 
-@app.get("/download_prediction", name="download_prediction")
-def download_predict():
-    return FileResponse("./output/predictions.csv", filename="predictions.csv")
+@app.get("/download_prediction", name="download_prediction", dependencies=[Depends(cookie)])
+def download_predict(session_id: UUID = Depends(cookie)):
+    return FileResponse(f"{hash(session_id)}/output/predictions.csv", filename="predictions.csv")
 
 
-def clean():
+@app.get("/clean", name="clean", dependencies=[Depends(cookie)])
+def clean(session_id: UUID = Depends(cookie)):
     """
     Iterates over created paths during PET and unlinks them.
     Returns:
         redirection to homepage
     """
-    paths = ["logging.txt", "last_pos.txt", "output", "results.json", "data.json", "data_uploaded"]
+    paths = ["logging.txt", "last_pos.txt", "output", "results.json", "data.json", "data_uploaded", f"{hash(session_id)}"]
     for path in paths:
         file_path = pathlib.Path(path)
         if isfile(path):
@@ -377,14 +389,12 @@ def read_item(request: Request):
     return templates.TemplateResponse("progress.html", {"request": request, "max_num": max_num})
 
 
-
-@app.post("/uploadfile/")
-async def create_upload_file(file: UploadFile = File(...)):
+@app.post("/uploadfile/", dependencies=[Depends(cookie)])
+async def create_upload_file(file: UploadFile = File(...), session_id: UUID = Depends(cookie)):
     """
     Upload function for the final page
     """
-
-    upload_folder = "./data_uploaded/unlabeled"
+    upload_folder = f"{hash(session_id)}/data_uploaded/unlabeled"
     os.makedirs(upload_folder, exist_ok=True)
     file_path = os.path.join(upload_folder, file.filename)
     with open(file_path, "wb") as file_object:
@@ -392,32 +402,37 @@ async def create_upload_file(file: UploadFile = File(...)):
     return {"filename": file.filename, "path": file_path}
 
 
-log_file = "logging.txt"
-last_pos_file = "last_pos.txt"
+log_file = "{session_id}/logging.txt"
 
-# Initialize last_pos to the value stored in last_pos.txt, or 0 if the file does not exist
-if os.path.exists(last_pos_file):
-    with open(last_pos_file, "r") as file:
-        last_pos = int(file.read())
-else:
-    last_pos = 0
 
-@app.get("/log", name = "log")
-async def read_log():
+@app.get("/log", name = "log", dependencies=[Depends(cookie)])
+async def read_log(session_id: UUID = Depends(cookie), initial: bool = False):
     global last_pos
-    with open(log_file, "r") as file:
-        file.seek(last_pos)
-        lines = file.readlines()
-        last_pos = file.tell()
-    with open(last_pos_file, "w") as file:
-        file.write(str(last_pos))
-    info_lines = [line.strip() for line in lines if any(
-        word in line for word in ["Creating", "Returning", "Saving", "Starting evaluation", "Training Complete"])]
-    #redis_conn.set("last_pos", last_pos)  # update last_pos in Redis
-    return {"log": info_lines}
+    if initial:
+        # Initialize last_pos to the value stored in last_pos.txt, or 0 if the file does not exist
+        if os.path.exists(last_pos_file):
+            with open(last_pos_file.format(session_id=hash(session_id)), "r") as file:
+                last_pos = int(file.read())
+        else:
+            last_pos = 0
+            f = open(log_file.format(session_id=hash(session_id)), "x")
+    else:
+        with open(log_file.format(session_id=hash(session_id)), "r") as file:
+            file.seek(last_pos)
+            lines = file.readlines()
+            last_pos = file.tell()
+        with open(last_pos_file.format(session_id=hash(session_id)), "w") as file:
+            file.write(str(last_pos))
+        info_lines = [line.strip() for line in lines if any(
+            word in line for word in ["Creating", "Returning", "Saving", "Starting evaluation", "Training Complete"])]
+        #redis_conn.set("last_pos", last_pos)  # update last_pos in Redis
+        return {"log": info_lines}
 
 
-@app.post("/basic", name="homepage")
+last_pos_file = "{session_id}/last_pos.txt"
+
+
+@app.post("/basic", name="homepage", dependencies=[Depends(cookie)])
 async def get_form(request: Request, sample: str = Form(media_type="multipart/form-data"),
                    label: str = Form(media_type="multipart/form-data"),
                    origin_0: str = Form(media_type="multipart/form-data"),
@@ -426,9 +441,12 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
                    mapping_1: str = Form(media_type="multipart/form-data"),
                    model_para: str = Form(media_type="multipart/form-data"),
                    file: UploadFile = File(...),
-                   template_0: str = Form(media_type="multipart/form-data")):
+                   template_0: str = Form(media_type="multipart/form-data"),
+                   session_id: UUID = Depends(cookie)):
+    os.makedirs(f"./{hash(session_id)}", exist_ok=True)   # If run with new conf.
+    await read_log(session_id, initial=True)
     file_upload = tarfile.open(fileobj=file.file, mode="r:gz")
-    file_upload.extractall('./data_uploaded')
+    file_upload.extractall(f'{hash(session_id)}/data_uploaded')
     da = await request.form()
     da = jsonable_encoder(da)
     #template_0 = da["template_0"]
@@ -451,30 +469,17 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
         mapping_key = f"mapping_{str(mapping_counter)}"
         para_dic[mapping_key] = da[mapping_key]
         mapping_counter = mapping_counter+1
-    with open('data.json', 'w') as f:
+    with open(f'{hash(session_id)}/data.json', 'w') as f:
         json.dump(para_dic, f)
-    global last_pos
-    last_pos = 0
     redirect_url = request.url_for('logging')
     print(para_dic)
     return RedirectResponse(redirect_url, status_code=303)
 
 
 @app.get("/final/start_prediction", dependencies=[Depends(cookie)])
-async def label_prediction(session_data: SessionData = Depends(verifier)):
+async def label_prediction(session_data: SessionData = Depends(verifier), session_id: UUID = Depends(cookie)):
     '''Start Predict'''
-    t = threading.Thread(target=submit_job, args=(session_data, True))
+    t = threading.Thread(target=submit_job, args=(session_data, True, session_id))
     t.start()
     t.join()
-
-
-
-
-def train(file, templates):
-    """
-    Starts training+testing with params and data_uploaded in Pet directory.
-    """
-    instance = script.Script("pet", templates, f"Pet/data_uploaded/{file}/", "bert", "bert-base-cased",
-                             "yelp-task", "./output")  # set defined task names
-    instance.run()
 

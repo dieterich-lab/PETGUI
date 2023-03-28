@@ -24,17 +24,71 @@
 
     <!-- Main CSS-->
     <link href="static/css/main.css" rel="stylesheet" media="all">
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <!-- Local CSS-->
+    <link rel="stylesheet" href="static/css/main.css">
 
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <style>
+        .spinner {
+  position: relative;
+  top: 50%;
+  left: 50%;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-left-color: #636767;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+  ul {
+    list-style-type: disc;
+    margin-left: 20px;
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    color: #333333;
+    text-decoration: none; /* remove underlining from list items */
+  }
+
+    li {
+    margin-bottom: 10px; /* add some spacing between list items */
+    text-decoration: none;
+    }
+
+
+    </style>
 </head>
 
  <script>
-     function startTraining() {
-         const logList = document.getElementById("logList");
-         logList.innerHTML = "<li>Training Started</li>"; // display "Training Started" message
-         refreshLog();
-         setInterval(refreshLog, 10000);
+    function showLoading() {
+			document.getElementById("loading").style.display = "block";
+		}
+	function hideLoading() {
+			document.getElementById("loading").style.display = "none";
+		}
+    function changeButtonColor(buttonId, color) {
+			document.getElementById(buttonId).setAttribute("class", "btn btn--radius-2 btn--"+color);
+		}
+
+    function changeButtonText(buttonId, text) {
+            const button = document.getElementById(buttonId);
+            button.textContent = text;
      }
+
+     function startTraining() {
+         changeButtonText("trainButton", "Training Starting..");
+         refreshLog();
+         const intervalId = setInterval(refreshLog, 10000);
+     }
+
+     function disableButton() {
+			document.getElementById("trainButton").disabled = true;
+		}
 
      function refreshLog() {
          fetch("/log")
@@ -44,8 +98,20 @@
                      data.log.forEach(line => {
                          const li = document.createElement("li");
                          li.textContent = line;
+                         li.style.textDecoration = "none";
                          logList.appendChild(li);
+                         if (li.textContent.includes('Training Complete')) {
+                            changeButtonColor("trainButton", "green");
+                            changeButtonText("trainButton", "Training Complete");
+                            clearInterval(intervalId);
+                            return;
+                            }
                      });
+                     if (logList.childElementCount >= 1) {
+                            hideLoading();
+                            changeButtonColor("trainButton", "blue");
+                            changeButtonText("trainButton", "Training Started");
+                            }
                  });
      }
  </script>
@@ -156,6 +222,7 @@ tr:nth-child(even) {
      #logList {
          height: 100px;
          overflow: auto;
+         text-decoration: none;
      }
  </style>
 <script>
@@ -181,10 +248,13 @@ tr:nth-child(even) {
                 </div>
                      <div class="card-body" id="container">
       <a href="#" id="test">
-       <button onclick="startTraining()" class="btn btn--radius-2 btn--red">
+       <button id="trainButton" onclick="startTraining(); disableButton(); showLoading()" class="btn btn--radius-2 btn--red">
         Start Training
        </button>
        <ul id="logList"></ul>
+<div id="loading" style="display: none;">
+  <div class="spinner"></div>
+</div>
       </a>
 <script>
 function updateProgress(progressBarElement, progressBarMessageElement, progress) {
@@ -217,7 +287,7 @@ text-align: start;
 
   <div class="card-body" id="table-container">
        <button onclick="loadJSON()" class="btn btn--radius-2 btn--red">
-         Download Result
+         Show Results
       </button>
 
   <p id='showData'></p>
