@@ -1,6 +1,5 @@
 import io
 import sys
-
 from fastapi.testclient import TestClient
 from app.petGui import app
 from app.petGui import train
@@ -18,6 +17,11 @@ from fastapi import UploadFile
 from unittest.mock import MagicMock, patch
 from os.path import exists
 from app.petGui import results
+from transformers import BertTokenizer
+import os
+import tempfile
+import asyncio
+
 
 class TestServer:
     @pytest.fixture()
@@ -35,7 +39,7 @@ class TestServer:
             "mapping_1": "good",
             "model_para": "gbert-base"
         }
-        self.file_path = "data.json" #
+        self.file_path = "data.json"
         self.client = TestClient(app)
 
     def test_home(self, setting):
@@ -62,8 +66,8 @@ class TestServer:
         assert exists(f"data_uploaded/{file['file'][0]}")
 
 
-    def test_upload_data(self,setting):
-        directory = "data/yelp_review_polarity_csv"
+    # def test_upload_data(self,setting):
+    #     directory = "data/yelp_review_polarity_csv"
 
 
     # def test_upload_data(self,setting):
@@ -293,65 +297,72 @@ class TestServer:
         assert response.status_code == 200
         assert response.json() == {"message": "Predictions generated successfully."}
 
-    @mock.patch('builtins.open', mock.mock_open(read_data=json.dumps({
-        "test_set_after_training": {
-            "acc": 0.9,
-            "pre-rec-f1-supp": [
-                [0.8, 0.7, 0.75, 100],
-                [0.9, 0.8, 0.85, 150]
-            ]
-        }
-    })))
-    @mock.patch('os.walk')
-    def test_results_function(self, mock_walk):
-        mock_walk.return_value = ("output/", ["final", "pattern-1"], [])
-        mock_walk.side_effect = [
-            ("output/final/", [], []),
-            ("output/pattern-1/", ["iteration-1"], []),
-            ("output/pattern-1/iteration-1", [], ["results.json"]),
-        ]
-        result = results()
-
-        expected_scores = {
-            "Final": {
+    def test_results(self):
+        # Mock the os.walk and open functions to simulate the directory structure and results.json content
+        with mock.patch('os.walk') as mock_walk, mock.patch('builtins.open', mock.mock_open(read_data=json.dumps({
+            "test_set_after_training": {
                 "acc": 0.9,
                 "pre-rec-f1-supp": [
-                    "Label: 0 pre: 0.8, rec: 0.7, f1: 0.75, supp: 100",
-                    "Label: 1 pre: 0.9, rec: 0.8, f1: 0.85, supp: 100"
-                ]
-            },
-            "Pattern-1 Iteration 1": {
-                "acc": 0.9,
-                "pre-rec-f1-supp": [
-                    "Label: 0 pre: 0.8, rec: 0.7, f1: 0.75, supp: 100",
-                    "Label: 1 pre: 0.9, rec: 0.8, f1: 0.85, supp: 100"
+                    [0.8, 0.7, 0.75, 100],
+                    [0.9, 0.8, 0.85, 150]
                 ]
             }
-        }
+        }))):
+            mock_walk.return_value = ("output/", ["final", "pattern-1"], [])
+            mock_walk.side_effect = [
+                ("output/final/", [], []),
+                ("output/pattern-1/", ["iteration-1"], []),
+                ("output/pattern-1/iteration-1", [], ["results.json"]),
+            ]
 
-        assert result == expected_scores
+            # Call the results function
+            result = results()
+
+            # Define the expected output
+            expected_scores = {
+                "Final": {
+                    "acc": 0.9,
+                    "pre-rec-f1-supp": [
+                        "Label: 0 pre: 0.8, rec: 0.7, f1: 0.75, supp: 100",
+                        "Label: 1 pre: 0.9, rec: 0.8, f1: 0.85, supp: 150"
+                    ]
+                },
+                "Pattern-1 Iteration 1": {
+                    "acc": 0.9,
+                    "pre-rec-f1-supp": [
+                        "Label: 0 pre: 0.8, rec: 0.7, f1: 0.75, supp: 100",
+                        "Label: 1 pre: 0.9, rec: 0.8, f1: 0.85, supp: 150"
+                    ]
+                }
+            }
+
+            # Assert that the result matches the expected output
+            assert result == expected_scores
 
 
-    #
-    # def test_create_upload_file(self,setting):
-    #     # make sure upload folder exists and is empty
-    #     test_file_content = b"test file content"
-    #     test_file = UploadFile(filename="test.csv", file=BytesIO(test_file_content))
-    #     upload_folder = "./Pet/data_uploaded/unlabeled"
-    #     os.makedirs(upload_folder, exist_ok=True)
-    #     shutil.rmtree(upload_folder)
-    #     os.makedirs(upload_folder, exist_ok=True)
-    #
-    #     # call the API endpoint with the test file
-    #     response = self.client.post("/uploadfile/", files={"file": test_file})
-    #
-    #     # check that the API returned the expected response
-    #     assert response.status_code == 200
-    #     assert response.json() == {"filename": "test.csv", "path": os.path.join(upload_folder, "test.csv")}
-    #
-    #     # check that the file was actually saved to the upload folder
-    #     with open(os.path.join(upload_folder, "test.csv"), "rb") as f:
-    #         assert f.read() == test_file_content
+    def test_create_upload_file(self):
+        # Create a temporary file for testing
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            temp_file.write(b"Test content")
+            temp_file.seek(0)
+
+            # Create a test UploadFile object
+            test_upload_file = UploadFile(temp_file.name, file=temp_file)
+
+            # Call the create_upload_file function
+            result = asyncio.run(create_upload_file(file=test_upload_file))
+
+            # Define the expected output
+            expected_result = {
+                "filename": temp_file.name,
+                "path": os.path.join("./data_uploaded/unlabeled", temp_file.name)
+            }
+
+            # Assert that the result matches the expected output
+            assert result == expected_result
+
+            # Clean up the temporary file
+            os.remove(temp_file.name)
 
 
 
