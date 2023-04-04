@@ -41,9 +41,9 @@ class TestServer:
         }
         self.file_path = "data.json"
         self.client = TestClient(app)
-        self.client.cookies.set("cookie_name", "valid_cookie")
-        yield
-        self.client.close()
+        # self.client.cookies.set("cookie_name", "valid_cookie")
+        # yield
+        # self.client.close()
 
     # @mock.patch('app.login.authenticate_ldap')
     # @mock.patch('app.login.create_session')
