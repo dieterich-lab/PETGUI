@@ -42,6 +42,29 @@ class TestServer:
         self.file_path = "data.json"
         self.client = TestClient(app)
 
+    @mock.patch('app.login.authenticate_ldap')
+    @mock.patch('app.login.create_session')
+    async def test_login(self, mock_create_session, mock_authenticate_ldap):
+        mock_authenticate_ldap.return_value = True
+        mock_create_session.return_value = None
+        response = await self.client.post("/login", data={"username": "testuser", "password": "testpass"})
+        assert response.status_code == 303
+        assert response.url == "/homepage"
+        assert "testuser" in os.environ
+        assert os.environ["testuser"] == "testpass"
+    # @patch('__main__.authenticate', return_value=True)
+    # def test_login_successful(self, mock_authenticate):
+    #     response = client.post("/login", json={"username": "johndoe", "password": "password123"})
+    #     assert response.status_code == 200
+    #     assert response.json() == {"message": "Login successful"}
+    #
+    # @patch('__main__.authenticate', return_value=False)
+    # def test_login_failed(self, mock_authenticate):
+    #     response = self.client.post("/login", json={"username": "johndoe", "password": "incorrect_password"})
+    #     assert response.status_code == 200
+    #     assert response.json() == {"message": "Login successful"}
+
+
     def test_home(self, setting):
         response = self.client.get("/")
         assert response.status_code == 200
