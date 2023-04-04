@@ -41,6 +41,7 @@ class TestServer:
         }
         self.file_path = "data.json"
         self.client = TestClient(app)
+        self.cookie = {"cookie_name": "valid_cookie"}
 
     # @mock.patch('app.login.authenticate_ldap')
     # @mock.patch('app.login.create_session')
@@ -82,6 +83,8 @@ class TestServer:
             data=self.metadata,
             files=file,
             follow_redirects=False,
+            cookies=self.cookie
+
         )
         assert response.status_code == 303
         assert f"{response.next_request}" == f"{self.client.get('/logging', follow_redirects=False).request}"
@@ -121,8 +124,8 @@ class TestServer:
     #     assert f"{response.next_request}" == f"{self.client.get('/logging', follow_redirects=False).request}"
 
     def test_logging(self,setting):
-        cookie = {"cookie_name": "valid_cookie"}
-        response = self.client.get("/logging",cookies=cookie) # call the logging
+
+        response = self.client.get("/logging",cookies=self.cookie) # call the logging
         assert response.status_code == 200 # Check if it is
         assert exists("data.json")
         assert exists("output")
@@ -131,7 +134,7 @@ class TestServer:
 
 
     def test_results(self, setting):
-        response = self.client.get("/results")
+        response = self.client.get("/results",cookies=self.cookie)
         assert response.template.name == "next.html"
 
     # def test_logging(self, setting):
@@ -171,7 +174,7 @@ class TestServer:
         # Call the endpoint
 
 
-        response = self.client.get("/log")
+        response = self.client.get("/log",cookies=self.cookie)
 
 
         # Check the response
@@ -227,7 +230,7 @@ class TestServer:
             json.dump(test_dict, f)
 
         # Make a GET request to the /download endpoint
-        response = self.client.get("/download")
+        response = self.client.get("/download",cookies=self.cookie)
 
         # Check that the response status code is 200 OK
         assert response.status_code == 200
@@ -258,7 +261,7 @@ class TestServer:
         # Call the API
         with open(self.file_path,"w") as file:
             json.dump(self.metadata, file)
-        response = self.client.get("/logging/start_train")
+        response = self.client.get("/logging/start_train",cookies=self.cookie)
 
         # Verify the response status code is 200
         assert response.status_code == 200
@@ -272,7 +275,7 @@ class TestServer:
         #     range(len(data.keys())) - 3))  # Exclude "file", "model_para", and "label" keys from template_cnt
 
     def test_get_final_template(self,setting):
-        response = self.client.get("/final")
+        response = self.client.get("/final",cookies=self.cookie)
         assert response.status_code == 200
 
     def test_predictions(self,setting):
