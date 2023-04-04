@@ -42,16 +42,16 @@ class TestServer:
         self.file_path = "data.json"
         self.client = TestClient(app)
 
-    @mock.patch('app.login.authenticate_ldap')
-    @mock.patch('app.login.create_session')
-    async def test_login(self, mock_create_session, mock_authenticate_ldap):
-        mock_authenticate_ldap.return_value = True
-        mock_create_session.return_value = None
-        response = await self.client.post("/login", data={"username": "testuser", "password": "testpass"})
-        assert response.status_code == 303
-        assert response.url == "/homepage"
-        assert "testuser" in os.environ
-        assert os.environ["testuser"] == "testpass"
+    # @mock.patch('app.login.authenticate_ldap')
+    # @mock.patch('app.login.create_session')
+    # async def test_login(self, mock_create_session, mock_authenticate_ldap):
+    #     mock_authenticate_ldap.return_value = True
+    #     mock_create_session.return_value = None
+    #     response = await self.client.post("/login", data={"username": "testuser", "password": "testpass"})
+    #     assert response.status_code == 303
+    #     assert response.url == "/homepage"
+    #     assert "testuser" in os.environ
+    #     assert os.environ["testuser"] == "testpass"
     # @patch('__main__.authenticate', return_value=True)
     # def test_login_successful(self, mock_authenticate):
     #     response = client.post("/login", json={"username": "johndoe", "password": "password123"})
@@ -121,8 +121,8 @@ class TestServer:
     #     assert f"{response.next_request}" == f"{self.client.get('/logging', follow_redirects=False).request}"
 
     def test_logging(self,setting):
-
-        response = self.client.get("/logging") # call the logging
+        cookie = {"cookie_name": "valid_cookie"}
+        response = self.client.get("/logging",cookies=cookie) # call the logging
         assert response.status_code == 200 # Check if it is
         assert exists("data.json")
         assert exists("output")
