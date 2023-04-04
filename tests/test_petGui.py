@@ -77,6 +77,7 @@ class TestServer:
             data = io.BytesIO(f.read())
 
         file = {"file": ("yelp_review_polarity_csv", data, "multipart/form-data")}
+        self.client.cookies.set("cookie_name", "valid_cookie")
         prep = self.client.get("/basic")
         assert prep.status_code == 200
 
@@ -125,7 +126,7 @@ class TestServer:
     #     assert f"{response.next_request}" == f"{self.client.get('/logging', follow_redirects=False).request}"
 
     def test_logging(self,setting):
-
+        self.client.cookies.set("cookie_name", "valid_cookie")
         response = self.client.get("/logging") # call the logging
         assert response.status_code == 200 # Check if it is
         assert exists("data.json")
@@ -174,7 +175,7 @@ class TestServer:
             last_pos = 0
         # Call the endpoint
 
-
+        self.client.cookies.set("cookie_name", "valid_cookie")
         response = self.client.get("/log")
 
 
