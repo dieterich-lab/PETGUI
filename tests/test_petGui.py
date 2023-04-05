@@ -43,7 +43,7 @@ class TestServer:
         self.file_path = "data.json"
         self.client = TestClient(app)
         #self.client._cookie_jar.update_cookies({"cookie_name": "valid_cookie"})
-        self.client.cookies.set("cookie_name", "valid_cookie")
+        self.client.cookies.set("cookie", "valid_cookie")
         # yield
         # self.client.close()
 
