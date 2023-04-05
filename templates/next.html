@@ -30,20 +30,32 @@
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
     <style>
         .spinner {
+  display: none;
   position: relative;
-  top: 50%;
+  top: 100%;
   left: 50%;
+  transform: translate(-50%, -50%) rotate(0deg);  /* changed position */
   border: 4px solid rgba(0, 0, 0, 0.1);
   border-left-color: #636767;
   border-radius: 50%;
-  width: 20px;
-  height: 20px;
+  width: 25px;
+  height: 25px;
   animation: spin 1s linear infinite;
+  margin-top: 25px;
 }
 
     @keyframes spin {
-      to { transform: rotate(360deg); }
+      to { transform:  translate(-50%, -50%) rotate(360deg); }
     }
+
+#loadingText {
+  display: none;
+  font-size: 15px;
+  font-weight: bold;
+  margin-bottom: 4px;
+  margin-top: 4px;
+  color: black;
+}
 
   ul {
     list-style-type: disc;
@@ -60,17 +72,57 @@
     text-decoration: none;
     }
 
+    .progress-ring {
+      position: relative;
+      width: 10rem;
+      height: 10rem;
+      display: inline-block;
+      transform: rotate(-90deg);
+    }
+    .progress-ring .progress-ring__circle {
+      fill: #fff;
+      stroke: #0d6efd;
+      stroke-width: 4;
+      stroke-dasharray: 283;
+      stroke-dashoffset: 0;
+
+    }
+    .progress-ring .progress-ring__circle--fill {
+      fill: none;
+      stroke: #f3f3f3;
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-dasharray: 283;
+      stroke-dashoffset: 283;
+      transition: stroke-dashoffset 1s ease-out;
+
+    }
+    .progress-ring .progress-ring__percentage {
+      position: relative;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(90deg); /* changed position */
+      font-size: 1rem;
+      font-weight: bold;
+      fill: black;
+    }
 
     </style>
 </head>
 
  <script>
     function showLoading() {
-			document.getElementById("loading").style.display = "block";
+			document.getElementById("spinner").style.display = "block";
 		}
 	function hideLoading() {
-			document.getElementById("loading").style.display = "none";
+			document.getElementById("spinner").style.display = "none";
 		}
+    function showText() {
+        document.getElementById("loadingText").style.display = "block";
+    }
+    function hideText() {
+        document.getElementById("loadingText").style.display = "none";
+    }
     function changeButtonColor(buttonId, color) {
 			document.getElementById(buttonId).setAttribute("class", "btn btn--radius-2 btn--"+color);
 		}
@@ -82,7 +134,6 @@
 
      function startTraining() {
          changeButtonText("trainButton", "Training Starting..");
-         refreshLog();
          const intervalId = setInterval(refreshLog, 10000);
      }
 
@@ -90,30 +141,34 @@
 			document.getElementById("trainButton").disabled = true;
 		}
 
-     function refreshLog() {
-         fetch("/log")
-                 .then(response => response.json())
-                 .then(data => {
-                     const logList = document.getElementById("logList");
-                     data.log.forEach(line => {
-                         const li = document.createElement("li");
-                         li.textContent = line;
-                         li.style.textDecoration = "none";
-                         logList.appendChild(li);
-                         if (li.textContent.includes('Training Complete')) {
-                            changeButtonColor("trainButton", "green");
-                            changeButtonText("trainButton", "Training Complete");
-                            clearInterval(intervalId);
-                            return;
-                            }
-                     });
-                     if (logList.childElementCount >= 1) {
-                            hideLoading();
-                            changeButtonColor("trainButton", "blue");
-                            changeButtonText("trainButton", "Training Started");
-                            }
-                 });
-     }
+    function refreshLog() {
+      return fetch("/log")
+        .then(response => response.json())
+        .then(data => {
+          const logList = document.getElementById("logList");
+          data.log.forEach(line => {
+            const li = document.createElement("li");
+            currentStep++;
+            li.textContent = line;
+            logList.appendChild(li);
+            animateProgress();
+
+            if (li.textContent.includes('Training Complete')) {
+              changeButtonColor("trainButton", "green");
+              changeButtonText("trainButton", "Training Complete");
+              const interval = document.getElementById("intervalId");
+              clearInterval(interval);
+              return;
+            } else if (logList.childElementCount >= 1) {
+              hideLoading();
+              hideText();
+              changeButtonColor("trainButton", "red");
+              changeButtonText("trainButton", "Training Started");
+            }
+          });
+        });
+    }
+
  </script>
     <script>
       async function downloadFile() {
@@ -248,35 +303,56 @@ tr:nth-child(even) {
                 </div>
                      <div class="card-body" id="container">
       <a href="#" id="test">
-       <button id="trainButton" onclick="startTraining(); disableButton(); showLoading()" class="btn btn--radius-2 btn--red">
+          <div class="button-container">
+       <button id="trainButton" onclick="startTraining(); disableButton(); showLoading(); showText()" class="btn btn--radius-2 btn--blue">
         Start Training
-       </button>
+       </button> <span id="spinner" class="spinner"></span>
+              <span id="loadingText">Please wait...</span>
+          </div>
        <ul id="logList"></ul>
-<div id="loading" style="display: none;">
-  <div class="spinner"></div>
-</div>
+        <div id="loading" style="display: none;">
+          <div class="progress-ring"></div>
+        </div>
       </a>
-<script>
-function updateProgress(progressBarElement, progressBarMessageElement, progress) {
-  progressBarElement.style.width = progress.percent + "%";
-  progressBarMessageElement.innerHTML = progress.current + ' of ' + progress.total + ' processed.';
-}
 
-var trigger = document.getElementById('progress-bar-trigger');
-trigger.addEventListener('click', function(e) {
-  var bar = document.getElementById("progress-bar");
-  var barMessage = document.getElementById("progress-bar-message");
+                         <div class="d-flex justify-content-center">
+    <svg class="progress-ring" viewBox="0 0 100 100">
+      <circle class="progress-ring__circle" cx="50" cy="50" r="45"/>
+      <circle class="progress-ring__circle--fill" cx="50" cy="50" r="45"/>
+      <text class="progress-ring__percentage" x="100%" y="-100%" dominant-baseline="middle" text-anchor="middle">0%</text>
+    </svg>
+  </div>
 
-  for (var i = 0; i < 11; i++) {
-    setTimeout(updateProgress, 500 * i, bar, barMessage, {
-      percent: 10 * i,
-      current: (0.1 * {{num}}) * i,
-      total: {{ num }}
-    })
-  }
-})
+  <script>
+
+    const steps = 13; // set the total number of steps here
+    let currentStep = 0; // set the current step here, between 0 and steps
+    const progressRing = document.querySelector('.progress-ring__circle--fill');
+    const ring_circle = document.querySelector('.progress-ring__circle');
+    const progressPercentage = document.querySelector('.progress-ring__percentage');
+    const circumference = 2 * Math.PI * 45;
+    let progress = 0;
+
+    const animateProgress = () => {
+      ring_circle.classList.add("animate")
+      progress = currentStep / steps;
+      progressRing.style.strokeDashoffset = circumference * (1 - progress) - circumference;
+      progressPercentage.textContent = `${Math.floor(progress * 100)}%`;
+    };
+
+
 </script>
                 <style>
+ svg {
+  display: block;
+  margin: auto;
+}
+
+.button-container {
+  position: relative;
+  display: inline-block;
+}
+
 #container {
 text-align: center;
 }
@@ -285,8 +361,9 @@ text-align: start;
 }
 </style>
 
+
   <div class="card-body" id="table-container">
-       <button onclick="loadJSON()" class="btn btn--radius-2 btn--red">
+       <button onclick="loadJSON()" class="btn btn--radius-2 btn--blue">
          Show Results
       </button>
 
@@ -367,10 +444,10 @@ button.addEventListener("click", function() {
                             </div>
                         </div>
                             <div class="card-body" id="container">
-                                <button class="btn btn--radius-2 btn--red" id="mycontain" onclick="runPythonCode()">Run with new configuration</button>
+                                <button class="btn btn--radius-2 btn--blue" id="mycontain" onclick="runPythonCode()">Run with new configuration</button>
                             </div>
                             <div class="card-body" id="container">
-                                <button class="btn btn--radius-2 btn--red" id="another" onclick="redirect()">Annotate unseen data</button>
+                                <button class="btn btn--radius-2 btn--blue" id="another" onclick="redirect()">Annotate unseen data</button>
                             </div>
                 </div>
             </div>
