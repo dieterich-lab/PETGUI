@@ -42,6 +42,7 @@ class TestServer:
         }
         self.file_path = "data.json"
         self.client = TestClient(app)
+        self.client._cookie_jar.update_cookies({"cookie_name": "valid_cookie"})
 
 
         # self.client.cookies.set("cookie_name", "valid_cookie")
@@ -91,7 +92,6 @@ class TestServer:
             data=self.metadata,
             files=file,
             follow_redirects=False,
-            dependencies=[Depends(mock_cookie)]
         )
         assert response.status_code == 303
         assert f"{response.next_request}" == f"{self.client.get('/logging', follow_redirects=False).request}"
@@ -131,8 +131,7 @@ class TestServer:
     #     assert f"{response.next_request}" == f"{self.client.get('/logging', follow_redirects=False).request}"
 
     def test_logging(self,setting):
-        cookie = {"cookie_name": "valid_cookie"}
-        response = self.client.get("/logging",cookies=cookie) # call the logging
+        response = self.client.get("/logging") # call the logging
         assert response.status_code == 200 # Check if it is
         assert exists("data.json")
         assert exists("output")
