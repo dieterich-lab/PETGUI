@@ -41,6 +41,8 @@ class TestServer:
         }
         self.file_path = "data.json"
         self.client = TestClient(app)
+
+
         # self.client.cookies.set("cookie_name", "valid_cookie")
         # yield
         # self.client.close()
@@ -66,7 +68,11 @@ class TestServer:
     #     response = self.client.post("/login", json={"username": "johndoe", "password": "incorrect_password"})
     #     assert response.status_code == 200
     #     assert response.json() == {"message": "Login successful"}
+    def mock_cookie(self):
+        def _mock_cookie():
+            return "valid_cookie"
 
+        return _mock_cookie
 
     def test_home(self, setting):
         response = self.client.get("/")
@@ -77,17 +83,15 @@ class TestServer:
             data = io.BytesIO(f.read())
 
         file = {"file": ("yelp_review_polarity_csv", data, "multipart/form-data")}
-        self.client.cookies.set("cookie_name", "valid_cookie")
         prep = self.client.get("/basic")
         assert prep.status_code == 200
-        cookie = {"cookie_name": "valid_cookie"}
 
         response = self.client.post(
             "/basic",
             data=self.metadata,
             files=file,
             follow_redirects=False,
-            cookies=cookie
+            dependencies=[Depends(mock_cookie)]
         )
         assert response.status_code == 303
         assert f"{response.next_request}" == f"{self.client.get('/logging', follow_redirects=False).request}"
@@ -176,8 +180,8 @@ class TestServer:
             last_pos = 0
         # Call the endpoint
 
-        cookie = {"cookie_name": "valid_cookie"}
-        response = self.client.get("/log",cookies=cookie)
+
+        response = self.client.get("/log")
 
 
         # Check the response
