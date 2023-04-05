@@ -72,6 +72,20 @@ class TestServer:
     #     def _mock_cookie(self):
     #         return "valid_cookie"
     #     return _mock_cookie
+    @pytest.fixture()
+    def session_cookie(self):
+        cookie_params = {
+            "httponly": True,
+            "samesite": "lax",
+            "secure": True,
+        }
+        return SessionCookie(
+            cookie_name="cookie",
+            identifier="general_verifier",
+            auto_error=True,
+            secret_key="DONOTUSE",
+            cookie_params=cookie_params,
+        )
 
     def test_home(self, setting):
         response = self.client.get("/")
@@ -129,7 +143,7 @@ class TestServer:
     #     assert f"{response.next_request}" == f"{self.client.get('/logging', follow_redirects=False).request}"
 
     def test_logging(self,setting):
-        response = self.client.get("/logging") # call the logging
+        response = self.client.get("/logging",cookies={"cookie": session_cookie.encode()}) # call the logging
         assert response.status_code == 200 # Check if it is
         assert exists("data.json")
         assert exists("output")
