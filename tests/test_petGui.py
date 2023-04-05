@@ -3,6 +3,8 @@ import sys
 from fastapi.testclient import TestClient
 from app.petGui import app
 from fastapi import Depends, Cookie
+from fastapi_sessions.frontends.implementations import SessionCookie, CookieParameters
+
 #from app.petGui import train
 import pytest
 import os
@@ -43,7 +45,7 @@ class TestServer:
         self.file_path = "data.json"
         self.client = TestClient(app)
         #self.client._cookie_jar.update_cookies({"cookie_name": "valid_cookie"})
-        self.client.cookies.set("cookie", "valid_cookie")
+        #self.client.cookies.set("cookie", "valid_cookie")
         # yield
         # self.client.close()
 
@@ -72,7 +74,7 @@ class TestServer:
     #     def _mock_cookie(self):
     #         return "valid_cookie"
     #     return _mock_cookie
-    @pytest.fixture()
+
     def session_cookie(self):
         cookie_params = {
             "httponly": True,
