@@ -42,10 +42,8 @@ class TestServer:
         }
         self.file_path = "data.json"
         self.client = TestClient(app)
-        self.client._cookie_jar.update_cookies({"cookie_name": "valid_cookie"})
-
-
-        # self.client.cookies.set("cookie_name", "valid_cookie")
+        #self.client._cookie_jar.update_cookies({"cookie_name": "valid_cookie"})
+        self.client.cookies.set("cookie_name", "valid_cookie")
         # yield
         # self.client.close()
 
@@ -70,10 +68,10 @@ class TestServer:
     #     response = self.client.post("/login", json={"username": "johndoe", "password": "incorrect_password"})
     #     assert response.status_code == 200
     #     assert response.json() == {"message": "Login successful"}
-    def mock_cookie():
-        def _mock_cookie():
-            return "valid_cookie"
-        return _mock_cookie
+    # def mock_cookie(self):
+    #     def _mock_cookie(self):
+    #         return "valid_cookie"
+    #     return _mock_cookie
 
     def test_home(self, setting):
         response = self.client.get("/")
