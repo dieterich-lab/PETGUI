@@ -80,13 +80,14 @@ class TestServer:
         self.client.cookies.set("cookie_name", "valid_cookie")
         prep = self.client.get("/basic")
         assert prep.status_code == 200
+        cookie = {"cookie_name": "valid_cookie"}
 
         response = self.client.post(
             "/basic",
             data=self.metadata,
             files=file,
             follow_redirects=False,
-
+            cookies=cookie
         )
         assert response.status_code == 303
         assert f"{response.next_request}" == f"{self.client.get('/logging', follow_redirects=False).request}"
@@ -126,8 +127,8 @@ class TestServer:
     #     assert f"{response.next_request}" == f"{self.client.get('/logging', follow_redirects=False).request}"
 
     def test_logging(self,setting):
-        self.client.cookies.set("cookie_name", "valid_cookie")
-        response = self.client.get("/logging") # call the logging
+        cookie = {"cookie_name": "valid_cookie"}
+        response = self.client.get("/logging",cookies=cookie) # call the logging
         assert response.status_code == 200 # Check if it is
         assert exists("data.json")
         assert exists("output")
@@ -175,8 +176,8 @@ class TestServer:
             last_pos = 0
         # Call the endpoint
 
-        self.client.cookies.set("cookie_name", "valid_cookie")
-        response = self.client.get("/log")
+        cookie = {"cookie_name": "valid_cookie"}
+        response = self.client.get("/log",cookies=cookie)
 
 
         # Check the response
