@@ -2,6 +2,7 @@ import io
 import sys
 from fastapi.testclient import TestClient
 from app.petGui import app
+from fastapi import HTTPException, FastAPI, Response, Depends
 #from app.petGui import train
 import pytest
 import os
@@ -91,6 +92,7 @@ class TestServer:
             data=self.metadata,
             files=file,
             follow_redirects=False,
+
             dependencies=[Depends(mock_cookie)]
         )
         assert response.status_code == 303
