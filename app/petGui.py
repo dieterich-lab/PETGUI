@@ -415,7 +415,7 @@ async def read_log(session_id: UUID = Depends(cookie), initial: bool = False):
                 last_pos = int(file.read())
         else:
             last_pos = 0
-            f = open(log_file.format(session_id=hash(session_id)), "x")
+            f = os.open(log_file.format(session_id=hash(session_id)), os.O_CREAT)
     else:
         with open(log_file.format(session_id=hash(session_id)), "r") as file:
             file.seek(last_pos)
@@ -424,7 +424,7 @@ async def read_log(session_id: UUID = Depends(cookie), initial: bool = False):
         with open(last_pos_file.format(session_id=hash(session_id)), "w") as file:
             file.write(str(last_pos))
         info_lines = [line.strip() for line in lines if any(
-            word in line for word in ["Creating", "Returning", "Saving", "Starting evaluation", "Training Complete"])]
+            word in line for word in ["Creating", "Returning", "Saving", "Starting evaluation", "'acc'", "RESULT ", "Training Complete"])]
         #redis_conn.set("last_pos", last_pos)  # update last_pos in Redis
         return {"log": info_lines}
 

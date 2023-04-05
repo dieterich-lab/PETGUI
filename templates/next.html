@@ -78,6 +78,7 @@
       height: 10rem;
       display: inline-block;
       transform: rotate(-90deg);
+      margin-top: 25px;
     }
     .progress-ring .progress-ring__circle {
       fill: #fff;
@@ -243,6 +244,7 @@ function showTable(jsonData) {
   font-family: Arial, sans-serif;
   font-size: 14px;
   color: #333;
+  margin-top: 25px;
 }
 
 th, td {
@@ -278,6 +280,7 @@ tr:nth-child(even) {
          height: 100px;
          overflow: auto;
          text-decoration: none;
+         margin-top: 25px;
      }
  </style>
 <script>
@@ -325,7 +328,7 @@ tr:nth-child(even) {
 
   <script>
 
-    const steps = 13; // set the total number of steps here
+    const steps = 17; // set the total number of steps here
     let currentStep = 0; // set the current step here, between 0 and steps
     const progressRing = document.querySelector('.progress-ring__circle--fill');
     const ring_circle = document.querySelector('.progress-ring__circle');

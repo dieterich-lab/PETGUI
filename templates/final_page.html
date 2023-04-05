@@ -53,7 +53,7 @@ text-align: start;
                             </div>
                         </div>
                             <div class="card-body" id="container">
-                                <label class="btn btn--radius-2 btn--red">
+                                <label class="btn btn--radius-2 btn--blue">
                                       Upload unlabeled text as plain text
                                 <input type="file" name="file" id="file" style="display:none;">
                                 </label>
@@ -82,12 +82,18 @@ text-align: start;
 		    document.getElementById(buttonId).disabled = true;
 		}
 
-    function showLoading(spinnerId) {
-			document.getElementById(spinnerId).style.display = "block";
+    function showLoading() {
+			document.getElementById("spinner").style.display = "block";
 		}
-	function hideLoading(spinnerId) {
-			document.getElementById(spinnerId).style.display = "none";
+	function hideLoading() {
+			document.getElementById("spinner").style.display = "none";
 		}
+    function showText() {
+        document.getElementById("loadingText").style.display = "block";
+    }
+    function hideText() {
+        document.getElementById("loadingText").style.display = "none";
+    }
     function changeButtonColor(buttonId, color) {
 			document.getElementById(buttonId).setAttribute("class", "btn btn--radius-2 btn--"+color);
 		}
@@ -100,44 +106,60 @@ text-align: start;
                 </script>
 
     <div class="card-body" id="container">
-        <button class="btn btn--radius-2 btn--red" id="mycontain" onclick="startPrediction(); disableButton(id)">Predict labels using PET Model</button>
-    </div>
+        <button class="btn btn--radius-2 btn--blue" id="mycontain" onclick="startPrediction(); disableButton(id); showText(); showLoading()">Predict labels using PET Model</button>
+        <span id="spinner" class="spinner"></span>
+              <span id="loadingText">Please wait...</span>
+            </div>
     <div id="loading" style="display: none;">
       <div class="spinner"></div>
     </div>
                         <style>
+    #loadingText {
+  display: none;
+  font-size: 15px;
+  font-weight: bold;
+  margin-bottom: 4px;
+  margin-top: 4px;
+  color: black;
+}
+
         .spinner {
+  display: none;
   position: relative;
-  top: 90%;
+  top: 100%;
   left: 50%;
+  transform: translate(-50%, -50%) rotate(0deg);
   border: 4px solid rgba(0, 0, 0, 0.1);
   border-left-color: #636767;
   border-radius: 50%;
-  width: 20px;
-  height: 20px;
+  width: 25px;
+  height: 25px;
   animation: spin 1s linear infinite;
+  margin-top: 25px;
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to { transform:  translate(-50%, -50%) rotate(360deg); }
 }
 
     </style>
     <script>
         function startPrediction() {
             changeButtonText("mycontain", "Prediction Started..");
+            changeButtonColor("mycontain", "red");
             showLoading("loading");
             fetch('/final/start_prediction')
                 .then(response => {
                     hideLoading("loading");
-                    changeButtonColor("mycontain", "blue");
+                    hideText();
+                    changeButtonColor("mycontain", "green");
                     changeButtonText("mycontain", "Prediction Finished");
                 });
         }
     </script>
 
                                             <div class="card-body" id="container">
-                                <button class="btn btn--radius-2 btn--red" id="mycontain_download">Download Predicted data</button>
+                                <button class="btn btn--radius-2 btn--blue" id="mycontain_download">Download Predicted data</button>
                             </div>
                 </div>
             </div>
