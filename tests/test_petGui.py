@@ -2,7 +2,7 @@ import io
 import sys
 from fastapi.testclient import TestClient
 from app.petGui import app
-from fastapi import HTTPException, FastAPI, Response, Depends
+from fastapi import Depends, Cookie
 #from app.petGui import train
 import pytest
 import os
@@ -69,10 +69,9 @@ class TestServer:
     #     response = self.client.post("/login", json={"username": "johndoe", "password": "incorrect_password"})
     #     assert response.status_code == 200
     #     assert response.json() == {"message": "Login successful"}
-    def mock_cookie(self):
+    def mock_cookie():
         def _mock_cookie():
             return "valid_cookie"
-
         return _mock_cookie
 
     def test_home(self, setting):
@@ -92,7 +91,6 @@ class TestServer:
             data=self.metadata,
             files=file,
             follow_redirects=False,
-
             dependencies=[Depends(mock_cookie)]
         )
         assert response.status_code == 303
