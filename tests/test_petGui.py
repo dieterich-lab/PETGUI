@@ -51,12 +51,12 @@ class TestServer:
         }
         self.file_path = "data.json"
         self.client = TestClient(app)
-        mock_cookie = MagicMock()
-        mock_cookie.return_value = str(uuid.uuid4())
+        self.mock_cookie = MagicMock()
+        self.mock_cookie.return_value = uuid.uuid4()
         # Override the cookie dependency of the client instance
-        cookie_value = mock_cookie()
-        self.client.app.dependency_overrides[cookie] = mock_cookie
-        self.mock_uuid = "b85ab5f6-06ab-4636-bc84-5cc2f7b7ccd2"
+        # cookie_value = mock_cookie()
+        # self.client.app.dependency_overrides[cookie] = mock_cookie
+        # self.mock_uuid = "b85ab5f6-06ab-4636-bc84-5cc2f7b7ccd2"
 
         # self.mock_cookie = SessionCookie(
         #     cookie_name="cookie",
@@ -178,7 +178,7 @@ class TestServer:
         # mock_cookie.return_value = uuid.uuid4()
         # #overwrite dependency
         # app.dependency_overrides[cookie] = mock_cookie
-        response = self.client.get("/logging",cookies={"mock_cookie": self.mock_uuid})
+        response = self.client.get("/logging",dependencies=[Depends(self.mock_cookie)])
         #setting.client.cookies.set('cookie', setting.mock_cookie)
         assert response.status_code == 200 # Check if it is
         assert exists("data.json")
