@@ -54,7 +54,8 @@ class TestServer:
         mock_cookie = MagicMock()
         mock_cookie.return_value = str(uuid.uuid4())
         # Override the cookie dependency of the client instance
-        self.client.app.dependency_overrides[cookie] = mock_cookie
+        cookie_value = mock_cookie()
+        self.client.app.dependency_overrides[cookie] = cookie_value
 
 
 
