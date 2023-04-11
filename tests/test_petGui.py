@@ -174,11 +174,11 @@ class TestServer:
     #     assert f"{response.next_request}" == f"{self.client.get('/logging', follow_redirects=False).request}"
 
     def test_logging(self,setting):
-        # mock_cookie = MagicMock()
-        # mock_cookie.return_value = uuid.uuid4()
+        mock_cookie = MagicMock()
+        mock_cookie.return_value = uuid.uuid4()
         # #overwrite dependency
-        # app.dependency_overrides[cookie] = mock_cookie
-        response = self.client.get("/logging",dependencies=[Depends(self.mock_cookie)])
+        app.dependency_overrides[cookie] = mock_cookie
+        response = self.client.get("/logging")
         #setting.client.cookies.set('cookie', setting.mock_cookie)
         assert response.status_code == 200 # Check if it is
         assert exists("data.json")
