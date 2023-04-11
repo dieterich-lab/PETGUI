@@ -51,7 +51,7 @@ class TestServer:
         }
         self.file_path = "data.json"
         self.client = TestClient(app)
-        mock_cookie = SessionCookie(
+        self.mock_cookie = SessionCookie(
             cookie_name="cookie",
             identifier="mock_session_id",
             auto_error=True,
@@ -181,7 +181,7 @@ class TestServer:
     #     assert f"{response.next_request}" == f"{self.client.get('/logging', follow_redirects=False).request}"
 
     def test_logging(self,setting):
-        with patch("app.petGui.cookie", mock_cookie):
+        with patch("app.petGui.cookie", self.mock_cookie):
             response = self.client.get("/logging")
         # mock_cookie = MagicMock()
         # mock_cookie.return_value = uuid.uuid4()
