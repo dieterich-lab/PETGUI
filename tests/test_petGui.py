@@ -30,9 +30,8 @@ from fastapi_sessions.backends.implementations import InMemoryBackend
 from fastapi_sessions.session_verifier import SessionVerifier
 from fastapi_sessions.frontends.implementations import SessionCookie, CookieParameters
 import uuid
+from unittest.mock import MagicMock
 
-from app.petGui import SessionData, CookieParameters, SessionCookie, \
-    SessionVerifier, BasicVerifier, HTTPException, UUID, cookie, backend, verifier
 
 class TestServer:
     @pytest.fixture()
@@ -51,14 +50,20 @@ class TestServer:
             "model_para": "gbert-base"
         }
         self.file_path = "data.json"
+        self.mock_cookie = MagicMock()
+        self.mock_cookie.return_value = uuid.uuid4()
         self.client = TestClient(app)
-        self.mock_cookie = SessionCookie(
-            cookie_name="cookie",
-            identifier="general_verifier",
-            auto_error=True,
-            secret_key="DONOTUSE",
-            cookie_params=cookie_params,
-        ).new_uuid()
+        #override dependency
+        app.dependency_overrides[cookie] = self.mock_cookie
+
+
+        # self.mock_cookie = SessionCookie(
+        #     cookie_name="cookie",
+        #     identifier="general_verifier",
+        #     auto_error=True,
+        #     secret_key="DONOTUSE",
+        #     cookie_params=cookie_params,
+        # ).new_uuid()
         # session_id = uuid.uuid4()
         # session_data = SessionData(username="testuser", remote_loc="testloc", remote_loc_pet="testpet")
         # backend.save(session_id, session_data)
@@ -168,7 +173,8 @@ class TestServer:
     #     assert f"{response.next_request}" == f"{self.client.get('/logging', follow_redirects=False).request}"
 
     def test_logging(self,setting):
-        setting.client.cookies.set('cookie', setting.mock_cookie)
+        response = self.client.get("/logging")
+        #setting.client.cookies.set('cookie', setting.mock_cookie)
         assert response.status_code == 200 # Check if it is
         assert exists("data.json")
         assert exists("output")
