@@ -31,7 +31,7 @@ from fastapi_sessions.session_verifier import SessionVerifier
 from fastapi_sessions.frontends.implementations import SessionCookie, CookieParameters
 import uuid
 from unittest.mock import MagicMock
-
+from app.petGui import cookie
 
 class TestServer:
     @pytest.fixture()
