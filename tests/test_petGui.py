@@ -24,8 +24,14 @@ from transformers import BertTokenizer
 import os
 import tempfile
 import asyncio
+from fastapi import HTTPException, FastAPI, Response, Depends
+from uuid import UUID, uuid4
+from fastapi_sessions.backends.implementations import InMemoryBackend
+from fastapi_sessions.session_verifier import SessionVerifier
+from fastapi_sessions.frontends.implementations import SessionCookie, CookieParameters
 import uuid
-from app.petGui import SessionData, CookieParameters, SessionCookie, InMemoryBackend, \
+
+from app.petGui import SessionData, CookieParameters, SessionCookie, \
     SessionVerifier, BasicVerifier, HTTPException, UUID, cookie, backend, verifier
 
 class TestServer:
@@ -45,12 +51,20 @@ class TestServer:
             "model_para": "gbert-base"
         }
         self.file_path = "data.json"
-        session_id = uuid.uuid4()
-        session_data = SessionData(username="testuser", remote_loc="testloc", remote_loc_pet="testpet")
-        backend.save(session_id, session_data)
-        cookie_value = cookie.create(session_id)
-        headers = {"Cookie": f"cookie={cookie_value}"}
-        self.client = TestClient(app, headers=headers)
+        self.client = TestClient(app)
+        self.mock_cookie = SessionCookie(
+            cookie_name="cookie",
+            identifier="general_verifier",
+            auto_error=True,
+            secret_key="DONOTUSE",
+            cookie_params=cookie_params,
+        ).new_uuid()
+        # session_id = uuid.uuid4()
+        # session_data = SessionData(username="testuser", remote_loc="testloc", remote_loc_pet="testpet")
+        # backend.save(session_id, session_data)
+        # cookie_value = cookie.create(session_id)
+        # headers = {"Cookie": f"cookie={cookie_value}"}
+
 
         #self.client._cookie_jar.update_cookies({"cookie_name": "valid_cookie"})
         #self.client.cookies.set("cookie", "valid_cookie")
@@ -109,6 +123,7 @@ class TestServer:
         prep = self.client.get("/basic")
         assert prep.status_code == 200
 
+
         response = self.client.post(
             "/basic",
             data=self.metadata,
@@ -153,7 +168,7 @@ class TestServer:
     #     assert f"{response.next_request}" == f"{self.client.get('/logging', follow_redirects=False).request}"
 
     def test_logging(self,setting):
-        response = self.client.get("/logging",cookies={"cookie": session_cookie.encode()}) # call the logging
+        setting.client.cookies.set('cookie', setting.mock_cookie)
         assert response.status_code == 200 # Check if it is
         assert exists("data.json")
         assert exists("output")
