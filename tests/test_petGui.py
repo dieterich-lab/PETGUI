@@ -31,8 +31,6 @@ from fastapi_sessions.session_verifier import SessionVerifier
 from fastapi_sessions.frontends.implementations import SessionCookie, CookieParameters
 import uuid
 
-from app.petGui import SessionData, CookieParameters, SessionCookie, \
-    SessionVerifier, BasicVerifier, HTTPException, UUID, cookie, backend, verifier
 
 class TestServer:
     @pytest.fixture()
