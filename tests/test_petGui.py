@@ -24,7 +24,9 @@ from transformers import BertTokenizer
 import os
 import tempfile
 import asyncio
-
+import uuid
+from app.petGui import SessionData, CookieParameters, SessionCookie, InMemoryBackend, \
+    SessionVerifier, BasicVerifier, HTTPException, UUID, cookie, backend, verifier
 
 class TestServer:
     @pytest.fixture()
@@ -43,7 +45,13 @@ class TestServer:
             "model_para": "gbert-base"
         }
         self.file_path = "data.json"
-        self.client = TestClient(app)
+        session_id = uuid.uuid4()
+        session_data = SessionData(username="testuser", remote_loc="testloc", remote_loc_pet="testpet")
+        backend.save(session_id, session_data)
+        cookie_value = cookie.create(session_id)
+        headers = {"Cookie": f"cookie={cookie_value}"}
+        self.client = TestClient(app, headers=headers)
+
         #self.client._cookie_jar.update_cookies({"cookie_name": "valid_cookie"})
         #self.client.cookies.set("cookie", "valid_cookie")
         # yield
@@ -75,19 +83,19 @@ class TestServer:
     #         return "valid_cookie"
     #     return _mock_cookie
 
-    def session_cookie(self):
-        cookie_params = {
-            "httponly": True,
-            "samesite": "lax",
-            "secure": True,
-        }
-        return SessionCookie(
-            cookie_name="cookie",
-            identifier="general_verifier",
-            auto_error=True,
-            secret_key="DONOTUSE",
-            cookie_params=cookie_params,
-        )
+    # def session_cookie(self):
+    #     cookie_params = {
+    #         "httponly": True,
+    #         "samesite": "lax",
+    #         "secure": True,
+    #     }
+    #     return SessionCookie(
+    #         cookie_name="cookie",
+    #         identifier="general_verifier",
+    #         auto_error=True,
+    #         secret_key="DONOTUSE",
+    #         cookie_params=cookie_params,
+    #     )
 
     def test_home(self, setting):
         response = self.client.get("/")
