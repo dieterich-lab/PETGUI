@@ -94,6 +94,13 @@ app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+@app.get("/steps", name="steps", dependencies=[Depends(cookie)])
+def get_steps(session_id: UUID = Depends(cookie)):
+    with open(f"./{hash(session_id)}/data.json") as f:
+        data = json.load(f)
+    count_tmp = len([tmp for tmp in data.keys() if "template_" in tmp])
+    count_steps = 17 + (count_tmp-1) * 5
+    return {"steps": count_steps}
 
 @app.get("/", name="start")
 def main():
@@ -443,17 +450,20 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
                    file: UploadFile = File(...),
                    template_0: str = Form(media_type="multipart/form-data"),
                    session_id: UUID = Depends(cookie)):
+
     os.makedirs(f"./{hash(session_id)}", exist_ok=True)   # If run with new conf.
     await read_log(session_id, initial=True)
-    file_upload = tarfile.open(fileobj=file.file, mode="r:gz")
-    file_upload.extractall(f'{hash(session_id)}/data_uploaded')
+    try:
+        file_upload = tarfile.open(fileobj=file.file, mode="r:gz")
+        file_upload.extractall(f'{hash(session_id)}/data_uploaded')
+    except:
+        return templates.TemplateResponse('index.html', {'request': request, 'error': "Invalid File Type: Please upload your data as a zip file with the extension '.tar.gz'"})
     da = await request.form()
     da = jsonable_encoder(da)
-    #template_0 = da["template_0"]
     template_counter = 1
-    origin_counter = 1
-    mapping_counter = 1
-    para_dic = {"file": file.filename.strip(".tar.gz"), "sample": sample, "label": label,
+    origin_counter = 2
+    mapping_counter = 2
+    para_dic = {"file": "".join(next(os.walk(f"./{hash(session_id)}/data_uploaded/"))[1]), "sample": sample, "label": label,
                 "template_0": template_0, "origin_0": origin_0,
                 "mapping_0": mapping_0,  "origin_1": origin_1,
                 "mapping_1": mapping_1, "model_para": model_para}
@@ -471,10 +481,12 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
         mapping_counter = mapping_counter+1
     with open(f'{hash(session_id)}/data.json', 'w') as f:
         json.dump(para_dic, f)
+    if origin_counter <2:
+        return templates.TemplateResponse('index.html', {'request': request,
+                                                         'error': "Please fill in all required parameters."})
     redirect_url = request.url_for('logging')
     print(para_dic)
     return RedirectResponse(redirect_url, status_code=303)
-
 
 @app.get("/final/start_prediction", dependencies=[Depends(cookie)])
 async def label_prediction(session_data: SessionData = Depends(verifier), session_id: UUID = Depends(cookie)):

@@ -142,7 +142,9 @@
 			document.getElementById("trainButton").disabled = true;
 		}
 
+
     function refreshLog() {
+      //steps = getSteps();
       return fetch("/log")
         .then(response => response.json())
         .then(data => {
@@ -325,10 +327,11 @@ tr:nth-child(even) {
       <text class="progress-ring__percentage" x="100%" y="-100%" dominant-baseline="middle" text-anchor="middle">0%</text>
     </svg>
   </div>
+<script>
 
-  <script>
+    let steps;
+    fetch('/steps').then(res => res.json()).then(data => parseInt(data.steps)).then(value => {steps = value});
 
-    const steps = 17; // set the total number of steps here
     let currentStep = 0; // set the current step here, between 0 and steps
     const progressRing = document.querySelector('.progress-ring__circle--fill');
     const ring_circle = document.querySelector('.progress-ring__circle');

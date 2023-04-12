@@ -59,7 +59,7 @@ function addInput(){
 
 
                  <script>
-var counter_map = 1;
+var counter_map = 2;
 var dynamicInput = [];
 
 function addInput_map(){
@@ -77,9 +77,13 @@ function addInput_map(){
 </script>
                 <div class="card-body">
                     <form method="POST" enctype="multipart/form-data" >
-                       <label for="file">Upload csv data in a zip file. The uploaded zip file contains the train and test dataset in csv format and a readme file</label><br>
+                       <label for="file"><h4>1.</h4>Upload csv data in a zip file. The uploaded zip file contains the train and test dataset in csv format and a readme file</label><br>
                         <input type="file" id="file-uploader" name = "file" required>
                         <p id="feedback"></p>
+                        <div class="p-t-15">
+                        {% if error %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                        {% endif %}
                         <script>
                             const fileUploader = document.getElementById('file-uploader');
 fileUploader.addEventListener('change', (event) => {
@@ -91,7 +95,7 @@ fileUploader.addEventListener('change', (event) => {
 });
 </script>
                         <div class="form-row m-b-55">
-                            <div class="name">Define columns numbers:</div>
+                            <div class="name"><h4>2.</h4>Define columns numbers:</div>
                             <div class="value">
                                 <div class="row row-space">
                                     <div class="col-2">
@@ -108,7 +112,7 @@ fileUploader.addEventListener('change', (event) => {
                             </div>
                         </div>
                         <div class="form-row"id="formulario">
-                            <div class="name">Define templates:</div>
+                            <div class="name"><h4>3.</h4>Define templates:</div>
                             <div class="value">
                                 <div id="dynamicInput[0]">
                                 <div class="input-group" >
@@ -119,27 +123,40 @@ fileUploader.addEventListener('change', (event) => {
                                 </div>
                             </div>
 
-                   <div class="form-row m-b-55">
-                            <div class="name">Define verbalizer mapping (label: mapping):</div>
+                        <div class="form-row m-b-55">
+                            <div class="name"><h4>4.</h4>Define verbalizer mapping (label: mapping):</div>
                             <div class="value">
                                 <div class="row row-space" id = 'formularmap' >
                                     <div class="col-2">
                                         <div class="input-group" >
-                                            <input class="input--style-5 form-control" type="text" placeholder="origin" name="origin_0" required>
+                                            <input class="input--style-5 form-control" type="text" placeholder="origin 1" name="origin_0" required>
                                         </div>
                                     </div>
                                     <div class="col-2">
                                         <div class="input-group">
-                                            <input class="input--style-5 form-control" type="text" placeholder="mapping" name="mapping_0" required>
-                                            <button class="btn btn--radius-2 btn--red"  type ="button" onClick="addInput_map();">+</button><br>
+                                            <input class="input--style-5 form-control" type="text" placeholder="mapping 1" name="mapping_0" required>
 
+                                        </div>
+                                    </div>
+                                </div>
+                            <div class="p-t-15">
+                                <div class="row row-space" id = 'formularmap' >
+                                    <div class="col-2">
+                                        <div class="input-group" >
+                                            <input class="input--style-5 form-control" type="text" placeholder="origin 2" name="origin_1" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-2">
+                                        <div class="input-group">
+                                            <input class="input--style-5 form-control" type="text" placeholder="mapping 2" name="mapping_1" required>
+                                            <button class="btn btn--radius-2 btn--red"  type ="button" onClick="addInput_map();">+</button><br>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="form-row p-t-20">
-                            <label class="label label--block">Define your language model:</label>
+                            <label class="label label--block"><h4>5.</h4>Define your language model:</label>
                             <div class="p-t-15">
                                 <label class="radio-container m-r-55">gbert-base
                                     <input type="radio" checked="checked" name="model_para" value="gbert-base" required>
