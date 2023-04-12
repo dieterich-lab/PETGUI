@@ -31,7 +31,7 @@ from fastapi_sessions.session_verifier import SessionVerifier
 from fastapi_sessions.frontends.implementations import SessionCookie, CookieParameters
 import uuid
 from unittest.mock import MagicMock
-from app.petGui import cookie,cookie_params
+from app.petGui import cookie,cookie_params,authenticate_ldap
 
 class TestServer:
     @pytest.fixture()
@@ -51,13 +51,13 @@ class TestServer:
         }
         self.file_path = "data.json"
         self.client = TestClient(app)
-        self.mock_cookie = SessionCookie(
-            cookie_name="cookie",
-            identifier="mock_session_id",
-            auto_error=True,
-            secret_key="DONOTUSE",
-            cookie_params=cookie_params,
-        )
+        # self.mock_cookie = SessionCookie(
+        #     cookie_name="cookie",
+        #     identifier="mock_session_id",
+        #     auto_error=True,
+        #     secret_key="DONOTUSE",
+        #     cookie_params=cookie_params,
+        # )
         # self.mock_cookie = MagicMock()
         # self.mock_cookie.return_value = uuid.uuid4()
         # Override the cookie dependency of the client instance
@@ -181,8 +181,10 @@ class TestServer:
     #     assert f"{response.next_request}" == f"{self.client.get('/logging', follow_redirects=False).request}"
 
     def test_logging(self,setting):
-        with patch("app.petGui.cookie", self.mock_cookie):
-            response = self.client.get("/logging")
+        # with patch("app.petGui.cookie", self.mock_cookie):
+        #     response = self.client.get("/logging")
+        with patch('app.peiGui.authenticate_ldap', return_value=True):
+            response = self.client.get("/logging",cookies={"cookie": "test"})
         # mock_cookie = MagicMock()
         # mock_cookie.return_value = uuid.uuid4()
         # # #overwrite dependency
