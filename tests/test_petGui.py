@@ -183,7 +183,7 @@ class TestServer:
     def test_logging(self,setting):
         # with patch("app.petGui.cookie", self.mock_cookie):
         #     response = self.client.get("/logging")
-        with patch('app.peiGui.authenticate_ldap', return_value=True):
+        with patch('app.petGui.authenticate_ldap', return_value=True):
             response = self.client.get("/logging",cookies={"cookie": "test"})
         # mock_cookie = MagicMock()
         # mock_cookie.return_value = uuid.uuid4()
