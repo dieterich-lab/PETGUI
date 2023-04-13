@@ -80,16 +80,70 @@ function addInput_map(){
                        <label for="file">Upload csv data in a zip file. The uploaded zip file contains the train and test dataset in csv format and a readme file</label><br>
                         <input type="file" id="file-uploader" name = "file" required>
                         <p id="feedback"></p>
-                        <script>
-                            const fileUploader = document.getElementById('file-uploader');
+                        <div id="statistics"></div>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/1.0.11/pako.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.13.1/underscore-min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script>
+  const fileUploader = document.getElementById('file-uploader');
 fileUploader.addEventListener('change', (event) => {
-  const files = event.target.files;
-  console.log('files', files);
-  const feedback = document.getElementById('feedback');
-  const msg = `File ${files[0].name} uploaded successfully!`;
-  feedback.innerHTML = msg;
-});
-</script>
+    const files = event.target.files;
+    console.log('files', files);
+    const feedback = document.getElementById('feedback');
+    const fileExt = files[0].name.split('.').pop(); // Get the file extension
+    if (fileExt !== 'gz') { // Check if file is not a tar.gz file
+        feedback.innerHTML = `Error: ${fileExt} file type not supported!`;
+        return;
+    }
+    const msg = `File ${files[0].name} uploaded successfully!`;
+    feedback.innerHTML = msg;
+
+        const fileReader = new FileReader();
+        fileReader.onload = () => {
+          const gzip = new Zlib.Gunzip(new Uint8Array(fileReader.result));
+          const tar = Tar.parse(gzip.decompress());
+          const trainCsv = tar.entries['train.csv'];
+          Papa.parse(trainCsv.buffer, {
+            header: true,
+            download: false,
+            skipEmptyLines: true,
+            complete: function (results) {
+              const data = results.data;
+              const labels = new Set();
+              const labelCounts = {};
+
+              // Collect label statistics
+              data.forEach((row) => {
+                const label = row.label;
+                labels.add(label);
+                if (!labelCounts[label]) {
+                  labelCounts[label] = 0;
+                }
+                labelCounts[label]++;
+              });
+
+              // Render label statistics on the webpage
+              const numLabels = labels.size;
+              let labelStats = `<p>Number of labels: ${numLabels}</p>`;
+              labels.forEach((label) => {
+                const count = labelCounts[label];
+                labelStats += `<p>Label ${label}: ${count} samples</p>`;
+              });
+              const statistics = document.getElementById('statistics');
+              statistics.innerHTML = labelStats;
+            },
+            error: function (error) {
+              console.error(error);
+            }
+          });
+        };
+        fileReader.readAsArrayBuffer(files[0]);
+      });
+    </script>
+
                         <div class="form-row m-b-55">
                             <div class="name">Define columns numbers:</div>
                             <div class="value">
