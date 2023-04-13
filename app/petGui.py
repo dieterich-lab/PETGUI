@@ -117,9 +117,11 @@ def who(session_id: UUID = Depends(cookie)):
     return session_id
 
 @app.get("/logout", dependencies=[Depends(cookie)])
-async def logout(response: Response, request: Request):
+def logout(response: Response, session_id: UUID = Depends(cookie), session_data: SessionData = Depends(verifier)):
+    clean(session_data, session_id, logout=True)
     cookie.delete_from_response(response)
-    return {"Logout": "successful"}
+    return {"Logout", "successful"}
+
 
 
 LDAP_SERVER = 'ldap://ldap2.dieterichlab.org'
@@ -163,7 +165,7 @@ async def create_session(user: str, response: Response):
     data = SessionData(username=user, remote_loc=remote_loc, remote_loc_pet=remote_loc_pet)
     await backend.create(session, data)
     cookie.attach_to_response(response, session)
-
+    return session
 
 # Endpoint to authenticate users
 @app.post("/login")
@@ -173,7 +175,8 @@ async def login(request: Request, username: str = Form(...), password: str = For
         return templates.TemplateResponse('login.html', {'request': request, 'error': error})
     os.environ[f"{username}"] = password
     response = RedirectResponse(url=request.url_for("homepage"), status_code=303)
-    await create_session(username, response)
+    session_uuid = await create_session(username, response)
+    os.makedirs(f"./{hash(session_uuid)}", exist_ok=True)  # If run with new conf.
     return response
 
 @app.get("/logging/start_train", dependencies=[Depends(cookie)])
@@ -380,7 +383,7 @@ def download_predict(session_id: UUID = Depends(cookie)):
 
 
 @app.get("/clean", name="clean", dependencies=[Depends(cookie)])
-def clean(session_data: SessionData = Depends(verifier), session_id: UUID = Depends(cookie)):
+def clean(session_data: SessionData = Depends(verifier), session_id: UUID = Depends(cookie), logout: bool=False):
     """
     Iterates over created paths during PET and unlinks them.
     Returns:
@@ -392,19 +395,21 @@ def clean(session_data: SessionData = Depends(verifier), session_id: UUID = Depe
 
     paths = ["logging.txt", "last_pos.txt", "output", "results.json", "data.json", "data_uploaded"]
     paths = [f"{hash(session_id)}/"+path for path in paths]
-    for path in paths:
+    for path in paths if not logout else [f"{hash(session_id)}"]:
         file_path = pathlib.Path(path)
         if isfile(path):
             file_path.unlink()
         elif isdir(path):
             shutil.rmtree(path)
-    rm_cmd = ['sshpass', '-e', 'ssh',
-               f'{user}@{cluster_name}', f'rm -r {remote_loc.format(user=user)}']
-    proc = subprocess.Popen(rm_cmd, env={"SSHPASS": os.environ[f"{user}"]}, shell=False, stdout=PIPE,
-                            stderr=PIPE)
-    outs, errs = proc.communicate()
-    print(outs, errs)
-
+    try:
+        rm_cmd = ['sshpass', '-e', 'ssh',
+                   f'{user}@{cluster_name}', f'rm -r {remote_loc.format(user=user)}']
+        proc = subprocess.Popen(rm_cmd, env={"SSHPASS": os.environ[f"{user}"]}, shell=False, stdout=PIPE,
+                                stderr=PIPE)
+        outs, errs = proc.communicate()
+        print(outs, errs)
+    except:
+        pass
 
 atexit.register(clean)
 
@@ -473,8 +478,6 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
                    file: UploadFile = File(...),
                    template_0: str = Form(media_type="multipart/form-data"),
                    session_id: UUID = Depends(cookie)):
-
-    os.makedirs(f"./{hash(session_id)}", exist_ok=True)   # If run with new conf.
     await read_log(session_id, initial=True)
     try:
         file_upload = tarfile.open(fileobj=file.file, mode="r:gz")

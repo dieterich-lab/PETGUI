@@ -304,6 +304,19 @@ tr:nth-child(even) {
          margin-top: 25px;
      }
 
+    .logout-btn {
+    display: flex;
+    float: right;
+    color: lightgrey;
+    line-height: 0px;
+    align-items: center;
+    padding: 0px 25px;
+    }
+
+    .logout-btn:hover {
+    color: white;
+    }
+
  </style>
 <script>
       function redirect() {
@@ -317,6 +330,12 @@ tr:nth-child(even) {
             window.location.href = '/basic';
         });
     }
+
+    function Logout() {
+    fetch('/logout').then(response => {
+        window.location.href = '/login';
+    });
+}
 </script>
 
 <body>
@@ -324,7 +343,8 @@ tr:nth-child(even) {
         <div class="wrapper wrapper--w790">
             <div class="card card-5">
                 <div class="card-heading">
-                    <h2 class="title">Train Your PET Model</h2>
+                    <div class="title">Train Your PET Model</div>
+                    <button class="btn logout-btn logout-btn:hover" onclick="Logout()">Logout</button>
                 </div>
                      <div class="card-body" id="container">
       <a href="#" id="test">

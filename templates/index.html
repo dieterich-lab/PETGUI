@@ -48,6 +48,19 @@
         color: #555;
         fill: none;
   }
+
+   .logout-btn {
+    display: flex;
+    float: right;
+    color: lightgrey;
+    line-height: 0px;
+    align-items: center;
+    padding: 0px 25px;
+    }
+
+    .logout-btn:hover {
+    color: white;
+    }
 </style>
 
 <body>
@@ -55,9 +68,17 @@
         <div class="wrapper wrapper--w790">
             <div class="card card-5">
                 <div class="card-heading">
-                    <h2 class="title">PET APP</h2>
+                    <div class="title">PET APP</div>
+                    <button class="btn logout-btn logout-btn:hover" onclick="Logout()">Logout</button>
                 </div>
+
                 <script>
+    function Logout() {
+        fetch('/logout').then(response => {
+            window.location.href = '/login';
+        });
+    }
+
 var counter = 1;
 var dynamicInput = [];
 
