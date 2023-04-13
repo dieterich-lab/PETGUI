@@ -1,30 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+    <!-- Required meta tags-->
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="Colorlib Templates">
+    <meta name="author" content="Colorlib">
+    <meta name="keywords" content="Colorlib Templates">
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+
+
+    <!-- Title Page-->
     <title>Login</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
-          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
-          crossorigin="anonymous">
+
+    <!-- Icons font CSS-->
+    <link href="/static/vendor/mdi-font/css/material-design-iconic-font.min.css" rel="stylesheet" media="all">
+    <link href="/static/vendor/font-awesome-4.7/css/font-awesome.min.css" rel="stylesheet" media="all">
+    <!-- Font special for pages-->
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i,800,800i" rel="stylesheet">
+
+    <!-- Vendor CSS-->
+    <link href="/static/vendor/select2/select2.min.css" rel="stylesheet" media="all">
+    <link href="/static/vendor/datepicker/daterangepicker.css" rel="stylesheet" media="all">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+
+    <!-- Main CSS-->
+    <link href="/static/css/main.css" rel="stylesheet" media="all">
+
+
 </head>
 <body>
-<div class="container">
-    <h1 class="mt-5">PETGUI - Login</h1>
-     <small class="mb-4">Please enter your login information (ldap uid and password) for the DieterichLab server: cluster.dieterichlab.org</small>
+    <div class="page-wrapper bg-gra-03 p-t-45 p-b-50">
+        <div class="wrapper wrapper--w790">
+            <div class="card card-5">
+                <div class="card-heading">
+                    <h2 class="title">PETGUI LOGIN</h2>
+                </div>
+<div class="card-body">
+     <h4 class="mb-4" style="text-align: center; font-family: arial; color: dark-grey">Please enter your login information (ldap uid and password) for the DieterichLab server: <cite>cluster.dieterichlab.org</cite></h4>
     {% if error %}
         <div class="alert alert-danger">{{ error }}</div>
     {% endif %}
     <form method="POST" action="/login" class="mt-4">
         <div class="form-group">
-            <label for="username">username</label>
+            <label for="username" style="font-size: 16px; padding-bottom: 5px;">Username</label>
             <input type="text" class="form-control" id="username" name="username" placeholder="mmustermann" required>
         </div>
+        <div class="p-t-15">
         <div class="form-group">
-            <label for="password">password</label>
+            <label for="password" style="font-size: 16px; padding-bottom: 5px;">Password</label>
             <input type="password" class="form-control" id="password" name="password" placeholder="iqu1TMWCEw1gWvr7" required>
         </div>
-        <button type="submit" class="btn btn-primary">Login</button>
+        <div class="p-t-20">
+        <button class="btn btn--radius-2 btn--blue" style="padding: 0 25px;" type="submit">Login</button>
     </form>
 </div>
-</body>
+
+
+    <!-- Jquery JS-->
+    <script src="/static/vendor/jquery/jquery.min.js"></script>
+    <!-- Vendor JS-->
+    <script src="/static/vendor/select2/select2.min.js"></script>
+    <script src="/static/vendor/datepicker/moment.min.js"></script>
+    <script src="/static/vendor/datepicker/daterangepicker.js"></script>
+
+    <!-- Main JS-->
+    <script src="/static/js/global.js"></script>
+
+</body><!-- This templates was made by Colorlib (https://colorlib.com) -->
+
 </html>
+<!-- end document-->

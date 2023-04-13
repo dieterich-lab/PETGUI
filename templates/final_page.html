@@ -41,21 +41,40 @@ text-align: center;
 #1container {
 text-align: start;
 }
+    		  .circle {
+        float: left;
+        display: inline-block;
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        border: 2px dotted #2c6ed5;
+        background-color: transparent;
+        text-align: center;
+        font-family: "sans";
+        font-size: 1.5em;
+        color: #555;
+        fill: none;
+  }
 </style>
                         <div class="form-row m-b-55">
                             <div class="value">
                                 <div class="row row-space">
+
                                     <div class="col-2">
+
                                     </div>
+
                                     <div class="col-2">
+
                                     </div>
                                 </div>
                             </div>
                         </div>
-                            <div class="card-body" id="container">
+
+                <div class="card-body" id="container"><span class="circle">1.</span>
                                 <label class="btn btn--radius-2 btn--blue">
-                                      Upload unlabeled text as plain text
-                                <input type="file" name="file" id="file" style="display:none;">
+                                      Upload unlabeled data as a csv file
+                                <input type="file" accept=".csv" name="file" id="file" style="display:none;">
                                 </label>
                                 <div id="feedback"></div>
                             </div>
@@ -105,7 +124,7 @@ text-align: start;
 
                 </script>
 
-    <div class="card-body" id="container">
+    <div class="card-body" id="container"><span class="circle">2.</span>
         <button class="btn btn--radius-2 btn--blue" id="mycontain" onclick="startPrediction(); disableButton(id); showText(); showLoading()">Predict labels using PET Model</button>
         <span id="spinner" class="spinner"></span>
               <span id="loadingText">Please wait...</span>
@@ -146,7 +165,6 @@ text-align: start;
     <script>
         function startPrediction() {
             changeButtonText("mycontain", "Prediction Started..");
-            changeButtonColor("mycontain", "red");
             showLoading("loading");
             fetch('/final/start_prediction')
                 .then(response => {
@@ -158,7 +176,7 @@ text-align: start;
         }
     </script>
 
-                                            <div class="card-body" id="container">
+                                            <div class="card-body" id="container"><span class="circle">3.</span>
                                 <button class="btn btn--radius-2 btn--blue" id="mycontain_download">Download Predicted data</button>
                             </div>
                 </div>

@@ -2,7 +2,7 @@ import pandas as pd
 from transformers import BertTokenizer, BertForSequenceClassification
 import torch
 
-df = pd.read_csv("./data_uploaded/yelp_review_polarity_csv/unlabeled.csv", header=None, names=['label', 'text'])
+df = pd.read_csv("./data_uploaded/unlabeled/unlabeled.csv", header=None, names=['label', 'text'])
 tokenizer = BertTokenizer.from_pretrained('output/final/p0-i0')
 model = BertForSequenceClassification.from_pretrained('./output/final/p0-i0')
 input_ids = []

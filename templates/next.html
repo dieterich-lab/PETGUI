@@ -70,6 +70,7 @@
     li {
     margin-bottom: 10px; /* add some spacing between list items */
     text-decoration: none;
+    pointer-events: none;
     }
 
     .progress-ring {
@@ -86,6 +87,7 @@
       stroke-width: 4;
       stroke-dasharray: 283;
       stroke-dashoffset: 0;
+      display: animate;
 
     }
     .progress-ring .progress-ring__circle--fill {
@@ -118,6 +120,12 @@
 	function hideLoading() {
 			document.getElementById("spinner").style.display = "none";
 		}
+    function showList() {
+           document.getElementById("logList").style.display = "inline-block";
+		}
+    function showRing() {
+           document.getElementById("loading").style.display = "inline-block";
+		}
     function showText() {
         document.getElementById("loadingText").style.display = "block";
     }
@@ -125,13 +133,19 @@
         document.getElementById("loadingText").style.display = "none";
     }
     function changeButtonColor(buttonId, color) {
+			document.getElementById(buttonId).removeAttribute("style");
 			document.getElementById(buttonId).setAttribute("class", "btn btn--radius-2 btn--"+color);
+
 		}
+
+    function removeButtonAttribute(buttonId, attribute) {
+        document.getElementById(buttonId).removeAttribute(attribute);
+    }
 
     function changeButtonText(buttonId, text) {
             const button = document.getElementById(buttonId);
             button.textContent = text;
-     }
+    }
 
      function startTraining() {
          changeButtonText("trainButton", "Training Starting..");
@@ -144,7 +158,6 @@
 
 
     function refreshLog() {
-      //steps = getSteps();
       return fetch("/log")
         .then(response => response.json())
         .then(data => {
@@ -159,13 +172,20 @@
             if (li.textContent.includes('Training Complete')) {
               changeButtonColor("trainButton", "green");
               changeButtonText("trainButton", "Training Complete");
+              changeButtonColor("resultsButton", "blue");
+              removeButtonAttribute("resultsButton", "disabled");
+              changeButtonColor("rerunButton", "blue");
+              removeButtonAttribute("rerunButton", "disabled");
+              changeButtonColor("annotateButton", "blue");
+              removeButtonAttribute("annotateButton", "disabled");
+
               const interval = document.getElementById("intervalId");
               clearInterval(interval);
               return;
             } else if (logList.childElementCount >= 1) {
+              showList();
               hideLoading();
               hideText();
-              changeButtonColor("trainButton", "red");
               changeButtonText("trainButton", "Training Started");
             }
           });
@@ -281,9 +301,9 @@ tr:nth-child(even) {
      #logList {
          height: 100px;
          overflow: auto;
-         text-decoration: none;
          margin-top: 25px;
      }
+
  </style>
 <script>
       function redirect() {
@@ -292,7 +312,7 @@ tr:nth-child(even) {
     </script>
 <script>
     function runPythonCode() {
-        fetch('/cleanup').then(response => {
+        fetch('/clean').then(response => {
             console.log('Python code executed successfully');
             window.location.href = '/basic';
         });
@@ -314,10 +334,10 @@ tr:nth-child(even) {
        </button> <span id="spinner" class="spinner"></span>
               <span id="loadingText">Please wait...</span>
           </div>
-       <ul id="logList"></ul>
-        <div id="loading" style="display: none;">
-          <div class="progress-ring"></div>
-        </div>
+       <ul class="disabled" id="logList" style="display: none;"></ul>
+          <div class="disabled" id="loading" style="display: none;">
+              <div class="progress-ring"></div>
+          </div>
       </a>
 
                          <div class="d-flex justify-content-center">
@@ -340,7 +360,6 @@ tr:nth-child(even) {
     let progress = 0;
 
     const animateProgress = () => {
-      ring_circle.classList.add("animate")
       progress = currentStep / steps;
       progressRing.style.strokeDashoffset = circumference * (1 - progress) - circumference;
       progressPercentage.textContent = `${Math.floor(progress * 100)}%`;
@@ -369,7 +388,7 @@ text-align: start;
 
 
   <div class="card-body" id="table-container">
-       <button onclick="loadJSON()" class="btn btn--radius-2 btn--blue">
+       <button id="resultsButton" onclick="loadJSON()" class="btn btn--radius-2" style="background-color: grey;" disabled>
          Show Results
       </button>
 
@@ -450,10 +469,10 @@ button.addEventListener("click", function() {
                             </div>
                         </div>
                             <div class="card-body" id="container">
-                                <button class="btn btn--radius-2 btn--blue" id="mycontain" onclick="runPythonCode()">Run with new configuration</button>
+                                <button class="btn btn--radius-2" style="background-color: grey;" id="rerunButton" onclick="runPythonCode()" disabled>Run with new configuration</button>
                             </div>
                             <div class="card-body" id="container">
-                                <button class="btn btn--radius-2 btn--blue" id="another" onclick="redirect()">Annotate unseen data</button>
+                                <button class="btn btn--radius-2" style="background-color: grey;" id="annotateButton" onclick="redirect()" disabled>Annotate unseen data</button>
                             </div>
                 </div>
             </div>

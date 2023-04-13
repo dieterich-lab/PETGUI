@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, Form, UploadFile, Request
+from fastapi import FastAPI, File, Form, UploadFile, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from starlette.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -116,6 +116,11 @@ async def whoami(request: Request, session_id: UUID = Depends(cookie)):
 def who(session_id: UUID = Depends(cookie)):
     return session_id
 
+@app.get("/logout", dependencies=[Depends(cookie)])
+async def logout(response: Response, request: Request):
+    cookie.delete_from_response(response)
+    return {"Logout": "successful"}
+
 
 LDAP_SERVER = 'ldap://ldap2.dieterichlab.org'
 CA_FILE = 'DieterichLab_CA.pem'
@@ -192,6 +197,12 @@ def submit_job(session_data, predict: bool = False, session_id: UUID = Depends(c
     cluster_name = session_data.cluster_name
 
     if predict:
+        scp_cmd = ['sshpass', '-e', 'scp', '-r', f'{str(hash(session_id))}/data_uploaded/unlabeled',
+                   f'{user}@{cluster_name}:{remote_loc_pet.format(user=user)}data_uploaded/']
+        proc = subprocess.Popen(scp_cmd, env={"SSHPASS": os.environ[f"{user}"]}, shell=False,
+                                stdout=subprocess.PIPE, stderr=PIPE)
+        outs, errs = proc.communicate()
+        print(outs, errs)
         ssh_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}',
                    f'sbatch {remote_loc_pet.format(user=user)}predict.sh {remote_loc.split("/")[-2]}']
         proc = subprocess.Popen(ssh_cmd, env={"SSHPASS": os.environ[f"{user}"]}, shell=False,
@@ -327,7 +338,7 @@ def results(session_id: UUID = Depends(cookie)):
     """
     dirs = next(os.walk(f"{hash(session_id)}/output/"))[1]
     scores = {}
-    for i, d in enumerate(dirs, 1):
+    for d in dirs:
         final = ""
         if "final" in d:
             k = "Final"
@@ -336,7 +347,7 @@ def results(session_id: UUID = Depends(cookie)):
             assert len(finals) == 1
             final += f"/{finals[0]}"
         else:
-            k = f"Pattern-{i} Iteration 1"
+            k = f"Pattern-{int(d[1])+1} Iteration 1"
             scores[k] = {"acc": "-", "pre-rec-f1-supp": []}
             final = ""
         with open(f"{hash(session_id)}/output/{d}{final}/results.json") as f:
@@ -369,19 +380,31 @@ def download_predict(session_id: UUID = Depends(cookie)):
 
 
 @app.get("/clean", name="clean", dependencies=[Depends(cookie)])
-def clean(session_id: UUID = Depends(cookie)):
+def clean(session_data: SessionData = Depends(verifier), session_id: UUID = Depends(cookie)):
     """
     Iterates over created paths during PET and unlinks them.
     Returns:
         redirection to homepage
     """
-    paths = ["logging.txt", "last_pos.txt", "output", "results.json", "data.json", "data_uploaded", f"{hash(session_id)}"]
+    user = session_data.username
+    remote_loc = session_data.remote_loc
+    cluster_name = session_data.cluster_name
+
+    paths = ["logging.txt", "last_pos.txt", "output", "results.json", "data.json", "data_uploaded"]
+    paths = [f"{hash(session_id)}/"+path for path in paths]
     for path in paths:
         file_path = pathlib.Path(path)
         if isfile(path):
             file_path.unlink()
         elif isdir(path):
             shutil.rmtree(path)
+    rm_cmd = ['sshpass', '-e', 'ssh',
+               f'{user}@{cluster_name}', f'rm -r {remote_loc.format(user=user)}']
+    proc = subprocess.Popen(rm_cmd, env={"SSHPASS": os.environ[f"{user}"]}, shell=False, stdout=PIPE,
+                            stderr=PIPE)
+    outs, errs = proc.communicate()
+    print(outs, errs)
+
 
 atexit.register(clean)
 
