@@ -2,7 +2,10 @@ import io
 import sys
 from fastapi.testclient import TestClient
 from app.petGui import app
-from app.petGui import train
+from fastapi import Depends, Cookie
+from fastapi_sessions.frontends.implementations import SessionCookie, CookieParameters
+
+#from app.petGui import train
 import pytest
 import os
 import tempfile
@@ -21,7 +24,14 @@ from transformers import BertTokenizer
 import os
 import tempfile
 import asyncio
-
+from fastapi import HTTPException, FastAPI, Response, Depends
+from uuid import UUID, uuid4
+from fastapi_sessions.backends.implementations import InMemoryBackend
+from fastapi_sessions.session_verifier import SessionVerifier
+from fastapi_sessions.frontends.implementations import SessionCookie, CookieParameters
+import uuid
+from unittest.mock import MagicMock
+from app.petGui import cookie,cookie_params,authenticate_ldap
 
 class TestServer:
     @pytest.fixture()
@@ -41,6 +51,78 @@ class TestServer:
         }
         self.file_path = "data.json"
         self.client = TestClient(app)
+        # self.mock_cookie = SessionCookie(
+        #     cookie_name="cookie",
+        #     identifier="mock_session_id",
+        #     auto_error=True,
+        #     secret_key="DONOTUSE",
+        #     cookie_params=cookie_params,
+        # )
+        # self.mock_cookie = MagicMock()
+        # self.mock_cookie.return_value = uuid.uuid4()
+        # Override the cookie dependency of the client instance
+        # cookie_value = mock_cookie()
+        # self.client.app.dependency_overrides[cookie] = mock_cookie
+        # self.mock_uuid = "b85ab5f6-06ab-4636-bc84-5cc2f7b7ccd2"
+
+        # self.mock_cookie = SessionCookie(
+        #     cookie_name="cookie",
+        #     identifier="general_verifier",
+        #     auto_error=True,
+        #     secret_key="DONOTUSE",
+        #     cookie_params=cookie_params,
+        # ).new_uuid()
+        # session_id = uuid.uuid4()
+        # session_data = SessionData(username="testuser", remote_loc="testloc", remote_loc_pet="testpet")
+        # backend.save(session_id, session_data)
+        # cookie_value = cookie.create(session_id)
+        # headers = {"Cookie": f"cookie={cookie_value}"}
+
+
+        #self.client._cookie_jar.update_cookies({"cookie_name": "valid_cookie"})
+        #self.client.cookies.set("cookie", "valid_cookie")
+        # yield
+        # self.client.close()
+
+    # @mock.patch('app.login.authenticate_ldap')
+    # @mock.patch('app.login.create_session')
+    # async def test_login(self, mock_create_session, mock_authenticate_ldap):
+    #     mock_authenticate_ldap.return_value = True
+    #     mock_create_session.return_value = None
+    #     response = await self.client.post("/login", data={"username": "testuser", "password": "testpass"})
+    #     assert response.status_code == 303
+    #     assert response.url == "/homepage"
+    #     assert "testuser" in os.environ
+    #     assert os.environ["testuser"] == "testpass"
+    # @patch('__main__.authenticate', return_value=True)
+    # def test_login_successful(self, mock_authenticate):
+    #     response = client.post("/login", json={"username": "johndoe", "password": "password123"})
+    #     assert response.status_code == 200
+    #     assert response.json() == {"message": "Login successful"}
+    #
+    # @patch('__main__.authenticate', return_value=False)
+    # def test_login_failed(self, mock_authenticate):
+    #     response = self.client.post("/login", json={"username": "johndoe", "password": "incorrect_password"})
+    #     assert response.status_code == 200
+    #     assert response.json() == {"message": "Login successful"}
+    # def mock_cookie(self):
+    #     def _mock_cookie(self):
+    #         return "valid_cookie"
+    #     return _mock_cookie
+
+    # def session_cookie(self):
+    #     cookie_params = {
+    #         "httponly": True,
+    #         "samesite": "lax",
+    #         "secure": True,
+    #     }
+    #     return SessionCookie(
+    #         cookie_name="cookie",
+    #         identifier="general_verifier",
+    #         auto_error=True,
+    #         secret_key="DONOTUSE",
+    #         cookie_params=cookie_params,
+    #     )
 
     def test_home(self, setting):
         response = self.client.get("/")
@@ -53,6 +135,7 @@ class TestServer:
         file = {"file": ("yelp_review_polarity_csv", data, "multipart/form-data")}
         prep = self.client.get("/basic")
         assert prep.status_code == 200
+
 
         response = self.client.post(
             "/basic",
@@ -98,8 +181,16 @@ class TestServer:
     #     assert f"{response.next_request}" == f"{self.client.get('/logging', follow_redirects=False).request}"
 
     def test_logging(self,setting):
+        # with patch("app.petGui.cookie", self.mock_cookie):
+        #     response = self.client.get("/logging")
+        with patch('app.petGui.authenticate_ldap', return_value=True):
+            response = self.client.get("/logging",cookies={"cookie": "test"})
+        # mock_cookie = MagicMock()
+        # mock_cookie.return_value = uuid.uuid4()
+        # # #overwrite dependency
+        # app.dependency_overrides[cookie] = mock_cookie
 
-        response = self.client.get("/logging") # call the logging
+        #setting.client.cookies.set('cookie', setting.mock_cookie)
         assert response.status_code == 200 # Check if it is
         assert exists("data.json")
         assert exists("output")

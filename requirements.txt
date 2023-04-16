@@ -7,11 +7,13 @@ backcall==0.2.0
 billiard==3.6.4.0
 celery==5.2.7
 certifi==2022.9.24
+cffi==1.15.1
 charset-normalizer==2.1.1
 click==8.1.3
 click-didyoumean==0.3.0
 click-plugins==1.1.1
 click-repl==0.2.0
+cryptography==39.0.2
 decorator==5.1.1
 distlib==0.3.6
 exceptiongroup==1.1.0
@@ -49,6 +51,7 @@ nvidia-cudnn-cu11==8.5.0.96
 packaging==21.3
 pandas==1.5.3
 parso==0.8.3
+passlib==1.7.4
 pet==0.3.2
 pexpect==4.8.0
 pickleshare==0.7.5
@@ -61,11 +64,13 @@ ptyprocess==0.7.0
 pure-eval==0.2.2
 pyasn1==0.4.8
 pycodestyle==2.10.0
+pycparser==2.21
 pydantic==1.10.2
 pyflakes==3.0.1
 Pygments==2.13.0
 pyparsing==3.0.9
 pytest==7.2.0
+python-dateutil==2.8.2
 python-multipart==0.0.5
 pytz==2022.7.1
 PyYAML==6.0
