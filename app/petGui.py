@@ -23,6 +23,9 @@ from fastapi_sessions.backends.implementations import InMemoryBackend
 from fastapi_sessions.session_verifier import SessionVerifier
 from fastapi_sessions.frontends.implementations import SessionCookie, CookieParameters
 import atexit
+import pandas as pd
+
+
 
 
 class SessionData(BaseModel):
@@ -447,6 +450,10 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
     await read_log(session_id, initial=True)
     file_upload = tarfile.open(fileobj=file.file, mode="r:gz")
     file_upload.extractall(f'{hash(session_id)}/data_uploaded')
+    # train_df = pd.read_csv(f"{hash(session_id)}/data_uploaded/train.csv", names=["label", "text"])
+    # test_df = pd.read_csv(f"{hash(session_id)}/data_uploaded/test.csv", names=["label", "text"])
+    # train_label_counts = train_df["label"].value_counts()
+    # test_label_counts = test_df["label"].value_counts()
     da = await request.form()
     da = jsonable_encoder(da)
     #template_0 = da["template_0"]
