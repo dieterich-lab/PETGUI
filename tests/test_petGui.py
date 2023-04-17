@@ -1,7 +1,7 @@
 import io
 import sys
 from fastapi.testclient import TestClient
-from app.petGui import app
+from app.petGui import app, verifier
 from fastapi import Depends, Cookie
 from fastapi_sessions.frontends.implementations import SessionCookie, CookieParameters
 
@@ -123,6 +123,24 @@ class TestServer:
     #         secret_key="DONOTUSE",
     #         cookie_params=cookie_params,
     #     )
+    # def test_login(self,setting):
+    #     # Make a POST request to the login endpoint with valid credentials
+    #     response = self.client.post("/login", data={"username": "testuser", "password": "testpassword"})
+    #
+    #     # Assert that the response status code is 303 (redirect)
+    #     assert response.status_code == 303
+    #
+    #     # Assert that a "cookie" header was returned in the response
+    #     assert "cookie" in response.headers
+    #
+    #     # Extract the cookie value from the response headers
+    #     cookie_value = response.headers["Set-Cookie"].split(";")[0]
+    #
+    #     # Create a cookie object from the extracted value
+    #     cookie = SessionCookie.parse_raw(cookie_value)
+    #
+    #     # Assert that the cookie is valid and can be used for authentication
+    #     assert verifier.verify_cookie(cookie)
 
     def test_home(self, setting):
         response = self.client.get("/")
@@ -184,7 +202,7 @@ class TestServer:
         # with patch("app.petGui.cookie", self.mock_cookie):
         #     response = self.client.get("/logging")
         with patch('app.petGui.authenticate_ldap', return_value=True):
-            response = self.client.get("/logging",cookies={"cookie": "test"})
+            response = self.client.get("/logging",headers={"cookie": cookie_value})
         # mock_cookie = MagicMock()
         # mock_cookie.return_value = uuid.uuid4()
         # # #overwrite dependency
