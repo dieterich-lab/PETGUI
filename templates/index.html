@@ -30,28 +30,69 @@
 
 
 </head>
+<style>
+
+    		  .circle {
+        float: left;
+        margin-bottom: 10px;
+        margin-right: 10px;
+        display: inline-block;
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        border: 2px dotted #2c6ed5;
+        background-color: transparent;
+        text-align: center;
+        font-family: "sans";
+        font-size: 1.5em;
+        color: #555;
+        fill: none;
+  }
+
+   .logout-btn {
+    display: flex;
+    float: right;
+    color: lightgrey;
+    line-height: 0px;
+    align-items: center;
+    padding: 0px 25px;
+    }
+
+    .logout-btn:hover {
+    color: white;
+    }
+</style>
 
 <body>
     <div class="page-wrapper bg-gra-03 p-t-45 p-b-50">
         <div class="wrapper wrapper--w790">
             <div class="card card-5">
                 <div class="card-heading">
-                    <h2 class="title">PET APP</h2>
+                    <div class="title">PET APP</div>
+                    <button class="btn logout-btn logout-btn:hover" onclick="Logout()">Logout</button>
                 </div>
+
                 <script>
+    function Logout() {
+        fetch('/logout').then(response => {
+            window.location.href = '/login';
+        });
+    }
+
 var counter = 1;
 var dynamicInput = [];
 
 function addInput(){
     var newdiv = document.createElement('div');
     newdiv.id = dynamicInput[counter];
-    newdiv.innerHTML = "Template " + (counter + 1) + " <br><input class='input--style-5 form-control' type='text' placeholder='Please enter the template text' name = template_"+counter +" required> <br><input class='btn btn--radius-2 btn--red' type='button' value='-' onClick='removeInput("+dynamicInput[counter]+");'>";
+    newdiv.innerHTML = "Template " + (counter + 1) + " <br><input class='input--style-5 form-control' type='text' placeholder='Next template text' name = template_"+counter +" required> <br><input class='btn btn--radius-2 btn--blue' style='padding: 0 25px;' type='button' value='-' onClick='removeInput("+dynamicInput[counter]+");'>";
     document.getElementById('formulario').appendChild(newdiv);
     counter++;
 }
 
   function removeInput(id){
     var elem = document.getElementById(id);
+    counter--;
     return elem.parentNode.removeChild(elem);
   }
 </script>
@@ -59,93 +100,47 @@ function addInput(){
 
 
                  <script>
-var counter_map = 1;
+var counter_map = 2;
 var dynamicInput = [];
 
 function addInput_map(){
     var newdiv = document.createElement('div');
     newdiv.id = dynamicInput[counter_map];
-    newdiv.innerHTML = "Mapping " + (counter_map + 1) + " <div class='row row-space'><div class='col-2'><div class='input-group'><input class='input--style-5 form-control' type='text' placeholder='origin' name=origin_"+ counter_map +" required></div></div><div class='col-2'><div class='input-group'><input class='input--style-5 form-control' type='text' placeholder='mapping' name=mapping_"+counter_map+" required><input class='btn btn--radius-2 btn--red' type='button' value='-' onClick='removeInput("+dynamicInput[counter]+");'></div></div></div>";
+    newdiv.innerHTML = "Mapping " + (counter_map + 1) +
+    " <div class='row row-space'><div class='col-2'><div class='input-group'><input class='input--style-5 form-control' type='text' placeholder='origin' name=origin_"+ counter_map +" required></div></div><div class='col-2'><div class='input-group'><input class='input--style-5 form-control' type='text' placeholder='mapping' name=mapping_"+counter_map+" required><input class='btn btn--radius-2 btn--blue' style='padding: 0 25px' type='button' value='-' onClick='removeInput("+dynamicInput[counter]+");'></div></div></div>";
     document.getElementById('formularmap').appendChild(newdiv);
-    counter++;
+    counter_map++;
 }
 
   function removeInput(id){
     var elem = document.getElementById(id);
+    counter_map--;
     return elem.parentNode.removeChild(elem);
   }
 </script>
+
+
                 <div class="card-body">
                     <form method="POST" enctype="multipart/form-data" >
-                       <label for="file">Upload csv data in a zip file. The uploaded zip file contains the train and test dataset in csv format and a readme file</label><br>
-                        <input type="file" id="file-uploader" name = "file" required>
-                        <p id="feedback"></p>
-                        <div id="statistics"></div>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/1.0.11/pako.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.13.1/underscore-min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-<script>
-  const fileUploader = document.getElementById('file-uploader');
+                       <label for="file"><span class="circle">1.</span> <h5>Upload csv data in a zip file. The uploaded zip file contains the train and test dataset in csv format and a readme file</h5></label>
+                        <input type="file" accept=".tar.gz" style="margin-left: 45px;" id="file-uploader" name = "file" required>
+                        <p id="feedback" style="margin-left: 45px;"></p>
+                        <div class="p-t-15">
+                        {% if error %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                        {% endif %}
+                        <script>
+                            const fileUploader = document.getElementById('file-uploader');
 fileUploader.addEventListener('change', (event) => {
-    const files = event.target.files;
-    console.log('files', files);
-    const feedback = document.getElementById('feedback');
-    const fileExt = files[0].name.split('.').pop(); // Get the file extension
-    if (fileExt !== 'gz') { // Check if file is not a tar.gz file
-        feedback.innerHTML = `Error: ${fileExt} file type not supported!`;
-        return;
-    }
-    const msg = `File ${files[0].name} uploaded successfully!`;
-    feedback.innerHTML = msg;
-
-        const fileReader = new FileReader();
-        fileReader.onload = () => {
-          const gzip = new Zlib.Gunzip(new Uint8Array(fileReader.result));
-          const tar = Tar.parse(gzip.decompress());
-          const trainCsv = tar.entries['train.csv'];
-          Papa.parse(trainCsv.buffer, {
-            header: true,
-            download: false,
-            skipEmptyLines: true,
-            complete: function (results) {
-              const data = results.data;
-              const labels = new Set();
-              const labelCounts = {};
-
-              // Collect label statistics
-              data.forEach((row) => {
-                const label = row.label;
-                labels.add(label);
-                if (!labelCounts[label]) {
-                  labelCounts[label] = 0;
-                }
-                labelCounts[label]++;
-              });
-
-              // Render label statistics on the webpage
-              const numLabels = labels.size;
-              let labelStats = `<p>Number of labels: ${numLabels}</p>`;
-              labels.forEach((label) => {
-                const count = labelCounts[label];
-                labelStats += `<p>Label ${label}: ${count} samples</p>`;
-              });
-              const statistics = document.getElementById('statistics');
-              statistics.innerHTML = labelStats;
-            },
-            error: function (error) {
-              console.error(error);
-            }
-          });
-        };
-        fileReader.readAsArrayBuffer(files[0]);
-      });
-    </script>
-
-                        <div class="form-row m-b-55">
-                            <div class="name">Define columns numbers:</div>
+  const files = event.target.files;
+  console.log('files', files);
+  const feedback = document.getElementById('feedback');
+  const msg = `File ${files[0].name} uploaded successfully!`;
+  feedback.innerHTML = msg;
+});
+</script>
+                        <span class="circle">2.</span><div class="form-row m-b-55">
+                            <div class="name">Define column numbers:</div>
                             <div class="value">
                                 <div class="row row-space">
                                     <div class="col-2">
@@ -160,42 +155,56 @@ fileUploader.addEventListener('change', (event) => {
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </div><span class="circle">3.</span>
                         <div class="form-row"id="formulario">
                             <div class="name">Define templates:</div>
                             <div class="value">
                                 <div id="dynamicInput[0]">
                                 <div class="input-group" >
-                                    <input class="input--style-5 form-control" type="text" placeholder = "Template text here.Example:It was_." name="template_0"  required>
-                                    <button class="btn btn--radius-2 btn--red"  type ="button" onClick="addInput();">+</button><br>
+                                    <input class="input--style-5 form-control" type="text" placeholder = "Example: It was_." name="template_0"  required>
+                                    <button class="btn btn--radius-2 btn--blue" style="padding: 0 25px;" type ="button" onClick="addInput();">+</button>
                                     </div>
                                     </div>
                                 </div>
                             </div>
 
-                   <div class="form-row m-b-55">
-                            <div class="name">Define verbalizer mapping (label: mapping):</div>
+                        <span class="circle">4.</span><div class="form-row m-b-55">
+                            <div class="name">Define verbalizer mappings:</div>
                             <div class="value">
                                 <div class="row row-space" id = 'formularmap' >
                                     <div class="col-2">
                                         <div class="input-group" >
-                                            <input class="input--style-5 form-control" type="text" placeholder="origin" name="origin_0" required>
+                                            <input class="input--style-5 form-control" type="text" placeholder="origin 1" name="origin_0" required>
                                         </div>
                                     </div>
                                     <div class="col-2">
                                         <div class="input-group">
-                                            <input class="input--style-5 form-control" type="text" placeholder="mapping" name="mapping_0" required>
-                                            <button class="btn btn--radius-2 btn--red"  type ="button" onClick="addInput_map();">+</button><br>
+                                            <input class="input--style-5 form-control" type="text" placeholder="mapping 1" name="mapping_0" required>
 
+                                        </div>
+                                    </div>
+                                </div>
+                            <div class="p-t-15">
+                                <div class="row row-space" id = 'formularmap' >
+                                    <div class="col-2">
+                                        <div class="input-group" >
+                                            <input class="input--style-5 form-control" type="text" placeholder="origin 2" name="origin_1" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-2">
+                                        <div class="input-group">
+                                            <input class="input--style-5 form-control" type="text" placeholder="mapping 2" name="mapping_1" required>
+                                            <button class="btn btn--radius-2 btn--blue" style="padding: 0 25px;" type ="button" onClick="addInput_map();">+</button>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="form-row p-t-20">
-                            <label class="label label--block">Define your language model:</label>
+                        </div>
+                        <div class="form-row"><span class="circle">5.</span>
+                            <label class="name">Define your language model:</label><div class="m-r-45"></div>
                             <div class="p-t-15">
-                                <label class="radio-container m-r-55">gbert-base
+                                <label class="radio-container m-r-55"><span></span>gbert-base
                                     <input type="radio" checked="checked" name="model_para" value="gbert-base" required>
                                     <span class="checkmark"></span>
                                 </label>
@@ -205,7 +214,7 @@ fileUploader.addEventListener('change', (event) => {
                                 </label>
                             </div>
                         </div>
-                        <button class="btn btn--radius-2 btn--red" type="submit">Send</button><br><br>
+                        <button class="btn btn--radius-2 btn--blue" type="submit">Send</button><br><br>
                     </form>
                 </div>
             </div>
