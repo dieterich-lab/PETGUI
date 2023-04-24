@@ -173,9 +173,9 @@ async def login(request: Request, username: str = Form(...), password: str = For
     if not authenticate_ldap(username=username, password=password):
         error = 'Invalid username or password'
         return templates.TemplateResponse('login.html', {'request': request, 'error': error})
-    os.environ[f"{username}"] = password
     response = RedirectResponse(url=request.url_for("homepage"), status_code=303)
     session_uuid = await create_session(username, response)
+    os.environ[f"{hash(session_uuid)}"] = password
     os.makedirs(f"./{hash(session_uuid)}", exist_ok=True)  # If run with new conf.
     return response
 
@@ -201,17 +201,17 @@ async def submit_job(session_data, predict: bool = False, session_id: UUID = Dep
     if predict:
         scp_cmd = ['sshpass', '-e', 'scp', '-r', f'{str(hash(session_id))}/data_uploaded/unlabeled',
                    f'{user}@{cluster_name}:{remote_loc_pet.format(user=user)}data_uploaded/']
-        outs, errs = bash_cmd(scp_cmd, user)
+        outs, errs = bash_cmd(scp_cmd, session_id)
         ssh_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}',
                    f'sbatch {remote_loc_pet.format(user=user)}predict.sh {remote_loc.split("/")[-2]}']
-        outs, errs = bash_cmd(ssh_cmd, user)
+        outs, errs = bash_cmd(ssh_cmd, session_id)
         print("Prediction: ", outs)
         # Get the job ID from the output of the sbatch command
         job_id = outs.decode('utf-8').strip().split()[-1]
         return job_id
     else:
         mkdir_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}', f'mkdir {remote_loc}']
-        outs, errs = bash_cmd(mkdir_cmd, user)
+        outs, errs = bash_cmd(mkdir_cmd, session_id)
         dir = hash(session_id)
 
         files = ["pet", "data.json", "train.sh", "data_uploaded", "predict.sh"]
@@ -221,19 +221,19 @@ async def submit_job(session_data, predict: bool = False, session_id: UUID = Dep
             scp_cmd = ['sshpass', '-e', 'scp', '-r', f,
                    f'{user}@{cluster_name}:{remote_loc.format(user = user)}' if "pet" in f
                    else f'{user}@{cluster_name}:{remote_loc_pet.format(user = user)}']
-            outs, errs = bash_cmd(scp_cmd, user)
+            outs, errs = bash_cmd(scp_cmd, session_id)
             print(outs, errs)
 
         # Submit the SLURM job via SSH
         ssh_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}',
                    f'sbatch {remote_loc_pet.format(user=user)}train.sh {remote_loc.split("/")[-2]}']
-        outs, errs = bash_cmd(ssh_cmd, user)
+        outs, errs = bash_cmd(ssh_cmd, session_id)
         # Get the job ID from the output of the sbatch command
         job_id = outs.decode('utf-8').strip().split()[-1]
         return job_id
 
-def bash_cmd(cmd, user, shell:bool = False):
-    proc = subprocess.Popen(" ".join(cmd) if shell else cmd, env={"SSHPASS": os.environ[f"{user}"]}, shell=shell,
+def bash_cmd(cmd, session_id, shell:bool = False):
+    proc = subprocess.Popen(" ".join(cmd) if shell else cmd, env={"SSHPASS": os.environ[f"{hash(session_id)}"]}, shell=shell,
                             stdout=subprocess.PIPE, stderr=PIPE)
     outs, errs = proc.communicate()
     return outs, errs
@@ -246,7 +246,7 @@ def check_job_status(job_id: str, session_data: SessionData = Depends(verifier),
     cluster_name = session_data.cluster_name
     while True:
         cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}', f"squeue -j {job_id} -h -t all | awk '{{print $5}}'"]
-        outs, errs = bash_cmd(cmd, user)
+        outs, errs = bash_cmd(cmd, session_id)
         status = outs.decode("utf-8").strip().split()[-1]
         print(status)
         if status == "R":
@@ -255,7 +255,7 @@ def check_job_status(job_id: str, session_data: SessionData = Depends(verifier),
             if predict:
                 scp_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}',
                            f'cat {remote_loc_pet.format(user=user)}predictions.csv', f'> {hash(session_id)}/output/predictions.csv']
-                outs, errs = bash_cmd(scp_cmd, user, shell=True)
+                outs, errs = bash_cmd(scp_cmd, session_id, shell=True)
                 print(outs, errs)
                 return {"status": "finished"}
             else:
@@ -264,7 +264,7 @@ def check_job_status(job_id: str, session_data: SessionData = Depends(verifier),
                 ssh_cmd = ['sshpass', '-e', 'ssh',
                            f'{user}@{cluster_name}', f'cd {remote_loc_pet.format(user=user)} '
                                                      f'&& find . -name "results.json" -type f']
-                outs, errs = bash_cmd(ssh_cmd, user)
+                outs, errs = bash_cmd(ssh_cmd, session_id)
                 print(outs, errs)
                 files = outs.decode("utf-8")
                 for f in files.rstrip().split("\n"):
@@ -274,7 +274,7 @@ def check_job_status(job_id: str, session_data: SessionData = Depends(verifier),
                         time.sleep(1)
                     scp_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}',
                                f'cat {remote_loc_pet.format(user=user)}{f} > {hash(session_id)}/{f}']
-                    outs, errs = bash_cmd(scp_cmd, user, shell=True)
+                    outs, errs = bash_cmd(scp_cmd, session_id, shell=True)
                     print(outs, errs)
                 '''Call Results'''
                 results(session_id)
@@ -284,7 +284,7 @@ def check_job_status(job_id: str, session_data: SessionData = Depends(verifier),
 
         ssh_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}',
                    f'cat /home/{user}{log_file.format(session_id="")}']
-        outs, errs = bash_cmd(ssh_cmd, user)
+        outs, errs = bash_cmd(ssh_cmd, session_id)
         log_contents = outs.decode('utf-8')
 
         # Update the log file on the local machine
@@ -374,7 +374,7 @@ def clean(session_data: SessionData = Depends(verifier), session_id: UUID = Depe
     try:
         rm_cmd = ['sshpass', '-e', 'ssh',
                    f'{user}@{cluster_name}', f'rm -r {remote_loc.format(user=user)}']
-        proc = subprocess.Popen(rm_cmd, env={"SSHPASS": os.environ[f"{user}"]}, shell=False, stdout=PIPE,
+        proc = subprocess.Popen(rm_cmd, env={"SSHPASS": os.environ[f"{hash(session_id)}"]}, shell=False, stdout=PIPE,
                                 stderr=PIPE)
         outs, errs = proc.communicate()
         print(outs, errs)
@@ -415,18 +415,18 @@ async def read_log(session_id: UUID = Depends(cookie), initial: bool = False):
         # Initialize last_pos to the value stored in last_pos.txt, or 0 if the file does not exist
         if os.path.exists(last_pos_file):
             with open(last_pos_file.format(session_id=hash(session_id)), "r") as file:
-                os.environ[f"{hash(session_id)}"] = file.read()
+                os.environ[f"{hash(session_id)}_log"] = file.read()
         else:
-            os.environ[f"{hash(session_id)}"] = str(0)
+            os.environ[f"{hash(session_id)}_log"] = str(0)
             f = os.open(log_file.format(session_id=hash(session_id)), os.O_CREAT)
             os.environ[f"{hash(session_id)}_inp"] = "False"
     else:
         with open(log_file.format(session_id=hash(session_id)), "r") as file:
             file.seek(int(os.environ[f"{hash(session_id)}"]))
             lines = file.readlines()
-            os.environ[f"{hash(session_id)}"] = str(file.tell())
+            os.environ[f"{hash(session_id)}_log"] = str(file.tell())
         with open(last_pos_file.format(session_id=hash(session_id)), "w") as file:
-            file.write(os.environ[f"{hash(session_id)}"])
+            file.write(os.environ[f"{hash(session_id)}_log"])
         info_lines = [line.strip() for line in lines if any(
             word in line for word in
             ["Creating", "Returning", "Saving", "Starting evaluation", "'acc'", "RESULT ", "Training Complete"])
