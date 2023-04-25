@@ -23,6 +23,9 @@ from fastapi_sessions.backends.implementations import InMemoryBackend
 from fastapi_sessions.session_verifier import SessionVerifier
 from fastapi_sessions.frontends.implementations import SessionCookie, CookieParameters
 import atexit
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 class SessionData(BaseModel):
@@ -440,6 +443,42 @@ async def read_log(session_id: UUID = Depends(cookie), initial: bool = False):
 
 last_pos_file = "{session_id}/last_pos.txt"
 
+@app.post("/extract-file")
+async def extract_file(file: UploadFile = File(...), session_id: UUID = Depends(cookie)):
+    file_upload = tarfile.open(fileobj=file.file, mode="r:gz")
+    file_upload.extractall(f'{hash(session_id)}/data_uploaded')
+
+    # Read the train and test data into dataframes
+    columns = ["label", "text"]
+    train_df = pd.read_csv(f'{hash(session_id)}/data_uploaded/yelp_review_polarity_csv/train.csv', names=columns)
+    test_df = pd.read_csv(f'{hash(session_id)}/data_uploaded/yelp_review_polarity_csv/test.csv', names=columns)
+
+    # Plot the distribution of labels for train and test data separately
+    fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(7, 5))
+    ax1.bar(train_df["label"].unique(), train_df["label"].value_counts(), width=0.5)
+    ax1.set_title("Train Label Distribution")
+    ax1.set_xlabel("Label")
+    ax1.set_ylabel("Count")
+    ax2.bar(test_df["label"].unique(), test_df["label"].value_counts(), width=0.5)
+    ax2.set_title("Test Label Distribution")
+    ax2.set_xlabel("Label")
+    ax2.set_ylabel("Count")
+
+    # Add text information about the label distribution to the chart
+    train_label_counts = train_df["label"].value_counts()
+    test_label_counts = test_df["label"].value_counts()
+
+    ax1.set_xticks(train_df["label"].unique())
+    ax2.set_xticks(test_df["label"].unique())
+
+    max_y = max(train_df["label"].value_counts().max(), test_df["label"].value_counts().max())
+    ax1.set_ylim([0, max_y])
+    ax2.set_ylim([0, max_y])
+
+    # Save the chart to a file
+    plt.savefig("static/chart.png", dpi=100)
+
+    return {"message": "File extracted successfully."}
 
 @app.post("/basic", name="homepage", dependencies=[Depends(cookie)])
 async def get_form(request: Request, sample: str = Form(media_type="multipart/form-data"),
