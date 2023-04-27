@@ -1,0 +1,207 @@
+.circle {
+        float: left;
+        margin-bottom: 10px;
+        margin-right: 10px;
+        display: inline-block;
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        border: 2px dotted #2c6ed5;
+        background-color: transparent;
+        text-align: center;
+        font-family: "sans";
+        font-size: 1.5em;
+        color: #555;
+        fill: none;
+  }
+
+   .logout-btn {
+    display: flex;
+    float: right;
+    color: lightgrey;
+    line-height: 0px;
+    align-items: center;
+    padding: 0px 25px;
+    }
+
+    .logout-btn:hover {
+    color: white;
+    }
+
+
+    #container {
+text-align: center;
+}
+#1container {
+text-align: start;
+}
+
+.circle_1 {
+    float: left;
+    display: inline-block;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    border: 2px dotted #2c6ed5;
+    background-color: transparent;
+    text-align: center;
+    font-family: "sans";
+    font-size: 1.5em;
+    color: #555;
+    fill: none;
+}
+
+
+
+    #loadingText {
+  display: none;
+  font-size: 15px;
+  font-weight: bold;
+  margin-bottom: 4px;
+  margin-top: 4px;
+  color: black;
+}
+
+        .spinner {
+  display: none;
+  position: relative;
+  top: 100%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(0deg);
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-left-color: #636767;
+  border-radius: 50%;
+  width: 25px;
+  height: 25px;
+  animation: spin 1s linear infinite;
+  margin-top: 25px;
+}
+
+@keyframes spin {
+  to { transform:  translate(-50%, -50%) rotate(360deg); }
+}
+
+
+
+
+
+  ul {
+    list-style-type: disc;
+    margin-left: 20px;
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    color: #333333;
+    text-decoration: none; /* remove underlining from list items */
+  }
+
+    li {
+    margin-bottom: 10px; /* add some spacing between list items */
+    text-decoration: none;
+    pointer-events: none;
+    }
+
+    .progress-ring {
+      position: relative;
+      width: 10rem;
+      height: 10rem;
+      display: inline-block;
+      transform: rotate(-90deg);
+      margin-top: 25px;
+    }
+    .progress-ring .progress-ring__circle {
+      fill: #fff;
+      stroke: #0d6efd;
+      stroke-width: 4;
+      stroke-dasharray: 283;
+      stroke-dashoffset: 0;
+      display: animate;
+
+    }
+    .progress-ring .progress-ring__circle--fill {
+      fill: none;
+      stroke: #f3f3f3;
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-dasharray: 283;
+      stroke-dashoffset: 283;
+      transition: stroke-dashoffset 1s ease-out;
+
+    }
+    .progress-ring .progress-ring__percentage {
+      position: relative;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(90deg); /* changed position */
+      font-size: 1rem;
+      font-weight: bold;
+      fill: black;
+    }
+
+
+
+ svg {
+  display: block;
+  margin: auto;
+}
+
+.button-container {
+  position: relative;
+  display: inline-block;
+}
+
+#container {
+text-align: center;
+}
+#1container {
+text-align: start;
+}
+
+
+     #logList {
+         height: 100px;
+         overflow: auto;
+         margin-top: 25px;
+     }
+
+    .logout-btn {
+    display: flex;
+    float: right;
+    color: lightgrey;
+    line-height: 0px;
+    align-items: center;
+    padding: 0px 25px;
+    }
+
+    .logout-btn:hover {
+    color: white;
+    }
+
+
+  #table-container {
+    text-align: center;
+    margin: auto;
+    font-size: 30px; }
+      table {
+  border-collapse: collapse;
+  margin: auto;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  color: #333;
+  margin-top: 25px;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+}
+
+th {
+  background-color: #f2f2f2;
+}
+
+tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
