@@ -92,17 +92,17 @@ observer.observe(feedbackDiv, { childList: true });
 
 
 
-                    document.getElementById("file").addEventListener("change", function() {
+                    document.getElementById("file_final").addEventListener("change", function() {
     var file = this.files[0];
     var formData = new FormData();
-    formData.append("file", file);
+    formData.append("file_final", file);
     var xhr = new XMLHttpRequest();
     xhr.open("POST", "/uploadfile/");
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4 && xhr.status === 200) {
-                document.getElementById("feedback").textContent = "File uploaded successfully. File name: " + file.name;
+                document.getElementById("feedback_file").textContent = "File uploaded successfully. File name: " + file.name;
             } else if (xhr.readyState === 4 && xhr.status !== 200) {
-                document.getElementById("feedback").textContent = "Error uploading file.";
+                document.getElementById("feedback_file").textContent = "Error uploading file.";
             }
         };
     xhr.send(formData);
@@ -327,12 +327,6 @@ function showTable(jsonData) {
             window.location.href = '/basic';
         });
     }
-
-    function Logout() {
-    fetch('/logout').then(response => {
-        window.location.href = '/login';
-    });
-}
 
 
 
