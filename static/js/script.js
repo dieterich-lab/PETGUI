@@ -1,41 +1,78 @@
 
+
 function Logout() {
         fetch('/logout').then(response => {
             window.location.href = '/login';
         });
     }
 
-
-
-
-   const fileUploader = document.getElementById('file-uploader');
-fileUploader.addEventListener('change', (event) => {
-    const files = event.target.files;
-    console.log('files', files);
-    const feedback = document.getElementById('feedback');
-    const fileExt = files[0].name.split('.').pop(); // Get the file extension
-    if (fileExt !== 'gz') { // Check if file is not a tar.gz file
-        feedback.innerHTML = `Error: ${fileExt} file type not supported!`;
-        return;
-    }
-    const msg = `File ${files[0].name} uploaded successfully!`;
-    feedback.innerHTML = msg;});
-
+function addEventListenersForIndex() {
   document.getElementById("file-uploader").addEventListener("change", function() {
     var formData = new FormData(document.getElementById("my-form"));
     fetch("/extract-file", {
       method: "POST",
       body: formData
-        }).then(response => {
-        if (response.ok) {
-          // Show the chart container and reload the image
-          const chartContainer = document.getElementById("chart-container");
-          chartContainer.style.display = "block";
-          const chartImage = document.getElementById("myChart");
-          chartImage.src = "static/chart.png?" + new Date().getTime();
-        }
+    }).then(response => {
+      if (response.ok) {
+        // Show the chart container and reload the image
+        const chartContainer = document.getElementById("chart-container");
+        chartContainer.style.display = "block";
+        const chartImage = document.getElementById("myChart");
+        chartImage.src = "static/chart.png?" + new Date().getTime();
+      }
     });
   });
+
+  const fileUploader = document.getElementById('file-uploader');
+  fileUploader.addEventListener('change', (event) => {
+    const files = event.target.files;
+    console.log('files', files);
+    const feedback = document.getElementById('feedback');
+    const fileExt = files[0].name.split('.').pop(); // Get the file extension
+    if (fileExt !== 'gz') { // Check if file is not a tar.gz file
+      feedback.innerHTML = `Error: ${fileExt} file type not supported!`;
+      return;
+    }
+    const msg = `File ${files[0].name} uploaded successfully!`;
+    feedback.innerHTML = msg;
+  });
+}
+
+
+
+    const feedbackDiv = document.getElementById('feedback_file');
+const observer = new MutationObserver(function(mutationsList) {
+  for (let mutation of mutationsList) {
+    if (mutation.type === 'childList' && feedbackDiv.innerText.trim() !== '') {
+      // This function will be called whenever the content of the div changes
+  changeButtonColor("mycontain", "blue");
+  removeButtonAttribute("mycontain", "disabled");
+  remove
+      // Call your function here or execute any code you want to run when feedback is given
+    }
+  }
+});
+
+observer.observe(feedbackDiv, { childList: true });
+
+document.getElementById("file_final").addEventListener("change", function(event) {
+    event.stopPropagation();
+    var file = this.files[0];
+    var formData = new FormData();
+    formData.append("file", file);
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", "/uploadfile/");
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                document.getElementById("feedback_file").textContent = "File uploaded successfully. File name: " + file.name;
+            } else if (xhr.readyState === 4 && xhr.status !== 200) {
+                document.getElementById("feedback_file").textContent = "Error uploading file.";
+            }
+        };
+    xhr.send(formData);
+});
+
+
 
 
 var counter = 1;
@@ -55,10 +92,7 @@ var dynamicInput_1 = [];
     return elem.parentNode.removeChild(elem);
   }
 
-
-
-
-    var counter_map = 2;
+  var counter_map = 2;
 var dynamicInput = [];
 
 
@@ -74,59 +108,19 @@ function addInput_map(){
 
 
 
-const feedbackDiv = document.getElementById('feedback');
 
-const observer = new MutationObserver(function(mutationsList) {
-  for (let mutation of mutationsList) {
-    if (mutation.type === 'childList' && feedbackDiv.innerText.trim() !== '') {
-      // This function will be called whenever the content of the div changes
-  changeButtonColor("mycontain", "blue");
-  removeButtonAttribute("mycontain", "disabled");
-  remove
-      // Call your function here or execute any code you want to run when feedback is given
-    }
-  }
-});
-
-observer.observe(feedbackDiv, { childList: true });
-
-
-
-                    document.getElementById("file_final").addEventListener("change", function() {
-    var file = this.files[0];
-    var formData = new FormData();
-    formData.append("file_final", file);
-    var xhr = new XMLHttpRequest();
-    xhr.open("POST", "/uploadfile/");
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                document.getElementById("feedback_file").textContent = "File uploaded successfully. File name: " + file.name;
-            } else if (xhr.readyState === 4 && xhr.status !== 200) {
-                document.getElementById("feedback_file").textContent = "Error uploading file.";
-            }
-        };
-    xhr.send(formData);
-});
-
-
-
-
-    function disableButton(buttonId) {
+    function disableButton_final(buttonId) {
 		    document.getElementById(buttonId).disabled = true;
 		}
 
-    function showLoading() {
+    function showLoading_final() {
 			document.getElementById("spinner").style.display = "block";
 		}
-	function hideLoading() {
-			document.getElementById("spinner").style.display = "none";
-		}
-    function showText() {
+
+    function showText_final() {
         document.getElementById("loadingText").style.display = "block";
     }
-    function hideText() {
-        document.getElementById("loadingText").style.display = "none";
-    }
+
     function changeButtonColor(buttonId, color) {
             document.getElementById(buttonId).removeAttribute("style");
 			document.getElementById(buttonId).setAttribute("class", "btn btn--radius-2 btn--"+color);
@@ -193,20 +187,7 @@ observer.observe(feedbackDiv, { childList: true });
     function hideText() {
         document.getElementById("loadingText").style.display = "none";
     }
-    function changeButtonColor(buttonId, color) {
-			document.getElementById(buttonId).removeAttribute("style");
-			document.getElementById(buttonId).setAttribute("class", "btn btn--radius-2 btn--"+color);
 
-		}
-
-    function removeButtonAttribute(buttonId, attribute) {
-        document.getElementById(buttonId).removeAttribute(attribute);
-    }
-
-    function changeButtonText(buttonId, text) {
-            const button = document.getElementById(buttonId);
-            button.textContent = text;
-    }
 
      function startTraining() {
          changeButtonText("trainButton", "Training Starting..");
@@ -315,10 +296,9 @@ function showTable(jsonData) {
 
 
 
-      function redirect() {
+function redirect() {
         window.location.href = "/final";
       }
-
 
 
     function runPythonCode() {
@@ -347,9 +327,13 @@ function showTable(jsonData) {
     };
 
 
-
     const button = document.getElementById("another");
+
 
 button.addEventListener("click", function() {
   window.location.href = "/final";
 });
+
+
+
+
