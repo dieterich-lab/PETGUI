@@ -274,9 +274,11 @@ async def create_upload_file(file: UploadFile = File(...), session_id: UUID = De
         file_object.write(file.file.read())
     return {"filename": file.filename, "path": file_path}
 
+
 @router.get("/download_prediction", name="download_prediction", dependencies=[Depends(cookie)])
 def download_predict(session_id: UUID = Depends(cookie)):
     return FileResponse(f"{hash(session_id)}/output/predictions.csv", filename="predictions.csv")
+
 
 @router.get("/logout", dependencies=[Depends(cookie)])
 def logout(response: Response, session_id: UUID = Depends(cookie), session_data: SessionData = Depends(verifier)):
@@ -297,7 +299,7 @@ def clean(session_data: SessionData = Depends(verifier), session_id: UUID = Depe
     cluster_name = session_data.cluster_name
     log_file = session_data.log_file
 
-    paths = ["logging.txt", "last_pos.txt", "output", "results.json", "data.json", "data_uploaded"]
+    paths = ["logging.txt", "last_pos.txt", "output", "results.json", "data.json", "data_uploaded", "static/chart.png"]
     paths = [f"{hash(session_id)}/"+path for path in paths]
     for path in paths if not logout else [f"{hash(session_id)}"]:
         file_path = pathlib.Path(path)
