@@ -327,6 +327,8 @@ function redirect() {
     };
 
 
+
+
     const button = document.getElementById("another");
 
 
