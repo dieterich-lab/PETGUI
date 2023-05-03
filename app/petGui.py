@@ -1,15 +1,17 @@
-from fastapi import FastAPI, Response, Depends, HTTPException
+from fastapi import FastAPI, Response, Depends, HTTPException, UploadFile, File
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 import json
 import os
 import threading
 import time
+import tarfile
 import subprocess
 from subprocess import PIPE
 from app.controller import templating
 from app.controller.templating import SessionData, UUID
-
+import pandas as pd
+import matplotlib.pyplot as plt
 
 from .controller.templating import get_session_id, get_session_data
 
@@ -190,8 +192,40 @@ def results(session_id: UUID = Depends(get_session_id)):
         json.dump(scores, res)
         
 
-@app.get("/final/start_prediction", dependencies=[Depends(get_session_id), Depends(get_session_data)])
-async def label_prediction(session_data: SessionData = Depends(get_session_data), session_id: UUID = Depends(get_session_id)):
-    '''Start Predict'''
-    job_id = await submit_job(session_data, True, session_id)
-    return check_job_status(job_id, session_data, True, session_id)
+
+@app.post("/extract-file")
+async def extract_file(file: UploadFile = File(...), session_id: UUID = Depends(get_session_id)):
+    file_upload = tarfile.open(fileobj=file.file, mode="r:gz")
+    file_upload.extractall(f'{hash(session_id)}/data_uploaded')
+
+    # Read the train and test data into dataframes
+    columns = ["label", "text"]
+    train_df = pd.read_csv(f'{hash(session_id)}/data_uploaded/yelp_review_polarity_csv/train.csv', names=columns)
+    test_df = pd.read_csv(f'{hash(session_id)}/data_uploaded/yelp_review_polarity_csv/test.csv', names=columns)
+
+    # Plot the distribution of labels for train and test data separately
+    fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(7, 5))
+    ax1.bar(train_df["label"].unique(), train_df["label"].value_counts(), width=0.5)
+    ax1.set_title("Train Label Distribution")
+    ax1.set_xlabel("Label")
+    ax1.set_ylabel("Count")
+    ax2.bar(test_df["label"].unique(), test_df["label"].value_counts(), width=0.5)
+    ax2.set_title("Test Label Distribution")
+    ax2.set_xlabel("Label")
+    ax2.set_ylabel("Count")
+
+    # Add text information about the label distribution to the chart
+    train_label_counts = train_df["label"].value_counts()
+    test_label_counts = test_df["label"].value_counts()
+
+    ax1.set_xticks(train_df["label"].unique())
+    ax2.set_xticks(test_df["label"].unique())
+
+    max_y = max(train_df["label"].value_counts().max(), test_df["label"].value_counts().max())
+    ax1.set_ylim([0, max_y])
+    ax2.set_ylim([0, max_y])
+
+    # Save the chart to a file
+    plt.savefig("static/chart.png", dpi=100)
+
+    return {"message": "File extracted successfully."}

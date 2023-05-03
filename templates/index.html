@@ -11,8 +11,11 @@
     <script src="/static/js/bootstrap.bundle.min.js"></script>
 
 
+
+
     <!-- Title Page-->
     <title>PET APP</title>
+
 
     <!-- Icons font CSS-->
     <link href="/static/vendor/mdi-font/css/material-design-iconic-font.min.css" rel="stylesheet" media="all">
@@ -63,6 +66,8 @@
     }
 </style>
 
+
+
 <body>
     <div class="page-wrapper bg-gra-03 p-t-45 p-b-50">
         <div class="wrapper wrapper--w790">
@@ -71,74 +76,19 @@
                     <div class="title">PET APP</div>
                     <button class="btn logout-btn logout-btn:hover" onclick="Logout()">Logout</button>
                 </div>
-
-                <script>
-    function Logout() {
-        fetch('/logout').then(response => {
-            window.location.href = '/login';
-        });
-    }
-
-var counter = 1;
-var dynamicInput = [];
-
-function addInput(){
-    var newdiv = document.createElement('div');
-    newdiv.id = dynamicInput[counter];
-    newdiv.innerHTML = "Template " + (counter + 1) + " <br><input class='input--style-5 form-control' type='text' placeholder='Next template text' name = template_"+counter +" required> <br><input class='btn btn--radius-2 btn--blue' style='padding: 0 25px;' type='button' value='-' onClick='removeInput("+dynamicInput[counter]+");'>";
-    document.getElementById('formulario').appendChild(newdiv);
-    counter++;
-}
-
-  function removeInput(id){
-    var elem = document.getElementById(id);
-    counter--;
-    return elem.parentNode.removeChild(elem);
-  }
-</script>
-
-
-
-                 <script>
-var counter_map = 2;
-var dynamicInput = [];
-
-function addInput_map(){
-    var newdiv = document.createElement('div');
-    newdiv.id = dynamicInput[counter_map];
-    newdiv.innerHTML = "Mapping " + (counter_map + 1) +
-    " <div class='row row-space'><div class='col-2'><div class='input-group'><input class='input--style-5 form-control' type='text' placeholder='origin' name=origin_"+ counter_map +" required></div></div><div class='col-2'><div class='input-group'><input class='input--style-5 form-control' type='text' placeholder='mapping' name=mapping_"+counter_map+" required><input class='btn btn--radius-2 btn--blue' style='padding: 0 25px' type='button' value='-' onClick='removeInput("+dynamicInput[counter]+");'></div></div></div>";
-    document.getElementById('formularmap').appendChild(newdiv);
-    counter_map++;
-}
-
-  function removeInput(id){
-    var elem = document.getElementById(id);
-    counter_map--;
-    return elem.parentNode.removeChild(elem);
-  }
-</script>
-
-
                 <div class="card-body">
-                    <form method="POST" enctype="multipart/form-data" >
+                    <form method="POST" id="my-form" enctype="multipart/form-data" >
                        <label for="file"><span class="circle">1.</span> <h5>Upload csv data in a zip file. The uploaded zip file contains the train and test dataset in csv format and a readme file</h5></label>
-                        <input type="file" accept=".tar.gz" style="margin-left: 45px;" id="file-uploader" name = "file" required>
+                        <input type="file" accept=".gz" style="margin-left: 45px;" id="file-uploader" name = "file" required>
                         <p id="feedback" style="margin-left: 45px;"></p>
                         <div class="p-t-15">
                         {% if error %}
                         <div class="alert alert-danger">{{ error }}</div>
                         {% endif %}
-                        <script>
-                            const fileUploader = document.getElementById('file-uploader');
-fileUploader.addEventListener('change', (event) => {
-  const files = event.target.files;
-  console.log('files', files);
-  const feedback = document.getElementById('feedback');
-  const msg = `File ${files[0].name} uploaded successfully!`;
-  feedback.innerHTML = msg;
-});
-</script>
+                            <div id="chart-container" style="display: none">
+                             <img id="myChart" src="/static/chart.png">
+                              </div>
+                        </div>
                         <span class="circle">2.</span><div class="form-row m-b-55">
                             <div class="name">Define column numbers:</div>
                             <div class="value">
@@ -231,6 +181,7 @@ fileUploader.addEventListener('change', (event) => {
 
     <!-- Main JS-->
     <script src="/static/js/global.js"></script>
+    <script src="/static/js/script.js"></script>
 
 </body><!-- This templates was made by Colorlib (https://colorlib.com) -->
 
