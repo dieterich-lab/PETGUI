@@ -53,6 +53,15 @@ async def run(session_id: UUID = Depends(get_session_id), session_data: SessionD
     t.start()
 
 
+@app.get("/final/start_prediction", dependencies=[Depends(get_session_id), Depends(get_session_data)])
+async def label_prediction(session_data: SessionData = Depends(get_session_data),
+                           session_id: UUID = Depends(get_session_id)):
+    '''Start Predict'''
+    print("Prediction starting..")
+    job_id = await submit_job(session_data, True, session_id)
+    return check_job_status(job_id, session_data, True, session_id)
+
+
 async def submit_job(session_data: SessionData = Depends(get_session_data), predict: bool = False,
                      session_id: UUID = Depends(get_session_id)):
     # Copy the SLURM script file to the remote cluster
@@ -195,7 +204,7 @@ def results(session_id: UUID = Depends(get_session_id)):
         json.dump(scores, res)
 
 
-@app.post("/extract-file")
+@app.post("/extract-file", dependencies=[Depends(get_session_id)])
 async def extract_file(file: UploadFile = File(...), session_id: UUID = Depends(get_session_id)):
     file_upload = tarfile.open(fileobj=file.file, mode="r:gz")
     file_upload.extractall(f'{hash(session_id)}/data_uploaded')
