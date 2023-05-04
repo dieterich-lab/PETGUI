@@ -30,19 +30,7 @@
 
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
 
-</head>
- <script type="text/javascript">
-  $(function() {
-          $('a#test').on('click', function(e) {
-            e.preventDefault()
-            $.getJSON('/logging/start_train',
-                function(data) {
-            });
-            return false;
-          });
-        });
 
- </script>
 <body>
     <div class="page-wrapper bg-gra-03 p-t-45 p-b-50">
         <div class="wrapper wrapper--w790">
@@ -73,25 +61,35 @@
     </svg>
   </div>
                          <script>
-
     let steps;
-    fetch('/steps').then(res => res.json()).then(data => parseInt(data.steps)).then(value => {steps = value});
+fetch('/steps').then(res => res.json()).then(data => parseInt(data.steps)).then(value => {steps = value});
 
-    let currentStep = 0; // set the current step here, between 0 and steps
-    const progressRing = document.querySelector('.progress-ring__circle--fill');
-    const ring_circle = document.querySelector('.progress-ring__circle');
-    const progressPercentage = document.querySelector('.progress-ring__percentage');
-    const circumference = 2 * Math.PI * 45;
-    let progress = 0;
+let currentStep = 0; // set the current step here, between 0 and steps
+const progressRing = document.querySelector('.progress-ring__circle--fill');
+const ring_circle = document.querySelector('.progress-ring__circle');
+const progressPercentage = document.querySelector('.progress-ring__percentage');
+const circumference = 2 * Math.PI * 45;
+let progress = 0;
 
-    const animateProgress = () => {
-      progress = currentStep / steps;
-      progressRing.style.strokeDashoffset = circumference * (1 - progress) - circumference;
-      progressPercentage.textContent = `${Math.floor(progress * 100)}%`;
-    };
-
-
+const animateProgress = () => {
+  progress = currentStep / steps;
+  progressRing.style.strokeDashoffset = circumference * (1 - progress) - circumference;
+  progressPercentage.textContent = `${Math.floor(progress * 100)}%`;
+};
 </script>
+
+                         <script type="text/javascript">
+  $(function() {
+          $('a#test').on('click', function(e) {
+            e.preventDefault()
+            $.getJSON('/logging/start_train',
+                function(data) {
+            });
+            return false;
+          });
+        });
+
+ </script>
 
 
 
@@ -104,7 +102,10 @@
   <p id='showData'></p>
   <p id='msg'></p>
 
+
+
       </div>
+
                         <div class="form-row m-b-55">
                             <div class="value">
                                 <div class="row row-space">
@@ -127,15 +128,17 @@
     </div>
 
     <!-- Jquery JS-->
-    <script src="/static/vendor/jquery/jquery.min.js"></script>
+    <script src="static/vendor/jquery/jquery.min.js"></script>
     <!-- Vendor JS-->
-    <script src="/static/vendor/select2/select2.min.js"></script>
-    <script src="/static/vendor/datepicker/moment.min.js"></script>
-    <script src="/static/vendor/datepicker/daterangepicker.js"></script>
+    <script src="static/vendor/select2/select2.min.js"></script>
+    <script src="static/vendor/datepicker/moment.min.js"></script>
+    <script src="static/vendor/datepicker/daterangepicker.js"></script>
 
     <!-- Main JS-->
     <script src="static/js/global.js"></script>
     <script src="/static/js/script.js"></script>
+
+
 
 </body><!-- This templates was made by Colorlib (https://colorlib.com) -->
 

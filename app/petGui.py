@@ -15,20 +15,19 @@ import matplotlib.pyplot as plt
 
 from .controller.templating import get_session_id, get_session_data
 
-
-
 '''START APP'''
 app = FastAPI()
 '''Include routers'''
 app.include_router(templating.router)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+
 @app.get("/steps", name="steps", dependencies=[Depends(get_session_id)])
 def get_steps(session_id: UUID = Depends(get_session_id)):
     with open(f"./{hash(session_id)}/data.json") as f:
         data = json.load(f)
     count_tmp = len([tmp for tmp in data.keys() if "template_" in tmp])
-    count_steps = 18 + (count_tmp-1) * 5
+    count_steps = 18 + (count_tmp - 1) * 5
     return {"steps": count_steps}
 
 
@@ -42,7 +41,7 @@ def whoami(session_id: UUID = Depends(get_session_id), session_data: SessionData
     return session_id, session_data
 
 
-@app.get("/logging/start_train",  dependencies=[Depends(get_session_id), Depends(get_session_data)])
+@app.get("/logging/start_train", dependencies=[Depends(get_session_id), Depends(get_session_data)])
 async def run(session_id: UUID = Depends(get_session_id), session_data: SessionData = Depends(get_session_data)):
     """
     Kicks off PET by calling train method.
@@ -52,15 +51,6 @@ async def run(session_id: UUID = Depends(get_session_id), session_data: SessionD
     job_id = await submit_job(session_data, False, session_id)
     t = threading.Thread(target=check_job_status, args=(job_id, session_data, False, session_id))
     t.start()
-
-
-@app.get("/final/start_prediction", dependencies=[Depends(get_session_id), Depends(get_session_data)])
-async def label_prediction(session_data: SessionData = Depends(get_session_data),
-                           session_id: UUID = Depends(get_session_id)):
-    '''Start Predict'''
-    print("Prediction starting..")
-    job_id = await submit_job(session_data, True, session_id)
-    return check_job_status(job_id, session_data, True, session_id)
 
 
 async def submit_job(session_data: SessionData = Depends(get_session_data), predict: bool = False,
@@ -90,12 +80,12 @@ async def submit_job(session_data: SessionData = Depends(get_session_data), pred
         dir = hash(session_id)
 
         files = ["pet", "data.json", "train.sh", "data_uploaded", "predict.sh"]
-        files = [str(dir)+"/"+f if f == "data.json" or f == "data_uploaded" else f for f in files]
+        files = [str(dir) + "/" + f if f == "data.json" or f == "data_uploaded" else f for f in files]
         print(files)
         for f in files:
             scp_cmd = ['sshpass', '-e', 'scp', '-r', f,
-                   f'{user}@{cluster_name}:{remote_loc}' if "pet" in f
-                   else f'{user}@{cluster_name}:{remote_loc_pet}']
+                       f'{user}@{cluster_name}:{remote_loc}' if "pet" in f
+                       else f'{user}@{cluster_name}:{remote_loc_pet}']
             outs, errs = bash_cmd(scp_cmd, session_id)
             print(outs, errs)
 
@@ -107,8 +97,10 @@ async def submit_job(session_data: SessionData = Depends(get_session_data), pred
         job_id = outs.decode('utf-8').strip().split()[-1]
         return job_id
 
-def bash_cmd(cmd, session_id: UUID = Depends(get_session_id), shell:bool = False):
-    proc = subprocess.Popen(" ".join(cmd) if shell else cmd, env={"SSHPASS": os.environ[f"{hash(session_id)}"]}, shell=shell,
+
+def bash_cmd(cmd, session_id: UUID = Depends(get_session_id), shell: bool = False):
+    proc = subprocess.Popen(" ".join(cmd) if shell else cmd, env={"SSHPASS": os.environ[f"{hash(session_id)}"]},
+                            shell=shell,
                             stdout=subprocess.PIPE, stderr=PIPE)
     outs, errs = proc.communicate()
     return outs, errs
@@ -185,7 +177,7 @@ def results(session_id: UUID = Depends(get_session_id)):
             assert len(finals) == 1
             final += f"/{finals[0]}"
         else:
-            k = f"Pattern-{int(d[1])+1} Iteration 1"
+            k = f"Pattern-{int(d[1]) + 1} Iteration 1"
             scores[k] = {"acc": "-", "pre-rec-f1-supp": []}
             final = ""
         with open(f"{hash(session_id)}/output/{d}{final}/results.json") as f:
@@ -197,13 +189,13 @@ def results(session_id: UUID = Depends(get_session_id)):
                 scores[k]["pre-rec-f1-supp"].append(f"Label: {l} Pre: {round(pre[l], 2)}, Rec: {round(rec[l], 2)},"
                                                     f"F1: {round(f1[l], 2)}, Supp: {supp[0]}")
             scores[k]["acc"] = acc
-            #scores[k]["pre-rec-f1-supp"] = [round(float(scr), 2) for l in scores.values() for scr in l]
+            # scores[k]["pre-rec-f1-supp"] = [round(float(scr), 2) for l in scores.values() for scr in l]
 
     with open(f"{hash(session_id)}/results.json", "w") as res:
         json.dump(scores, res)
-        
 
-@app.post("/extract-file", dependencies=[Depends(get_session_id)])
+
+@app.post("/extract-file")
 async def extract_file(file: UploadFile = File(...), session_id: UUID = Depends(get_session_id)):
     file_upload = tarfile.open(fileobj=file.file, mode="r:gz")
     file_upload.extractall(f'{hash(session_id)}/data_uploaded')
@@ -239,5 +231,3 @@ async def extract_file(file: UploadFile = File(...), session_id: UUID = Depends(
     plt.savefig("static/chart.png", dpi=100)
 
     return {"message": "File extracted successfully."}
-
-
