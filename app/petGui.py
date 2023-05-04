@@ -20,6 +20,11 @@ app = FastAPI()
 '''Include routers'''
 app.include_router(templating.router)
 app.mount("/static", StaticFiles(directory="static"), name="static")
+local = False # If running app locally
+ssh = "sshpass"
+if local:
+    ssh = "/opt/homebrew/bin/sshpass"
+
 
 
 @app.get("/steps", name="steps", dependencies=[Depends(get_session_id)])
@@ -63,7 +68,7 @@ async def label_prediction(session_data: SessionData = Depends(get_session_data)
 
 
 async def submit_job(session_data: SessionData = Depends(get_session_data), predict: bool = False,
-                     session_id: UUID = Depends(get_session_id)):
+                     session_id: UUID = Depends(get_session_id),ssh=ssh):
     # Copy the SLURM script file to the remote cluster
     print("Submitting job..")
 
@@ -73,10 +78,10 @@ async def submit_job(session_data: SessionData = Depends(get_session_data), pred
     cluster_name = session_data.cluster_name
 
     if predict:
-        scp_cmd = ['sshpass', '-e', 'scp', '-r', f'{str(hash(session_id))}/data_uploaded/unlabeled',
+        scp_cmd = [ssh, '-e', 'scp', '-r', f'{str(hash(session_id))}/data_uploaded/unlabeled',
                    f'{user}@{cluster_name}:{remote_loc_pet}data_uploaded/']
         outs, errs = bash_cmd(scp_cmd, session_id)
-        ssh_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}',
+        ssh_cmd = [ssh, '-e', 'ssh', f'{user}@{cluster_name}',
                    f'sbatch {remote_loc_pet}predict.sh {remote_loc.split("/")[-2]}']
         outs, errs = bash_cmd(ssh_cmd, session_id)
         print("Prediction: ", outs)
@@ -84,7 +89,7 @@ async def submit_job(session_data: SessionData = Depends(get_session_data), pred
         job_id = outs.decode('utf-8').strip().split()[-1]
         return job_id
     else:
-        mkdir_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}', f'mkdir {remote_loc}']
+        mkdir_cmd = [ssh, '-e', 'ssh', f'{user}@{cluster_name}', f'mkdir {remote_loc}']
         outs, errs = bash_cmd(mkdir_cmd, session_id)
         dir = hash(session_id)
 
@@ -92,14 +97,14 @@ async def submit_job(session_data: SessionData = Depends(get_session_data), pred
         files = [str(dir) + "/" + f if f == "data.json" or f == "data_uploaded" else f for f in files]
         print(files)
         for f in files:
-            scp_cmd = ['sshpass', '-e', 'scp', '-r', f,
+            scp_cmd = [ssh, '-e', 'scp', '-r', f,
                        f'{user}@{cluster_name}:{remote_loc}' if "pet" in f
                        else f'{user}@{cluster_name}:{remote_loc_pet}']
             outs, errs = bash_cmd(scp_cmd, session_id)
             print(outs, errs)
 
         # Submit the SLURM job via SSH
-        ssh_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}',
+        ssh_cmd = [ssh, '-e', 'ssh', f'{user}@{cluster_name}',
                    f'sbatch {remote_loc_pet}train.sh {remote_loc.split("/")[-2]}']
         outs, errs = bash_cmd(ssh_cmd, session_id)
         # Get the job ID from the output of the sbatch command
@@ -116,13 +121,13 @@ def bash_cmd(cmd, session_id: UUID = Depends(get_session_id), shell: bool = Fals
 
 
 def check_job_status(job_id: str, session_data: SessionData = Depends(get_session_data), predict: bool = False,
-                     session_id: UUID = Depends(get_session_id)):
+                     session_id: UUID = Depends(get_session_id),ssh=ssh):
     user = session_data.username
     remote_loc_pet = session_data.remote_loc_pet
     cluster_name = session_data.cluster_name
     log_file = session_data.log_file
     while True:
-        cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}', f"squeue -j {job_id} -h -t all | awk '{{print $5}}'"]
+        cmd = [ssh, '-e', 'ssh', f'{user}@{cluster_name}', f"squeue -j {job_id} -h -t all | awk '{{print $5}}'"]
         outs, errs = bash_cmd(cmd, session_id)
         status = outs.decode("utf-8").strip().split()[-1]
         print(status)
@@ -130,7 +135,7 @@ def check_job_status(job_id: str, session_data: SessionData = Depends(get_sessio
             pass
         elif status == "CD":
             if predict:
-                scp_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}',
+                scp_cmd = [ssh, '-e', 'ssh', f'{user}@{cluster_name}',
                            f'cat {remote_loc_pet}predictions.csv', f'> {hash(session_id)}/output/predictions.csv']
                 outs, errs = bash_cmd(scp_cmd, session_id, shell=True)
                 print(outs, errs)
@@ -138,7 +143,7 @@ def check_job_status(job_id: str, session_data: SessionData = Depends(get_sessio
             else:
                 with open(f'{hash(session_id)}/logging.txt', 'a') as file:
                     file.write('Training Complete\n')
-                ssh_cmd = ['sshpass', '-e', 'ssh',
+                ssh_cmd = [ssh, '-e', 'ssh',
                            f'{user}@{cluster_name}', f'cd {remote_loc_pet} '
                                                      f'&& find . -name "results.json" -type f']
                 outs, errs = bash_cmd(ssh_cmd, session_id)
@@ -149,7 +154,7 @@ def check_job_status(job_id: str, session_data: SessionData = Depends(get_sessio
                     os.makedirs(f"{hash(session_id)}/{f.rstrip('results.json')}", exist_ok=True)
                     while not os.path.exists(f"{hash(session_id)}/{f.rstrip('results.json')}"):
                         time.sleep(1)
-                    scp_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}',
+                    scp_cmd = [ssh, '-e', 'ssh', f'{user}@{cluster_name}',
                                f'cat {remote_loc_pet}{f} > {hash(session_id)}/{f}']
                     outs, errs = bash_cmd(scp_cmd, session_id, shell=True)
                     print(outs, errs)
@@ -159,7 +164,7 @@ def check_job_status(job_id: str, session_data: SessionData = Depends(get_sessio
 
         time.sleep(5)
 
-        ssh_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}',
+        ssh_cmd = [ssh, '-e', 'ssh', f'{user}@{cluster_name}',
                    f'cat /home/{user}/{log_file.split("/")[-1]}']
         outs, errs = bash_cmd(ssh_cmd, session_id)
         log_contents = outs.decode('utf-8')

@@ -1,5 +1,3 @@
-
-
 from fastapi import Request, Depends, APIRouter, Form, File, UploadFile, Response, HTTPException
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse, HTMLResponse
@@ -90,7 +88,12 @@ verifier = BasicVerifier(
 
 
 router = APIRouter()
-templates = Jinja2Templates(directory="/home/raci/PETGUI/templates")
+templates = Jinja2Templates(directory="../PETGUI/templates")
+local = False # If running app locally
+ssh = "sshpass"
+if local:
+    ssh = "/opt/homebrew/bin/sshpass"
+
 
 
 def get_session(session_id: UUID = Depends(cookie), session_data: SessionData = Depends(verifier)):
@@ -288,7 +291,7 @@ def logout(response: Response, session_id: UUID = Depends(cookie), session_data:
 
 
 @router.get("/clean", name="clean", dependencies=[Depends(cookie)])
-def clean(session_data: SessionData = Depends(verifier), session_id: UUID = Depends(cookie), logout: bool = False):
+def clean(session_data: SessionData = Depends(verifier), session_id: UUID = Depends(cookie), logout: bool = False,ssh=ssh):
     """
     Iterates over created paths during PET and unlinks them.
     Returns:
@@ -308,7 +311,7 @@ def clean(session_data: SessionData = Depends(verifier), session_id: UUID = Depe
         elif isdir(path):
             shutil.rmtree(path)
     try:
-        rm_cmd = ['sshpass', '-e', 'ssh',
+        rm_cmd = [ssh, '-e', 'ssh',
                    f'{user}@{cluster_name}', f'rm -r {remote_loc} /home/{user}/{log_file.split("/")[-1]}']
         proc = subprocess.Popen(rm_cmd, env={"SSHPASS": os.environ[f"{hash(session_id)}"]}, shell=False, stdout=PIPE,
                                 stderr=PIPE)
