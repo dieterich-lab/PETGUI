@@ -109,6 +109,8 @@ function addInput_map(){
 
 
 
+
+
     function disableButton_final(buttonId) {
 		    document.getElementById(buttonId).disabled = true;
 		}
@@ -152,6 +154,8 @@ function addInput_map(){
         }
 
 
+
+
   const downloadButton = document.getElementById('mycontain_download');
   downloadButton.addEventListener('click', () => {
     const url = '/download_prediction'; // The URL of your FastAPI endpoint
@@ -167,6 +171,7 @@ function addInput_map(){
         });
       });
   });
+
 
 
     function showLoading() {
@@ -255,6 +260,11 @@ function addInput_map(){
         .catch(error => console.error(error));
     }
 
+
+
+
+
+
 function showTable(jsonData) {
   const container = document.getElementById("table-container");
   const table = document.createElement("table");
@@ -309,22 +319,6 @@ function redirect() {
     }
 
 
-
-    let steps;
-    fetch('/steps').then(res => res.json()).then(data => parseInt(data.steps)).then(value => {steps = value});
-
-    let currentStep = 0; // set the current step here, between 0 and steps
-    const progressRing = document.querySelector('.progress-ring__circle--fill');
-    const ring_circle = document.querySelector('.progress-ring__circle');
-    const progressPercentage = document.querySelector('.progress-ring__percentage');
-    const circumference = 2 * Math.PI * 45;
-    let progress = 0;
-
-    const animateProgress = () => {
-      progress = currentStep / steps;
-      progressRing.style.strokeDashoffset = circumference * (1 - progress) - circumference;
-      progressPercentage.textContent = `${Math.floor(progress * 100)}%`;
-    };
 
 
 
