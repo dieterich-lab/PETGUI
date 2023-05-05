@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Response, Depends, HTTPException, UploadFile, File
+from fastapi import FastAPI, Depends, UploadFile, File, Request
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 import json
@@ -8,12 +8,12 @@ import time
 import tarfile
 import subprocess
 from subprocess import PIPE
-from app.controller import templating
-from app.controller.templating import SessionData, UUID
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from .controller.templating import get_session_id, get_session_data
+from app.controller import templating
+from app.dto.session import SessionData, UUID
+from .dto.session import get_session_id, get_session_data
 
 
 
@@ -55,12 +55,16 @@ async def run(session_id: UUID = Depends(get_session_id), session_data: SessionD
 
 
 @app.get("/final/start_prediction", dependencies=[Depends(get_session_id), Depends(get_session_data)])
-async def label_prediction(session_data: SessionData = Depends(get_session_data),
+async def label_prediction(request: Request, session_data: SessionData = Depends(get_session_data),
                            session_id: UUID = Depends(get_session_id)):
-    '''Start Predict'''
-    print("Prediction starting..")
-    job_id = await submit_job(session_data, True, session_id)
-    return check_job_status(job_id, session_data, True, session_id)
+    '''Start Predicttion'''
+    try:
+        print("Prediction starting..")
+        job_id = await submit_job(session_data, True, session_id)
+        return check_job_status(job_id, session_data, True, session_id)
+    except Exception as e:
+        error = "Something went wrong, please reload the page and try again"
+        return await templating.get_final_template(request, error)
 
 
 async def submit_job(session_data: SessionData = Depends(get_session_data), predict: bool = False,
@@ -74,16 +78,19 @@ async def submit_job(session_data: SessionData = Depends(get_session_data), pred
     cluster_name = session_data.cluster_name
 
     if predict:
-        scp_cmd = ['sshpass', '-e', 'scp', '-r', f'{str(hash(session_id))}/data_uploaded/unlabeled',
-                   f'{user}@{cluster_name}:{remote_loc_pet}data_uploaded/']
-        outs, errs = bash_cmd(scp_cmd, session_id)
-        ssh_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}',
-                   f'sbatch {remote_loc_pet}predict.sh {remote_loc.split("/")[-2]}']
-        outs, errs = bash_cmd(ssh_cmd, session_id)
-        print("Prediction: ", outs)
-        # Get the job ID from the output of the sbatch command
-        job_id = outs.decode('utf-8').strip().split()[-1]
-        return job_id
+        try:
+            scp_cmd = ['sshpass', '-e', 'scp', '-r', f'{str(hash(session_id))}/data_uploaded/unlabeled',
+                       f'{user}@{cluster_name}:{remote_loc_pet}data_uploaded/']
+            outs, errs = bash_cmd(scp_cmd, session_id)
+            ssh_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}',
+                       f'sbatch {remote_loc_pet}predict.sh {remote_loc.split("/")[-2]}']
+            outs, errs = bash_cmd(ssh_cmd, session_id)
+            print("Prediction: ", outs)
+            # Get the job ID from the output of the sbatch command
+            job_id = outs.decode('utf-8').strip().split()[-1]
+            return job_id
+        except Exception as e:
+            raise e
     else:
         mkdir_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}', f'mkdir {remote_loc}']
         outs, errs = bash_cmd(mkdir_cmd, session_id)
@@ -155,6 +162,8 @@ def check_job_status(job_id: str, session_data: SessionData = Depends(get_sessio
                 '''Call Results'''
                 results(session_id)
                 return {"Pet": "finished"}
+        elif status == "F":
+            raise Exception("Job could not finish. Please login and try again")
 
         time.sleep(5)
 
