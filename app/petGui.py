@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, UploadFile, File, Request
+from fastapi import FastAPI, Depends, UploadFile, File, Request, Response, Form
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 import json
@@ -10,10 +10,15 @@ import subprocess
 from subprocess import PIPE
 import pandas as pd
 import matplotlib.pyplot as plt
+from uuid import UUID, uuid4
+
+'''LDAP'''
+from ldap3 import Server, Connection, ALL, Tls, AUTO_BIND_TLS_BEFORE_BIND, core
+from ssl import PROTOCOL_TLSv1_2
 
 from app.controller import templating
 from app.dto.session import SessionData, UUID
-from .dto.session import get_session_id, get_session_data
+from .services.session import SessionService
 
 
 
@@ -23,8 +28,64 @@ app = FastAPI()
 app.include_router(templating.router)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-@app.get("/steps", name="steps", dependencies=[Depends(get_session_id)])
-def get_steps(session_id: UUID = Depends(get_session_id)):
+
+@app.post("/login")
+async def login(request: Request, username: str = Form(...), password: str = Form(...)):
+    if not authenticate_ldap(username=username, password=password):
+        error = 'Invalid username or password'
+        return await templating.login_form(request, error)
+    response = RedirectResponse(url=request.url_for("homepage"), status_code=303)
+    global sessionObj
+    sessionObj = await create_session(username, response)
+    session_uuid = sessionObj.get_session_id()
+    os.environ[f"{hash(session_uuid)}"] = password
+    os.makedirs(f"./{hash(session_uuid)}", exist_ok=True)  # If run with new conf.
+    return response
+
+
+def authenticate_ldap(username: str, password: str):
+    LDAP_SERVER = 'ldap://ldap2.dieterichlab.org'
+    CA_FILE = 'DieterichLab_CA.pem'
+    USER_BASE = 'dc=dieterichlab,dc=org'
+    LDAP_SEARCH_FILTER = '({name_attribute}={name})'
+    try:
+        tls = Tls(ca_certs_file=CA_FILE, version=PROTOCOL_TLSv1_2)
+        server = Server(LDAP_SERVER, get_info=ALL, tls=tls)
+        conn = Connection(server, auto_bind=AUTO_BIND_TLS_BEFORE_BIND, raise_exceptions=True)
+        conn.bind()
+        conn.search(USER_BASE, LDAP_SEARCH_FILTER.format(name_attribute="uid", name=username))
+        if conn.result['result'] == 0:
+            user_dn = conn.response[0]['dn']
+            try:
+                conn = Connection(server, user_dn, password, auto_bind=AUTO_BIND_TLS_BEFORE_BIND)
+                return True
+            except core.exceptions.LDAPBindError:
+                print("User authentication failed.")
+                return False
+        else:
+            return False
+    except Exception as e:
+        print(str(e))
+        return False
+
+
+async def create_session(user: str, response: Response):
+    session_id = uuid4()
+    remote_loc = f"/home/{user}/{hash(session_id)}/"
+    remote_loc_pet = f"/home/{user}/{hash(session_id)}/pet/"
+    cluster_name = "cluster.dieterichlab.org"
+    log_file = f"{hash(session_id)}/logging.txt"
+    last_pos_file = f"{hash(session_id)}/last_pos.txt"
+    data = SessionData(username=user, remote_loc=remote_loc, remote_loc_pet=remote_loc_pet, cluster_name=cluster_name,
+                       log_file=log_file, last_pos_file=last_pos_file)
+    sessionObj = SessionService(data, session_id)
+    await sessionObj.create_backend()
+    sessionObj.create_cookie(response=response)
+    return sessionObj
+
+
+@app.get("/steps", name="steps", dependencies=[Depends(sessionObj.get_session_id)])
+def get_steps(session_id: UUID = Depends(sessionObj.get_session_id)):
     with open(f"./{hash(session_id)}/data.json") as f:
         data = json.load(f)
     count_tmp = len([tmp for tmp in data.keys() if "template_" in tmp])
@@ -37,13 +98,13 @@ def main():
     return RedirectResponse(url="/login")
 
 
-@app.get("/whoami", dependencies=[Depends(get_session_id), Depends(get_session_data)], name="whoami")
-def whoami(session_id: UUID = Depends(get_session_id), session_data: SessionData = Depends(get_session_data)):
+@app.get("/whoami", dependencies=[Depends(sessionObj.get_session_id), Depends(sessionObj.get_session_data)], name="whoami")
+def whoami(session_id: UUID = Depends(sessionObj.get_session_id), session_data: SessionData = Depends(sessionObj.get_session_data)):
     return session_id, session_data
 
 
-@app.get("/logging/start_train",  dependencies=[Depends(get_session_id), Depends(get_session_data)])
-async def run(session_id: UUID = Depends(get_session_id), session_data: SessionData = Depends(get_session_data)):
+@app.get("/logging/start_train",  dependencies=[Depends(sessionObj.get_session_id), Depends(sessionObj.get_session_data)])
+async def run(session_id: UUID = Depends(sessionObj.get_session_id), session_data: SessionData = Depends(sessionObj.get_session_data)):
     """
     Kicks off PET by calling train method.
     """
@@ -54,9 +115,9 @@ async def run(session_id: UUID = Depends(get_session_id), session_data: SessionD
     t.start()
 
 
-@app.get("/final/start_prediction", dependencies=[Depends(get_session_id), Depends(get_session_data)])
-async def label_prediction(request: Request, session_data: SessionData = Depends(get_session_data),
-                           session_id: UUID = Depends(get_session_id)):
+@app.get("/final/start_prediction", dependencies=[Depends(sessionObj.get_session_id), Depends(sessionObj.get_session_data)])
+async def label_prediction(request: Request, session_data: SessionData = Depends(sessionObj.get_session_data),
+                           session_id: UUID = Depends(sessionObj.get_session_id)):
     '''Start Predicttion'''
     try:
         print("Prediction starting..")
@@ -67,8 +128,8 @@ async def label_prediction(request: Request, session_data: SessionData = Depends
         return await templating.get_final_template(request, error)
 
 
-async def submit_job(session_data: SessionData = Depends(get_session_data), predict: bool = False,
-                     session_id: UUID = Depends(get_session_id)):
+async def submit_job(session_data: SessionData = Depends(sessionObj.get_session_data), predict: bool = False,
+                     session_id: UUID = Depends(sessionObj.get_session_id)):
     # Copy the SLURM script file to the remote cluster
     print("Submitting job..")
 
@@ -114,15 +175,15 @@ async def submit_job(session_data: SessionData = Depends(get_session_data), pred
         job_id = outs.decode('utf-8').strip().split()[-1]
         return job_id
 
-def bash_cmd(cmd, session_id: UUID = Depends(get_session_id), shell:bool = False):
+def bash_cmd(cmd, session_id: UUID = Depends(sessionObj.get_session_id), shell:bool = False):
     proc = subprocess.Popen(" ".join(cmd) if shell else cmd, env={"SSHPASS": os.environ[f"{hash(session_id)}"]}, shell=shell,
                             stdout=subprocess.PIPE, stderr=PIPE)
     outs, errs = proc.communicate()
     return outs, errs
 
 
-def check_job_status(job_id: str, session_data: SessionData = Depends(get_session_data), predict: bool = False,
-                     session_id: UUID = Depends(get_session_id)):
+def check_job_status(job_id: str, session_data: SessionData = Depends(sessionObj.get_session_data), predict: bool = False,
+                     session_id: UUID = Depends(sessionObj.get_session_id)):
     user = session_data.username
     remote_loc_pet = session_data.remote_loc_pet
     cluster_name = session_data.cluster_name
@@ -177,7 +238,7 @@ def check_job_status(job_id: str, session_data: SessionData = Depends(get_sessio
             f.write(log_contents)
 
 
-def results(session_id: UUID = Depends(get_session_id)):
+def results(session_id: UUID = Depends(sessionObj.get_session_id)):
     """
     Saves results.json for each pattern-iteration pair of output/final directory in a dictionary.
     Returns:
@@ -212,8 +273,8 @@ def results(session_id: UUID = Depends(get_session_id)):
         json.dump(scores, res)
         
 
-@app.post("/extract-file", dependencies=[Depends(get_session_id)])
-async def extract_file(file: UploadFile = File(...), session_id: UUID = Depends(get_session_id)):
+@app.post("/extract-file", dependencies=[Depends(sessionObj.get_session_id)])
+async def extract_file(file: UploadFile = File(...), session_id: UUID = Depends(sessionObj.get_session_id)):
     file_upload = tarfile.open(fileobj=file.file, mode="r:gz")
     file_upload.extractall(f'{hash(session_id)}/data_uploaded')
 

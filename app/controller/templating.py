@@ -11,71 +11,19 @@ from uuid import UUID, uuid4
 from os.path import isdir, isfile
 import pathlib
 import shutil
-from ldap3 import Server, Connection, ALL, Tls, AUTO_BIND_TLS_BEFORE_BIND, core
-from ssl import PROTOCOL_TLSv1_2
-
 
 from ..dto.session import SessionData, backend, cookie, verifier
+
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
 
 
-
-def authenticate_ldap(username: str, password: str):
-    LDAP_SERVER = 'ldap://ldap2.dieterichlab.org'
-    CA_FILE = 'DieterichLab_CA.pem'
-    USER_BASE = 'dc=dieterichlab,dc=org'
-    LDAP_SEARCH_FILTER = '({name_attribute}={name})'
-    try:
-        tls = Tls(ca_certs_file=CA_FILE, version=PROTOCOL_TLSv1_2)
-        server = Server(LDAP_SERVER, get_info=ALL, tls=tls)
-        conn = Connection(server, auto_bind=AUTO_BIND_TLS_BEFORE_BIND, raise_exceptions=True)
-        conn.bind()
-        conn.search(USER_BASE, LDAP_SEARCH_FILTER.format(name_attribute="uid", name=username))
-        if conn.result['result'] == 0:
-            user_dn = conn.response[0]['dn']
-            try:
-                conn = Connection(server, user_dn, password, auto_bind=AUTO_BIND_TLS_BEFORE_BIND)
-                return True
-            except core.exceptions.LDAPBindError:
-                print("User authentication failed.")
-                return False
-        else:
-            return False
-    except Exception as e:
-        print(str(e))
-        return False
-
-async def create_session(user: str, response: Response):
-
-    session = uuid4()
-    remote_loc = f"/home/{user}/{hash(session)}/"
-    remote_loc_pet = f"/home/{user}/{hash(session)}/pet/"
-    cluster_name = "cluster.dieterichlab.org"
-    log_file = f"{hash(session)}/logging.txt"
-    last_pos_file = f"{hash(session)}/last_pos.txt"
-    data = SessionData(username=user, remote_loc=remote_loc, remote_loc_pet=remote_loc_pet, cluster_name=cluster_name,
-                       log_file=log_file, last_pos_file=last_pos_file)
-    await backend.create(session, data)
-    cookie.attach_to_response(response, session)
-    return session
-
 @router.get("/login", response_class=HTMLResponse)
 async def login_form(request: Request, error=None):
     return templates.TemplateResponse('login.html', {'request': request, 'error': error})
 
-@router.post("/login")
-async def login(request: Request, username: str = Form(...), password: str = Form(...)):
-    if not authenticate_ldap(username=username, password=password):
-        error = 'Invalid username or password'
-        return templates.TemplateResponse('login.html', {'request': request, 'error': error})
-    response = RedirectResponse(url=request.url_for("homepage"), status_code=303)
-    session_uuid = await create_session(username, response)
-    os.environ[f"{hash(session_uuid)}"] = password
-    os.makedirs(f"./{hash(session_uuid)}", exist_ok=True)  # If run with new conf.
-    return response
 
 @router.post("/basic", name="homepage", dependencies=[Depends(cookie)])
 async def get_form(request: Request, sample: str = Form(media_type="multipart/form-data"),
