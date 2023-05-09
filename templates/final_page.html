@@ -78,10 +78,40 @@
                                             <div class="card-body" id="container"><span class="circle_1">3.</span>
                                 <button class="btn btn--radius-2 btn--blue" id="mycontain_download" style="background-color: grey;" disabled>Download Predicted data</button>
                             </div>
-                </div>
+
+                   <div class="card-body" id="container">
+      <span class="circle_1">4.</span>
+      <button class="btn btn--radius-2 btn--blue" id="show_chart" onclick="generateChart()" style="background-color: grey;" disabled>Show Chart</button>
+    </div>
+                <div id="chartContainer"></div>
+
             </div>
         </div>
     </div>
+    <style>
+#chartContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+</style>
+
+   <script>
+function generateChart() {
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", "/label-distribution");
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+            // The chart was generated successfully
+            var chartImage = document.createElement("img");
+            chartImage.src = "/static/chart_prediction.png";
+            document.getElementById("chartContainer").appendChild(chartImage);
+        }
+    }
+    xhr.send(JSON.stringify({}));
+}
+</script>
 
 
     <!-- Jquery JS-->

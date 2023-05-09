@@ -245,3 +245,27 @@ async def extract_file(file: UploadFile = File(...), session_id: UUID = Depends(
     plt.savefig("static/chart.png", dpi=100)
 
     return {"message": "File extracted successfully."}
+
+
+@app.post("/label-distribution",dependencies=[Depends(get_session_id)])
+async def label_distribution(session_id: UUID = Depends(get_session_id)):
+    # Read the prediction data into a dataframe
+    df = pd.read_csv(f'{hash(session_id)}/output/predictions.csv')
+
+    label_counts = df['label'].value_counts()
+    fig = plt.figure(figsize=(7, 5))
+    ax = fig.add_subplot(111)
+    label_counts.plot(kind='bar', width=0.3, ax=ax)
+
+    ax.set_title('Label Counts')
+
+    ax.set_xlabel('Label')
+
+    ax.set_ylabel('Number of Examples')
+
+
+
+    # Save the chart to a file
+    plt.savefig("static/chart_prediction.png", dpi=100)
+    return {"message": "Label distribution chart created successfully."}
+

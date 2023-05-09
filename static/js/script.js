@@ -14,11 +14,9 @@ function addEventListenersForIndex() {
       body: formData
     }).then(response => {
       if (response.ok) {
-        // Show the chart container and reload the image
-        const chartContainer = document.getElementById("chart-container");
-        chartContainer.style.display = "block";
-        const chartImage = document.getElementById("myChart");
-        chartImage.src = "static/chart.png?" + new Date().getTime();
+        // Enable the show statistics button
+        const showStatisticsButton = document.getElementById("show-statistics-button");
+        showStatisticsButton.disabled = false;
       }
     });
   });
@@ -36,7 +34,18 @@ function addEventListenersForIndex() {
     const msg = `File ${files[0].name} uploaded successfully!`;
     feedback.innerHTML = msg;
   });
+
+  const showStatisticsButton = document.getElementById("show-statistics-button");
+  showStatisticsButton.addEventListener("click", function() {
+    // Read in the image and display the statistics
+    const chartImage = document.getElementById("myChart");
+    const img = document.createElement("img");
+    img.src = chartImage.src;
+    const statsContainer = document.getElementById("stats-container");
+    statsContainer.appendChild(img);
+  });
 }
+
 
 
 
@@ -150,6 +159,8 @@ function addInput_map(){
                     changeButtonColor("mycontain_download", "blue");
                     changeButtonText("mycontain", "Prediction Finished");
                     removeButtonAttribute("mycontain_download", "disabled");
+                    changeButtonColor("show_chart", "blue");
+                    removeButtonAttribute("show_chart", "disabled");
                 });
         }
 
