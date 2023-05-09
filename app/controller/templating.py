@@ -5,13 +5,6 @@ from starlette.responses import FileResponse
 from fastapi.encoders import jsonable_encoder
 import json, os, tarfile, subprocess
 from subprocess import PIPE
-
-
-'''Session'''
-from pydantic import BaseModel
-from fastapi_sessions.backends.implementations import InMemoryBackend
-from fastapi_sessions.session_verifier import SessionVerifier
-from fastapi_sessions.frontends.implementations import SessionCookie, CookieParameters
 from uuid import UUID, uuid4
 
 '''LDAP'''
@@ -22,73 +15,13 @@ from ldap3 import Server, Connection, ALL, Tls, AUTO_BIND_TLS_BEFORE_BIND, core
 from ssl import PROTOCOL_TLSv1_2
 
 
-class SessionData(BaseModel):
-    username: str
-    remote_loc: str
-    remote_loc_pet: str
-    cluster_name: str
-    last_pos_file: str
-    log_file: str
-
-
-cookie_params = CookieParameters()
-
-# Uses UUID
-cookie = SessionCookie(
-    cookie_name="cookie",
-    identifier="general_verifier",
-    auto_error=True,
-    secret_key="DONOTUSE",
-    cookie_params=cookie_params,
-)
-backend = InMemoryBackend[UUID, SessionData]()
-
-
-class BasicVerifier(SessionVerifier[UUID, SessionData]):
-    def __init__(
-        self,
-        *,
-        identifier: str,
-        auto_error: bool,
-        backend: InMemoryBackend[UUID, SessionData],
-        auth_http_exception: HTTPException,
-    ):
-        self._identifier = identifier
-        self._auto_error = auto_error
-        self._backend = backend
-        self._auth_http_exception = auth_http_exception
-
-    @property
-    def identifier(self):
-        return self._identifier
-
-    @property
-    def backend(self):
-        return self._backend
-
-    @property
-    def auto_error(self):
-        return self._auto_error
-
-    @property
-    def auth_http_exception(self):
-        return self._auth_http_exception
-
-    def verify_session(self, model: SessionData) -> bool:
-        """If the session exists, it is valid"""
-        return True
-
-
-verifier = BasicVerifier(
-    identifier="general_verifier",
-    auto_error=True,
-    backend=backend,
-    auth_http_exception=HTTPException(status_code=403, detail="invalid session"),
-)
-
+from ..dto.session import SessionData, backend, cookie, verifier
 
 router = APIRouter()
-templates = Jinja2Templates(directory="../PETGUI/templates")
+
+templates = Jinja2Templates(directory="templates")
+
+
 local = False # If running app locally
 ssh = "sshpass"
 if local:
@@ -96,14 +29,8 @@ if local:
 
 
 
-def get_session(session_id: UUID = Depends(cookie), session_data: SessionData = Depends(verifier)):
-    return session_id, session_data
 
-def get_session_id(session_id: UUID = Depends(cookie)):
-    return session_id
 
-def get_session_data(session_data: SessionData = Depends(verifier)):
-    return session_data
 
 def authenticate_ldap(username: str, password: str):
     LDAP_SERVER = 'ldap://ldap2.dieterichlab.org'
@@ -170,41 +97,48 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
                    file: UploadFile = File(...),
                    template_0: str = Form(media_type="multipart/form-data"),
                    session_id: UUID = Depends(cookie), session_data: SessionData = Depends(verifier)):
-    await read_log(session_id, session_data, initial=True)
     try:
-        file_upload = tarfile.open(fileobj=file.file, mode="r:gz")
-        file_upload.extractall(f'{hash(session_id)}/data_uploaded')
-    except:
-        return templates.TemplateResponse('index.html', {'request': request, 'error': "Invalid File Type: Please upload your data as a zip file with the extension '.tar.gz'"})
-    da = await request.form()
-    da = jsonable_encoder(da)
-    template_counter = 1
-    origin_counter = 2
-    mapping_counter = 2
-    para_dic = {"file": "".join(next(os.walk(f"./{hash(session_id)}/data_uploaded/"))[1]), "sample": sample, "label": label,
-                "template_0": template_0, "origin_0": origin_0,
-                "mapping_0": mapping_0,  "origin_1": origin_1,
-                "mapping_1": mapping_1, "model_para": model_para}
-    while f"template_{str(template_counter)}" in da: # Template
-        template_key = f"template_{str(template_counter)}"
-        para_dic[template_key] = da[template_key]
-        template_counter = template_counter + 1
-    while f"origin_{str(origin_counter)}" in da: # Label
-        origin_key = f"origin_{str(origin_counter)}"
-        para_dic[origin_key] = da[origin_key]
-        origin_counter = origin_counter+1
-    while f"mapping_{str(mapping_counter)}" in da: # Verbalizer
-        mapping_key = f"mapping_{str(mapping_counter)}"
-        para_dic[mapping_key] = da[mapping_key]
-        mapping_counter = mapping_counter+1
-    with open(f'{hash(session_id)}/data.json', 'w') as f:
-        json.dump(para_dic, f)
-    if origin_counter <2:
-        return templates.TemplateResponse('index.html', {'request': request,
-                                                         'error': "Please fill in all required parameters."})
-    redirect_url = request.url_for('logging')
-    print(para_dic)
-    return RedirectResponse(redirect_url, status_code=303)
+
+        await read_log(session_id, session_data, initial=True)
+        try:
+            file_upload = tarfile.open(fileobj=file.file, mode="r:gz")
+            file_upload.extractall(f'{hash(session_id)}/data_uploaded')
+        except:
+            return templates.TemplateResponse('index.html', {'request': request, 'error': "Invalid File Type: Please upload your data as a zip file with the extension '.tar.gz'"})
+        da = await request.form()
+        da = jsonable_encoder(da)
+        template_counter = 1
+        origin_counter = 2
+        mapping_counter = 2
+        para_dic = {"file": "".join(next(os.walk(f"./{hash(session_id)}/data_uploaded/"))[1]), "sample": sample, "label": label,
+                    "template_0": template_0, "origin_0": origin_0,
+                    "mapping_0": mapping_0,  "origin_1": origin_1,
+                    "mapping_1": mapping_1, "model_para": model_para}
+        while f"template_{str(template_counter)}" in da: # Template
+            template_key = f"template_{str(template_counter)}"
+            para_dic[template_key] = da[template_key]
+            template_counter = template_counter + 1
+        while f"origin_{str(origin_counter)}" in da: # Label
+            origin_key = f"origin_{str(origin_counter)}"
+            para_dic[origin_key] = da[origin_key]
+            origin_counter = origin_counter+1
+        while f"mapping_{str(mapping_counter)}" in da: # Verbalizer
+            mapping_key = f"mapping_{str(mapping_counter)}"
+            para_dic[mapping_key] = da[mapping_key]
+            mapping_counter = mapping_counter+1
+        with open(f'{hash(session_id)}/data.json', 'w') as f:
+            json.dump(para_dic, f)
+        if origin_counter <2:
+            return templates.TemplateResponse('index.html', {'request': request,
+                                                             'error': "Please fill in all required parameters."})
+        redirect_url = request.url_for('logging')
+        print(para_dic)
+        return RedirectResponse(redirect_url, status_code=303)
+
+    except Exception as e:
+        error = str(e)
+        return templates.TemplateResponse("index.html", {"request": request, "error": error})
+
 
 @router.get("/basic", response_class=HTMLResponse, name='homepage')
 async def get_form(request: Request):
@@ -217,8 +151,8 @@ def read_item(request: Request):
     return templates.TemplateResponse("progress.html", {"request": request, "max_num": max_num})
 
 @router.get("/logging", name="logging", dependencies=[Depends(cookie)])
-async def logging(request: Request):
-    return templates.TemplateResponse("next.html", {"request": request})
+async def logging(request: Request, error: str = None):
+    return templates.TemplateResponse("next.html", {"request": request, "error": error})
 
 
 @router.get("/log", name="log", dependencies=[Depends(cookie)])
@@ -262,8 +196,8 @@ def download(session_id: UUID = Depends(cookie)):
     return FileResponse(f"{hash(session_id)}/results.json", filename="results.json")
 
 @router.get("/final", response_class=HTMLResponse, name='final', dependencies=[Depends(cookie)])
-async def get_final_template(request: Request):
-    return templates.TemplateResponse("final_page.html", {"request": request})
+async def get_final_template(request: Request, error = None):
+    return templates.TemplateResponse("final_page.html", {"request": request, "error": error})
 
 @router.post("/uploadfile/", dependencies=[Depends(cookie)])
 async def create_upload_file(file: UploadFile = File(...), session_id: UUID = Depends(cookie)):
