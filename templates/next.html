@@ -26,317 +26,10 @@
     <link href="static/css/main.css" rel="stylesheet" media="all">
     <!-- Local CSS-->
     <link rel="stylesheet" href="static/css/main.css">
+    <link href="/static/css/style.css" rel="stylesheet">
 
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-    <style>
-        .spinner {
-  display: none;
-  position: relative;
-  top: 100%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(0deg);  /* changed position */
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  border-left-color: #636767;
-  border-radius: 50%;
-  width: 25px;
-  height: 25px;
-  animation: spin 1s linear infinite;
-  margin-top: 25px;
-}
 
-    @keyframes spin {
-      to { transform:  translate(-50%, -50%) rotate(360deg); }
-    }
-
-#loadingText {
-  display: none;
-  font-size: 15px;
-  font-weight: bold;
-  margin-bottom: 4px;
-  margin-top: 4px;
-  color: black;
-}
-
-  ul {
-    list-style-type: disc;
-    margin-left: 20px;
-    font-family: Arial, sans-serif;
-    font-size: 16px;
-    line-height: 1.5;
-    color: #333333;
-    text-decoration: none; /* remove underlining from list items */
-  }
-
-    li {
-    margin-bottom: 10px; /* add some spacing between list items */
-    text-decoration: none;
-    pointer-events: none;
-    }
-
-    .progress-ring {
-      position: relative;
-      width: 10rem;
-      height: 10rem;
-      display: inline-block;
-      transform: rotate(-90deg);
-      margin-top: 25px;
-    }
-    .progress-ring .progress-ring__circle {
-      fill: #fff;
-      stroke: #0d6efd;
-      stroke-width: 4;
-      stroke-dasharray: 283;
-      stroke-dashoffset: 0;
-      display: animate;
-
-    }
-    .progress-ring .progress-ring__circle--fill {
-      fill: none;
-      stroke: #f3f3f3;
-      stroke-width: 4;
-      stroke-linecap: round;
-      stroke-dasharray: 283;
-      stroke-dashoffset: 283;
-      transition: stroke-dashoffset 1s ease-out;
-
-    }
-    .progress-ring .progress-ring__percentage {
-      position: relative;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) rotate(90deg); /* changed position */
-      font-size: 1rem;
-      font-weight: bold;
-      fill: black;
-    }
-
-    </style>
-</head>
-
- <script>
-    function showLoading() {
-			document.getElementById("spinner").style.display = "block";
-		}
-	function hideLoading() {
-			document.getElementById("spinner").style.display = "none";
-		}
-    function showList() {
-           document.getElementById("logList").style.display = "inline-block";
-		}
-    function showRing() {
-           document.getElementById("loading").style.display = "inline-block";
-		}
-    function showText() {
-        document.getElementById("loadingText").style.display = "block";
-    }
-    function hideText() {
-        document.getElementById("loadingText").style.display = "none";
-    }
-    function changeButtonColor(buttonId, color) {
-			document.getElementById(buttonId).removeAttribute("style");
-			document.getElementById(buttonId).setAttribute("class", "btn btn--radius-2 btn--"+color);
-
-		}
-
-    function removeButtonAttribute(buttonId, attribute) {
-        document.getElementById(buttonId).removeAttribute(attribute);
-    }
-
-    function changeButtonText(buttonId, text) {
-            const button = document.getElementById(buttonId);
-            button.textContent = text;
-    }
-
-     function startTraining() {
-         changeButtonText("trainButton", "Training Starting..");
-         const intervalId = setInterval(refreshLog, 10000);
-     }
-
-     function disableButton() {
-			document.getElementById("trainButton").disabled = true;
-		}
-
-
-    function refreshLog() {
-      return fetch("/log")
-        .then(response => response.json())
-        .then(data => {
-          const logList = document.getElementById("logList");
-          data.log.forEach(line => {
-            const li = document.createElement("li");
-            currentStep++;
-            li.textContent = line;
-            logList.appendChild(li);
-            animateProgress();
-
-            if (li.textContent.includes('Training Complete')) {
-              changeButtonColor("trainButton", "green");
-              changeButtonText("trainButton", "Training Complete");
-              changeButtonColor("resultsButton", "blue");
-              removeButtonAttribute("resultsButton", "disabled");
-              changeButtonColor("rerunButton", "blue");
-              removeButtonAttribute("rerunButton", "disabled");
-              changeButtonColor("annotateButton", "blue");
-              removeButtonAttribute("annotateButton", "disabled");
-
-              const interval = document.getElementById("intervalId");
-              clearInterval(interval);
-              return;
-            } else if (logList.childElementCount >= 1) {
-              showList();
-              hideLoading();
-              hideText();
-              changeButtonText("trainButton", "Training Started");
-            }
-          });
-        });
-    }
-
- </script>
-    <script>
-      async function downloadFile() {
-        const response = await fetch("/download");
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = "results.json";
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-      }
-    </script>
-<script>
-    function loadJSON() {
-      fetch('/download')
-        .then(response => response.json())
-        .then(data => showTable(data))
-        .catch(error => console.error(error));
-    }
-
-function showTable(jsonData) {
-  const container = document.getElementById("table-container");
-  const table = document.createElement("table");
-
-  // create table header
-  const header = table.createTHead();
-  const headerRow = header.insertRow();
-  const iterationHeader = headerRow.insertCell();
-  iterationHeader.innerHTML = "Pattern";
-  const accHeader = headerRow.insertCell();
-  accHeader.innerHTML = "Accuracy";
-  const labelHeader = headerRow.insertCell();
-  labelHeader.innerHTML = "Per label performance";
-
-  // create table body
-  const body = table.createTBody();
-  for (let iteration in jsonData) {
-    const row = body.insertRow();
-    const iterationCell = row.insertCell();
-    iterationCell.innerHTML = iteration;
-    const accCell = row.insertCell();
-    accCell.innerHTML = jsonData[iteration]["acc"];
-    const labelCell = row.insertCell();
-    const labelTable = document.createElement("table");
-    const labelBody = labelTable.createTBody();
-    for (let labelData of jsonData[iteration]["pre-rec-f1-supp"]) {
-      const labelRow = labelBody.insertRow();
-      const labelNameCell = labelRow.insertCell();
-      const labelPerfCell = labelRow.insertCell();
-      const labelDataArr = labelData.split(" ");
-      labelNameCell.innerHTML = labelDataArr[0] + " " + labelDataArr[1];
-      labelPerfCell.innerHTML = labelDataArr.slice(2).join(" ");
-    }
-    labelCell.appendChild(labelTable);
-  }
-
-  container.appendChild(table);
-}
-
-
-  </script>
-<style>
-  #table-container {
-    text-align: center;
-    margin: auto;
-    font-size: 30px; }
-      table {
-  border-collapse: collapse;
-  margin: auto;
-  font-family: Arial, sans-serif;
-  font-size: 14px;
-  color: #333;
-  margin-top: 25px;
-}
-
-th, td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: center;
-}
-
-th {
-  background-color: #f2f2f2;
-}
-
-tr:nth-child(even) {
-  background-color: #f9f9f9;
-}
-
-</style>
- <script type="text/javascript">
-  $(function() {
-          $('a#test').on('click', function(e) {
-            e.preventDefault()
-            $.getJSON('/logging/start_train',
-                function(data) {
-            });
-            return false;
-          });
-        });
-
- </script>
-
- <style>
-     #logList {
-         height: 100px;
-         overflow: auto;
-         margin-top: 25px;
-     }
-
-    .logout-btn {
-    display: flex;
-    float: right;
-    color: lightgrey;
-    line-height: 0px;
-    align-items: center;
-    padding: 0px 25px;
-    }
-
-    .logout-btn:hover {
-    color: white;
-    }
-
- </style>
-<script>
-      function redirect() {
-        window.location.href = "/final";
-      }
-    </script>
-<script>
-    function runPythonCode() {
-        fetch('/clean').then(response => {
-            console.log('Python code executed successfully');
-            window.location.href = '/basic';
-        });
-    }
-
-    function Logout() {
-    fetch('/logout').then(response => {
-        window.location.href = '/login';
-    });
-}
-</script>
 
 <body>
     <div class="page-wrapper bg-gra-03 p-t-45 p-b-50">
@@ -367,44 +60,38 @@ tr:nth-child(even) {
       <text class="progress-ring__percentage" x="100%" y="-100%" dominant-baseline="middle" text-anchor="middle">0%</text>
     </svg>
   </div>
-<script>
-
+                         <script>
     let steps;
-    fetch('/steps').then(res => res.json()).then(data => parseInt(data.steps)).then(value => {steps = value});
+fetch('/steps').then(res => res.json()).then(data => parseInt(data.steps)).then(value => {steps = value});
 
-    let currentStep = 0; // set the current step here, between 0 and steps
-    const progressRing = document.querySelector('.progress-ring__circle--fill');
-    const ring_circle = document.querySelector('.progress-ring__circle');
-    const progressPercentage = document.querySelector('.progress-ring__percentage');
-    const circumference = 2 * Math.PI * 45;
-    let progress = 0;
+let currentStep = 0; // set the current step here, between 0 and steps
+const progressRing = document.querySelector('.progress-ring__circle--fill');
+const ring_circle = document.querySelector('.progress-ring__circle');
+const progressPercentage = document.querySelector('.progress-ring__percentage');
+const circumference = 2 * Math.PI * 45;
+let progress = 0;
 
-    const animateProgress = () => {
-      progress = currentStep / steps;
-      progressRing.style.strokeDashoffset = circumference * (1 - progress) - circumference;
-      progressPercentage.textContent = `${Math.floor(progress * 100)}%`;
-    };
-
-
+const animateProgress = () => {
+  progress = currentStep / steps;
+  progressRing.style.strokeDashoffset = circumference * (1 - progress) - circumference;
+  progressPercentage.textContent = `${Math.floor(progress * 100)}%`;
+};
 </script>
-                <style>
- svg {
-  display: block;
-  margin: auto;
-}
 
-.button-container {
-  position: relative;
-  display: inline-block;
-}
+                         <script type="text/javascript">
+  $(function() {
+          $('a#test').on('click', function(e) {
+            e.preventDefault()
+            $.getJSON('/logging/start_train',
+                function(data) {
+            });
+            return false;
+          });
+        });
 
-#container {
-text-align: center;
-}
-#1container {
-text-align: start;
-}
-</style>
+ </script>
+
+
 
 
   <div class="card-body" id="table-container">
@@ -414,70 +101,11 @@ text-align: start;
 
   <p id='showData'></p>
   <p id='msg'></p>
-<script>
-    const button = document.getElementById("another");
 
-button.addEventListener("click", function() {
-  window.location.href = "/final";
-});
-</script>
 
-<script>
-  let tableFromJson = () => {
-    // the json data.
-    const myBooks = [
-      {'Precision': '1', 'Recall': 'Challenging Times',
-       'F1': 'Business', 'Support': '125.60'
-      },
-      {'Precision': '2', 'Recall': 'Learn JavaScript',
-       'F1': 'Programming', 'Support': '56.00'
-      },
-        {'Precision': '2', 'Recall': 'Learn JavaScript',
-       'F1': 'Programming', 'Support': '56.00'
-      }
 
-    ]
-
-    // Extract value from table header.
-    // ('Book ID', 'Book Name', 'Category' and 'Price')
-    let col = [];
-    for (let i = 0; i < myBooks.length; i++) {
-      for (let key in myBooks[i]) {
-        if (col.indexOf(key) === -1) {
-          col.push(key);
-        }
-      }
-    }
-    // Create a table.
-    const table = document.createElement("table");
-
-    // Create table header row using the extracted headers above.
-    let tr = table.insertRow(-1);                   // table row.
-
-    for (let i = 0; i < col.length; i++) {
-      let th = document.createElement("th");      // table header.
-      th.innerHTML = col[i];
-      tr.appendChild(th);
-    }
-
-    // add json data to the table as rows.
-    for (let i = 0; i < myBooks.length; i++) {
-
-      tr = table.insertRow(-1);
-
-      for (let j = 0; j < col.length; j++) {
-        let tabCell = tr.insertCell(-1);
-        tabCell.innerHTML = myBooks[i][col[j]];
-      }
-    }
-
-    // Now, add the newly created table with json data, to a container.
-    const divShowData = document.getElementById('showData');
-    divShowData.innerHTML = "";
-    divShowData.appendChild(table);
-  }
-</script>
       </div>
+
                         <div class="form-row m-b-55">
                             <div class="value">
                                 <div class="row row-space">
@@ -508,6 +136,9 @@ button.addEventListener("click", function() {
 
     <!-- Main JS-->
     <script src="static/js/global.js"></script>
+    <script src="/static/js/script.js"></script>
+
+
 
 </body><!-- This templates was made by Colorlib (https://colorlib.com) -->
 
