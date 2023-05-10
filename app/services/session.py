@@ -6,7 +6,6 @@ class SessionService:
     def __init__(self, session_data: SessionData = Depends(verifier), session_id: UUID = Depends(cookie)):
         self.session_data = session_data
         self.session_id = session_id
-
     async def create_backend(self):
         return await backend.create(self.session_id, self.session_data)
 

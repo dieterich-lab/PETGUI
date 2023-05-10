@@ -2,3 +2,4 @@ venv/
 *__pycache__*
 DieterichLab_CA.pem
 /data/big
+/static/chart.png

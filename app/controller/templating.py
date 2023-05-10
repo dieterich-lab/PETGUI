@@ -21,8 +21,11 @@ templates = Jinja2Templates(directory="templates")
 
 
 @router.get("/login", response_class=HTMLResponse)
-async def login_form(request: Request, error=None):
-    return templates.TemplateResponse('login.html', {'request': request, 'error': error})
+async def login_form(request: Request, error=None, logout: bool = False):
+    if logout:
+        return templates.TemplateResponse('login.html', {'request': request, 'error': error, 'logout_msg': "Logged out successfully!"})
+    else:
+        return templates.TemplateResponse('login.html', {'request': request, 'error': error})
 
 
 @router.post("/basic", name="homepage", dependencies=[Depends(cookie)])
@@ -156,11 +159,11 @@ def download_predict(session_id: UUID = Depends(cookie)):
     return FileResponse(f"{hash(session_id)}/output/predictions.csv", filename="predictions.csv")
 
 
-@router.get("/logout", dependencies=[Depends(cookie)])
-def logout(response: Response, session_id: UUID = Depends(cookie), session_data: SessionData = Depends(verifier)):
+@router.get("/logout")
+def logout(request: Request, response: Response, session_id: UUID = Depends(cookie), session_data: SessionData = Depends(verifier)):
     clean(session_data, session_id, logout=True)
     cookie.delete_from_response(response)
-    return {"Logout", "successful"}
+    request.app.state.session = None
 
 
 @router.get("/clean", name="clean", dependencies=[Depends(cookie)])

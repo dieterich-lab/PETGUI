@@ -304,16 +304,35 @@ tr:nth-child(even) {
          margin-top: 25px;
      }
 
+   .card-heading {
+   position: relative;
+   }
+
     .logout-btn {
-    display: flex;
-    float: right;
+    position: absolute;
+    top: 0%;
+    transform: translateY(-50%, 50%);
+    right: 0;
     color: lightgrey;
-    line-height: 0px;
     align-items: center;
-    padding: 0px 25px;
+    padding: 15px 25px;
     }
 
     .logout-btn:hover {
+    color: white;
+    }
+
+    .home-btn {
+    position: absolute;
+    top: 0%;
+    transform: translateY(-50%, 50%);
+    left: 0;
+    color: lightgrey;
+    align-items: center;
+    padding: 15px 25px;
+    }
+
+    .home-btn:hover {
     color: white;
     }
 
@@ -324,18 +343,17 @@ tr:nth-child(even) {
       }
     </script>
 <script>
-    function runPythonCode() {
+    function Rerun() {
         fetch('/clean').then(response => {
-            console.log('Python code executed successfully');
             window.location.href = '/basic';
         });
     }
 
     function Logout() {
-    fetch('/logout').then(response => {
-        window.location.href = '/login';
-    });
-}
+        fetch('/logout').then(response => {
+            window.location.href = '/login?logout=True';
+        });
+    }
 </script>
 
 <body>
@@ -344,7 +362,8 @@ tr:nth-child(even) {
             <div class="card card-5">
                 <div class="card-heading">
                     <div class="title">Train Your PET Model</div>
-                    <button class="btn logout-btn logout-btn:hover" onclick="Logout()">Logout</button>
+                    <button class="btn logout-btn logout-btn:hover" onclick="Logout()">Logout <i class="fa fa-power-off"></i></button>
+                    <button class="btn home-btn home-btn:hover" onclick="Rerun()">START <i class="fa fa-home"></i></button>
                 </div>
                      <div class="card-body" id="container">
       <a href="#" id="test">
@@ -489,7 +508,7 @@ button.addEventListener("click", function() {
                             </div>
                         </div>
                             <div class="card-body" id="container">
-                                <button class="btn btn--radius-2" style="background-color: grey;" id="rerunButton" onclick="runPythonCode()" disabled>Run with new configuration</button>
+                                <button class="btn btn--radius-2" style="background-color: grey;" id="rerunButton" onclick="Rerun()" disabled>Run with new configuration</button>
                             </div>
                             <div class="card-body" id="container">
                                 <button class="btn btn--radius-2" style="background-color: grey;" id="annotateButton" onclick="redirect()" disabled>Annotate unseen data</button>

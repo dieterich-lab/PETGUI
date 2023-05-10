@@ -29,19 +29,40 @@ app.include_router(templating.router)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
+class Session:
+    session: SessionService
+
+
+app.state = Session()
+
+
+def get_session_service(request: Request):
+    return request.app.state.session
+
+@app.get("/", name="start")
+def main():
+    return RedirectResponse(url="/login")
+
+
 @app.post("/login")
 async def login(request: Request, username: str = Form(...), password: str = Form(...)):
     if not authenticate_ldap(username=username, password=password):
         error = 'Invalid username or password'
         return await templating.login_form(request, error)
     response = RedirectResponse(url=request.url_for("homepage"), status_code=303)
-    global sessionObj
-    sessionObj = await create_session(username, response)
-    session_uuid = sessionObj.get_session_id()
+    session = await create_session(request, username, response)
+    session_uuid = session.get_session_id()
     os.environ[f"{hash(session_uuid)}"] = password
     os.makedirs(f"./{hash(session_uuid)}", exist_ok=True)  # If run with new conf.
     return response
 
+
+@app.get("/whoami", name="whoami")
+def whoami(session: SessionService = Depends(get_session_service)):
+    try:
+        return session.get_session_id(), session.get_session_data()
+    except AttributeError as e:
+        print(str(e))
 
 def authenticate_ldap(username: str, password: str):
     LDAP_SERVER = 'ldap://ldap2.dieterichlab.org'
@@ -69,7 +90,7 @@ def authenticate_ldap(username: str, password: str):
         return False
 
 
-async def create_session(user: str, response: Response):
+async def create_session(request: Request, user: str, response: Response):
     session_id = uuid4()
     remote_loc = f"/home/{user}/{hash(session_id)}/"
     remote_loc_pet = f"/home/{user}/{hash(session_id)}/pet/"
@@ -78,14 +99,16 @@ async def create_session(user: str, response: Response):
     last_pos_file = f"{hash(session_id)}/last_pos.txt"
     data = SessionData(username=user, remote_loc=remote_loc, remote_loc_pet=remote_loc_pet, cluster_name=cluster_name,
                        log_file=log_file, last_pos_file=last_pos_file)
-    sessionObj = SessionService(data, session_id)
-    await sessionObj.create_backend()
-    sessionObj.create_cookie(response=response)
-    return sessionObj
+    request.app.state.session = SessionService(data, session_id)
+    session = request.app.state.session
+    session.create_cookie(response=response)
+    await session.create_backend()
+    return session
 
 
-@app.get("/steps", name="steps", dependencies=[Depends(sessionObj.get_session_id)])
-def get_steps(session_id: UUID = Depends(sessionObj.get_session_id)):
+@app.get("/steps", name="steps")
+def get_steps(session: SessionService = Depends(get_session_service)):
+    session_id = session.get_session_id()
     with open(f"./{hash(session_id)}/data.json") as f:
         data = json.load(f)
     count_tmp = len([tmp for tmp in data.keys() if "template_" in tmp])
@@ -93,59 +116,49 @@ def get_steps(session_id: UUID = Depends(sessionObj.get_session_id)):
     return {"steps": count_steps}
 
 
-@app.get("/", name="start")
-def main():
-    return RedirectResponse(url="/login")
-
-
-@app.get("/whoami", dependencies=[Depends(sessionObj.get_session_id), Depends(sessionObj.get_session_data)], name="whoami")
-def whoami(session_id: UUID = Depends(sessionObj.get_session_id), session_data: SessionData = Depends(sessionObj.get_session_data)):
-    return session_id, session_data
-
-
-@app.get("/logging/start_train",  dependencies=[Depends(sessionObj.get_session_id), Depends(sessionObj.get_session_data)])
-async def run(session_id: UUID = Depends(sessionObj.get_session_id), session_data: SessionData = Depends(sessionObj.get_session_data)):
+@app.get("/logging/start_train")
+async def run(session: SessionService = Depends(get_session_service)):
     """
     Kicks off PET by calling train method.
     """
     '''Start PET'''
     print("Training starting..")
-    job_id = await submit_job(session_data, False, session_id)
-    t = threading.Thread(target=check_job_status, args=(job_id, session_data, False, session_id))
+    job_id = await submit_job(session, False)
+    t = threading.Thread(target=check_job_status, args=(session, job_id, False))
     t.start()
 
 
-@app.get("/final/start_prediction", dependencies=[Depends(sessionObj.get_session_id), Depends(sessionObj.get_session_data)])
-async def label_prediction(request: Request, session_data: SessionData = Depends(sessionObj.get_session_data),
-                           session_id: UUID = Depends(sessionObj.get_session_id)):
+@app.get("/final/start_prediction")
+async def label_prediction(request: Request, session: SessionService = Depends(get_session_service)):
     '''Start Predicttion'''
+    session_data, session_id = session.get_session_data(), session.get_session_id()
     try:
         print("Prediction starting..")
-        job_id = await submit_job(session_data, True, session_id)
-        return check_job_status(job_id, session_data, True, session_id)
+        job_id = await submit_job(session, True)
+        return check_job_status(session, job_id, True)
     except Exception as e:
         error = "Something went wrong, please reload the page and try again"
         return await templating.get_final_template(request, error)
 
 
-async def submit_job(session_data: SessionData = Depends(sessionObj.get_session_data), predict: bool = False,
-                     session_id: UUID = Depends(sessionObj.get_session_id)):
+async def submit_job(session: SessionService = Depends(get_session_service), predict: bool = False):
     # Copy the SLURM script file to the remote cluster
     print("Submitting job..")
 
-    user = session_data.username
-    remote_loc = session_data.remote_loc
-    remote_loc_pet = session_data.remote_loc_pet
-    cluster_name = session_data.cluster_name
+    user = session.session_data.username
+    remote_loc = session.session_data.remote_loc
+    remote_loc_pet = session.session_data.remote_loc_pet
+    cluster_name = session.session_data.cluster_name
+    session_id = session.get_session_id()
 
     if predict:
         try:
             scp_cmd = ['sshpass', '-e', 'scp', '-r', f'{str(hash(session_id))}/data_uploaded/unlabeled',
                        f'{user}@{cluster_name}:{remote_loc_pet}data_uploaded/']
-            outs, errs = bash_cmd(scp_cmd, session_id)
+            outs, errs = bash_cmd(session, scp_cmd)
             ssh_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}',
                        f'sbatch {remote_loc_pet}predict.sh {remote_loc.split("/")[-2]}']
-            outs, errs = bash_cmd(ssh_cmd, session_id)
+            outs, errs = bash_cmd(session, ssh_cmd)
             print("Prediction: ", outs)
             # Get the job ID from the output of the sbatch command
             job_id = outs.decode('utf-8').strip().split()[-1]
@@ -154,7 +167,7 @@ async def submit_job(session_data: SessionData = Depends(sessionObj.get_session_
             raise e
     else:
         mkdir_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}', f'mkdir {remote_loc}']
-        outs, errs = bash_cmd(mkdir_cmd, session_id)
+        outs, errs = bash_cmd(session, mkdir_cmd)
         dir = hash(session_id)
 
         files = ["pet", "data.json", "train.sh", "data_uploaded", "predict.sh"]
@@ -164,33 +177,35 @@ async def submit_job(session_data: SessionData = Depends(sessionObj.get_session_
             scp_cmd = ['sshpass', '-e', 'scp', '-r', f,
                    f'{user}@{cluster_name}:{remote_loc}' if "pet" in f
                    else f'{user}@{cluster_name}:{remote_loc_pet}']
-            outs, errs = bash_cmd(scp_cmd, session_id)
+            outs, errs = bash_cmd(session, scp_cmd)
             print(outs, errs)
 
         # Submit the SLURM job via SSH
         ssh_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}',
                    f'sbatch {remote_loc_pet}train.sh {remote_loc.split("/")[-2]}']
-        outs, errs = bash_cmd(ssh_cmd, session_id)
+        outs, errs = bash_cmd(session, ssh_cmd)
         # Get the job ID from the output of the sbatch command
         job_id = outs.decode('utf-8').strip().split()[-1]
         return job_id
 
-def bash_cmd(cmd, session_id: UUID = Depends(sessionObj.get_session_id), shell:bool = False):
+
+def bash_cmd(session: SessionService = Depends(get_session_service), cmd=None, shell: bool = False):
+    session_id = session.get_session_id()
     proc = subprocess.Popen(" ".join(cmd) if shell else cmd, env={"SSHPASS": os.environ[f"{hash(session_id)}"]}, shell=shell,
                             stdout=subprocess.PIPE, stderr=PIPE)
     outs, errs = proc.communicate()
     return outs, errs
 
 
-def check_job_status(job_id: str, session_data: SessionData = Depends(sessionObj.get_session_data), predict: bool = False,
-                     session_id: UUID = Depends(sessionObj.get_session_id)):
-    user = session_data.username
-    remote_loc_pet = session_data.remote_loc_pet
-    cluster_name = session_data.cluster_name
-    log_file = session_data.log_file
+def check_job_status(session: SessionService = Depends(get_session_service), job_id: str = None, predict: bool = False):
+    user = session.session_data.username
+    remote_loc_pet = session.session_data.remote_loc_pet
+    cluster_name = session.session_data.cluster_name
+    log_file = session.session_data.log_file
+    session_id = session.get_session_id()
     while True:
         cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}', f"squeue -j {job_id} -h -t all | awk '{{print $5}}'"]
-        outs, errs = bash_cmd(cmd, session_id)
+        outs, errs = bash_cmd(session, cmd)
         status = outs.decode("utf-8").strip().split()[-1]
         print(status)
         if status == "R":
@@ -199,7 +214,7 @@ def check_job_status(job_id: str, session_data: SessionData = Depends(sessionObj
             if predict:
                 scp_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}',
                            f'cat {remote_loc_pet}predictions.csv', f'> {hash(session_id)}/output/predictions.csv']
-                outs, errs = bash_cmd(scp_cmd, session_id, shell=True)
+                outs, errs = bash_cmd(session, scp_cmd, shell=True)
                 print(outs, errs)
                 return {"status": "finished"}
             else:
@@ -208,7 +223,7 @@ def check_job_status(job_id: str, session_data: SessionData = Depends(sessionObj
                 ssh_cmd = ['sshpass', '-e', 'ssh',
                            f'{user}@{cluster_name}', f'cd {remote_loc_pet} '
                                                      f'&& find . -name "results.json" -type f']
-                outs, errs = bash_cmd(ssh_cmd, session_id)
+                outs, errs = bash_cmd(session, ssh_cmd)
                 print(outs, errs)
                 files = outs.decode("utf-8")
                 for f in files.rstrip().split("\n"):
@@ -218,10 +233,10 @@ def check_job_status(job_id: str, session_data: SessionData = Depends(sessionObj
                         time.sleep(1)
                     scp_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}',
                                f'cat {remote_loc_pet}{f} > {hash(session_id)}/{f}']
-                    outs, errs = bash_cmd(scp_cmd, session_id, shell=True)
+                    outs, errs = bash_cmd(session, scp_cmd, shell=True)
                     print(outs, errs)
                 '''Call Results'''
-                results(session_id)
+                results(session)
                 return {"Pet": "finished"}
         elif status == "F":
             raise Exception("Job could not finish. Please login and try again")
@@ -230,7 +245,7 @@ def check_job_status(job_id: str, session_data: SessionData = Depends(sessionObj
 
         ssh_cmd = ['sshpass', '-e', 'ssh', f'{user}@{cluster_name}',
                    f'cat /home/{user}/{log_file.split("/")[-1]}']
-        outs, errs = bash_cmd(ssh_cmd, session_id)
+        outs, errs = bash_cmd(session, ssh_cmd)
         log_contents = outs.decode('utf-8')
 
         # Update the log file on the local machine
@@ -238,12 +253,13 @@ def check_job_status(job_id: str, session_data: SessionData = Depends(sessionObj
             f.write(log_contents)
 
 
-def results(session_id: UUID = Depends(sessionObj.get_session_id)):
+def results(session: SessionService = Depends(get_session_service)):
     """
     Saves results.json for each pattern-iteration pair of output/final directory in a dictionary.
     Returns:
         html page with results & homepage redirection buttons
     """
+    session_id = session.get_session_id()
     dirs = next(os.walk(f"{hash(session_id)}/output/"))[1]
     scores = {}
     for d in dirs:
@@ -271,10 +287,11 @@ def results(session_id: UUID = Depends(sessionObj.get_session_id)):
 
     with open(f"{hash(session_id)}/results.json", "w") as res:
         json.dump(scores, res)
-        
 
-@app.post("/extract-file", dependencies=[Depends(sessionObj.get_session_id)])
-async def extract_file(file: UploadFile = File(...), session_id: UUID = Depends(sessionObj.get_session_id)):
+
+@app.post("/extract-file")
+async def extract_file(file: UploadFile = File(...), session: SessionService = Depends(get_session_service)):
+    session_id = session.get_session_id()
     file_upload = tarfile.open(fileobj=file.file, mode="r:gz")
     file_upload.extractall(f'{hash(session_id)}/data_uploaded')
 
