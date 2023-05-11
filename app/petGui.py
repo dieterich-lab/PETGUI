@@ -10,6 +10,8 @@ import subprocess
 from subprocess import PIPE
 import pandas as pd
 import matplotlib.pyplot as plt
+import random
+
 
 from app.controller import templating
 from app.dto.session import SessionData, UUID
@@ -258,25 +260,38 @@ async def extract_file(file: UploadFile = File(...), session_id: UUID = Depends(
     return {"message": "File extracted successfully."}
 
 
-@app.post("/label-distribution",dependencies=[Depends(get_session_id)])
+@app.post("/label-distribution", dependencies=[Depends(get_session_id)])
 async def label_distribution(session_id: UUID = Depends(get_session_id)):
     # Read the prediction data into a dataframe
     df = pd.read_csv(f'{hash(session_id)}/output/predictions.csv')
 
+    # Create a bar chart of the label distribution
     label_counts = df['label'].value_counts()
-    fig = plt.figure(figsize=(7, 5))
-    ax = fig.add_subplot(111)
+    fig = plt.figure(figsize=(7, 7))
+    ax = fig.add_subplot(211)
     label_counts.plot(kind='bar', width=0.3, ax=ax)
-
     ax.set_title('Label Counts')
-
     ax.set_xlabel('Label')
-
     ax.set_ylabel('Number of Examples')
+    random_examples = df.sample(n=5)
 
+    # Format the text column to show only the first 25 tokens
+    random_examples['text'] = random_examples['text'].apply(
+        lambda x: ' '.join(x.split()[:10]) + ('...' if len(x.split()) > 10 else ''))
+
+    # Create a table to display the randomly selected examples
+    table_data = [['Label', 'Text']]
+    for _, row in random_examples.iterrows():
+        table_data.append([row['label'], row['text']])
+
+    table = ax.table(cellText=table_data, loc='bottom', cellLoc='left', bbox=[0, -0.8, 1, 0.5])
+
+    table.auto_set_column_width(col=list(range(2)))
+    # Create a string with the label and text for each example
 
 
     # Save the chart to a file
     plt.savefig("static/chart_prediction.png", dpi=100)
+
     return {"message": "Label distribution chart created successfully."}
 

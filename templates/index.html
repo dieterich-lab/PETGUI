@@ -45,8 +45,9 @@
                     <form method="POST" id="my-form" enctype="multipart/form-data">
   <label for="file"><span class="circle">1.</span> <h5>Upload csv data in a zip file. The uploaded zip file contains the train and test dataset in csv format and a readme file</h5></label>
   <div style="display: flex; align-items: center;">
-    <input type="file" accept=".gz" style="margin-left: 45px;" id="file-uploader" name="file" required>
-    <button id="show-statistics-button" disabled style="margin-left: 45px;">Show Statistics</button>
+      <label for="file-uploader" class="btn btn--radius-2 btn--blue">Upload</label>
+    <input type="file" accept=".gz" style="display: none;" id="file-uploader" name="file" required>
+    <button id="show-statistics-button" class="btn btn--radius-2 btn--blue" disabled style="margin-left: auto;">View Data</button>
   </div>
   <p id="feedback" style="margin-left: 45px;"></p>
   <div class="p-t-15">
@@ -133,7 +134,7 @@
                                 </label>
                             </div>
                         </div>
-                        <button class="btn btn--radius-2 btn--blue" type="submit">Send</button><br><br>
+                        <button class="btn btn--radius-2 btn--blue" type="submit">Submit</button><br><br>
                     </form>
                 </div>
             </div>
