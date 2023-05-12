@@ -27,6 +27,7 @@ cookie = SessionCookie(
 )
 backend = InMemoryBackend[UUID, SessionData]()
 
+
 class BasicVerifier(SessionVerifier[UUID, SessionData]):
     def __init__(
             self,
@@ -69,13 +70,3 @@ verifier = BasicVerifier(
 )
 
 
-def get_session(session_id: UUID = Depends(cookie), session_data: SessionData = Depends(verifier)):
-    return session_id, session_data
-
-
-def get_session_id(session_id: UUID = Depends(cookie)):
-    return session_id
-
-
-def get_session_data(session_data: SessionData = Depends(verifier)):
-    return session_data

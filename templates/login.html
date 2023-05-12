@@ -37,12 +37,15 @@
                 <div class="card-heading">
                     <h2 class="title">PETGUI LOGIN</h2>
                 </div>
-<div class="card-body">
-     <h4 class="mb-4" style="text-align: center; font-family: arial; color: dark-grey">Please enter your login information (ldap uid and password) for the DieterichLab server: <cite>cluster.dieterichlab.org</cite></h4>
-    {% if error %}
-        <div class="alert alert-danger">{{ error }}</div>
-    {% endif %}
-    <form method="POST" action="/login" class="mt-4">
+                {% if logout_msg %}
+                <div class="alert alert-success">{{ logout_msg }}</div>
+                {% endif %}
+            <div class="card-body">
+             <h4 class="mb-4" style="text-align: center; font-family: arial; color: dark-grey">Please enter your login information (ldap uid and password) for the DieterichLab server: <cite>cluster.dieterichlab.org</cite></h4>
+            {% if error %}
+                <div class="alert alert-danger">{{ error }}</div>
+            {% endif %}
+            <form method="POST" action="/login" class="mt-4">
         <div class="form-group">
             <label for="username" style="font-size: 16px; padding-bottom: 5px;">Username</label>
             <input type="text" class="form-control" id="username" name="username" placeholder="mmustermann" required>
