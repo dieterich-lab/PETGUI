@@ -3,3 +3,4 @@ venv/
 DieterichLab_CA.pem
 /data/big
 /static/chart.png
+log_file

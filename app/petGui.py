@@ -43,6 +43,12 @@ def get_session_service(request: Request):
 def main():
     return RedirectResponse(url="/login")
 
+@app.get("/get_cookie")
+def get(request: Request, session: SessionService=Depends(get_session_service)):
+    cookies = request.cookies
+    session = get_session_service(request)
+    print(cookies, session)
+    return {"sess": session, "cook": cookies}
 
 @app.post("/login")
 async def login(request: Request, username: str = Form(...), password: str = Form(...)):
@@ -52,6 +58,7 @@ async def login(request: Request, username: str = Form(...), password: str = For
     response = RedirectResponse(url=request.url_for("homepage"), status_code=303)
     session = await create_session(request, username, response)
     session_uuid = session.get_session_id()
+    print(session_uuid, hash(session_uuid))
     os.environ[f"{hash(session_uuid)}"] = password
     os.makedirs(f"./{hash(session_uuid)}", exist_ok=True)  # If run with new conf.
     return response
@@ -103,6 +110,7 @@ async def create_session(request: Request, user: str, response: Response):
     session = request.app.state.session
     session.create_cookie(response=response)
     await session.create_backend()
+    print(session_id, hash(session_id))
     return session
 
 
