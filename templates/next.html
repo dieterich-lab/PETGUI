@@ -26,23 +26,9 @@
     <link href="static/css/main.css" rel="stylesheet" media="all">
     <!-- Local CSS-->
     <link rel="stylesheet" href="static/css/main.css">
+    <link href="/static/css/style.css" rel="stylesheet">
 
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-    <style>
-        .spinner {
-  display: none;
-  position: relative;
-  top: 100%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(0deg);  /* changed position */
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  border-left-color: #636767;
-  border-radius: 50%;
-  width: 25px;
-  height: 25px;
-  animation: spin 1s linear infinite;
-  margin-top: 25px;
-}
 
     @keyframes spin {
       to { transform:  translate(-50%, -50%) rotate(360deg); }
@@ -386,44 +372,38 @@ tr:nth-child(even) {
       <text class="progress-ring__percentage" x="100%" y="-100%" dominant-baseline="middle" text-anchor="middle">0%</text>
     </svg>
   </div>
-<script>
-
+                         <script>
     let steps;
-    fetch('/steps').then(res => res.json()).then(data => parseInt(data.steps)).then(value => {steps = value});
+fetch('/steps').then(res => res.json()).then(data => parseInt(data.steps)).then(value => {steps = value});
 
-    let currentStep = 0; // set the current step here, between 0 and steps
-    const progressRing = document.querySelector('.progress-ring__circle--fill');
-    const ring_circle = document.querySelector('.progress-ring__circle');
-    const progressPercentage = document.querySelector('.progress-ring__percentage');
-    const circumference = 2 * Math.PI * 45;
-    let progress = 0;
+let currentStep = 0; // set the current step here, between 0 and steps
+const progressRing = document.querySelector('.progress-ring__circle--fill');
+const ring_circle = document.querySelector('.progress-ring__circle');
+const progressPercentage = document.querySelector('.progress-ring__percentage');
+const circumference = 2 * Math.PI * 45;
+let progress = 0;
 
-    const animateProgress = () => {
-      progress = currentStep / steps;
-      progressRing.style.strokeDashoffset = circumference * (1 - progress) - circumference;
-      progressPercentage.textContent = `${Math.floor(progress * 100)}%`;
-    };
-
-
+const animateProgress = () => {
+  progress = currentStep / steps;
+  progressRing.style.strokeDashoffset = circumference * (1 - progress) - circumference;
+  progressPercentage.textContent = `${Math.floor(progress * 100)}%`;
+};
 </script>
-                <style>
- svg {
-  display: block;
-  margin: auto;
-}
 
-.button-container {
-  position: relative;
-  display: inline-block;
-}
+                         <script type="text/javascript">
+  $(function() {
+          $('a#test').on('click', function(e) {
+            e.preventDefault()
+            $.getJSON('/logging/start_train',
+                function(data) {
+            });
+            return false;
+          });
+        });
 
-#container {
-text-align: center;
-}
-#1container {
-text-align: start;
-}
-</style>
+ </script>
+
+
 
 
   <div class="card-body" id="table-container">
@@ -433,70 +413,11 @@ text-align: start;
 
   <p id='showData'></p>
   <p id='msg'></p>
-<script>
-    const button = document.getElementById("another");
 
-button.addEventListener("click", function() {
-  window.location.href = "/final";
-});
-</script>
 
-<script>
-  let tableFromJson = () => {
-    // the json data.
-    const myBooks = [
-      {'Precision': '1', 'Recall': 'Challenging Times',
-       'F1': 'Business', 'Support': '125.60'
-      },
-      {'Precision': '2', 'Recall': 'Learn JavaScript',
-       'F1': 'Programming', 'Support': '56.00'
-      },
-        {'Precision': '2', 'Recall': 'Learn JavaScript',
-       'F1': 'Programming', 'Support': '56.00'
-      }
 
-    ]
-
-    // Extract value from table header.
-    // ('Book ID', 'Book Name', 'Category' and 'Price')
-    let col = [];
-    for (let i = 0; i < myBooks.length; i++) {
-      for (let key in myBooks[i]) {
-        if (col.indexOf(key) === -1) {
-          col.push(key);
-        }
-      }
-    }
-    // Create a table.
-    const table = document.createElement("table");
-
-    // Create table header row using the extracted headers above.
-    let tr = table.insertRow(-1);                   // table row.
-
-    for (let i = 0; i < col.length; i++) {
-      let th = document.createElement("th");      // table header.
-      th.innerHTML = col[i];
-      tr.appendChild(th);
-    }
-
-    // add json data to the table as rows.
-    for (let i = 0; i < myBooks.length; i++) {
-
-      tr = table.insertRow(-1);
-
-      for (let j = 0; j < col.length; j++) {
-        let tabCell = tr.insertCell(-1);
-        tabCell.innerHTML = myBooks[i][col[j]];
-      }
-    }
-
-    // Now, add the newly created table with json data, to a container.
-    const divShowData = document.getElementById('showData');
-    divShowData.innerHTML = "";
-    divShowData.appendChild(table);
-  }
-</script>
       </div>
+
                         <div class="form-row m-b-55">
                             <div class="value">
                                 <div class="row row-space">
@@ -527,6 +448,9 @@ button.addEventListener("click", function() {
 
     <!-- Main JS-->
     <script src="static/js/global.js"></script>
+    <script src="/static/js/script.js"></script>
+
+
 
 </body><!-- This templates was made by Colorlib (https://colorlib.com) -->
 

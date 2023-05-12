@@ -15,19 +15,21 @@
 
 
     <!-- Icons font CSS-->
-    <link href="static/vendor/mdi-font/css/material-design-iconic-font.min.css" rel="stylesheet" media="all">
-    <link href="static/vendor/font-awesome-4.7/css/font-awesome.min.css" rel="stylesheet" media="all">
+    <link href="/static/vendor/mdi-font/css/material-design-iconic-font.min.css" rel="stylesheet" media="all">
+    <link href="/static/vendor/font-awesome-4.7/css/font-awesome.min.css" rel="stylesheet" media="all">
     <!-- Font special for pages-->
     <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i,800,800i" rel="stylesheet">
 
     <!-- Vendor CSS-->
-    <link href="static/vendor/select2/select2.min.css" rel="stylesheet" media="all">
-    <link href="static/vendor/datepicker/daterangepicker.css" rel="stylesheet" media="all">
+    <link href="/static/vendor/select2/select2.min.css" rel="stylesheet" media="all">
+    <link href="/static/vendor/datepicker/daterangepicker.css" rel="stylesheet" media="all">
 
     <!-- Main CSS-->
-    <link href="static/css/main.css" rel="stylesheet" media="all">
+    <link href="/static/css/main.css" rel="stylesheet" media="all">
+    <link href="/static/css/style.css" rel="stylesheet">
 
 </head>
+
 
 <body>
     <div class="page-wrapper bg-gra-03 p-t-45 p-b-50">
@@ -109,12 +111,13 @@
                             </div>
                         </div>
 
-                <div class="card-body" id="container"><span class="circle">1.</span>
+
+                <div class="card-body" id="container"><span class="circle_1">1.</span>
                                 <label class="btn btn--radius-2 btn--blue">
                                       Upload unlabeled data as a csv file
-                                <input type="file" accept=".csv" name="file" id="file" style="display:none;">
+                                <input type="file" accept=".csv" name="file_final" id="file_final" style="display:none;">
                                 </label>
-                                <div id="feedback"></div>
+                                <div id="feedback_file"></div>
                             </div>
 
                 <script>
@@ -191,94 +194,56 @@ observer.observe(feedbackDiv, { childList: true });
         document.getElementById(buttonId).removeAttribute(attribute);
     }
 
-    function changeButtonText(buttonId, text) {
-            const button = document.getElementById(buttonId);
-            button.textContent = text;
-     }
 
-                </script>
-
-    <div class="card-body" id="container"><span class="circle">2.</span>
-        <button class="btn btn--radius-2 btn--blue" id="mycontain" onclick="startPrediction(); disableButton(id); showText(); showLoading()" style="background-color: grey;" disabled>Predict labels using PET Model</button>
+    <div class="card-body" id="container"><span class="circle_1">2.</span>
+        <button class="btn btn--radius-2 btn--blue" id="mycontain" onclick="startPrediction(); disableButton_final(id); showText_final(); showLoading_final()" style="background-color: grey;" disabled>Predict labels using PET Model</button>
         <span id="spinner" class="spinner"></span>
               <span id="loadingText">Please wait...</span>
             </div>
     <div id="loading" style="display: none;">
       <div class="spinner"></div>
     </div>
-                        <style>
-    #loadingText {
-  display: none;
-  font-size: 15px;
-  font-weight: bold;
-  margin-bottom: 4px;
-  margin-top: 4px;
-  color: black;
-}
 
-        .spinner {
-  display: none;
-  position: relative;
-  top: 100%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(0deg);
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  border-left-color: #636767;
-  border-radius: 50%;
-  width: 25px;
-  height: 25px;
-  animation: spin 1s linear infinite;
-  margin-top: 25px;
-}
 
-@keyframes spin {
-  to { transform:  translate(-50%, -50%) rotate(360deg); }
-}
 
-    </style>
-    <script>
-        function startPrediction() {
-            changeButtonText("mycontain", "Prediction Started..");
-            showLoading("loading");
-            fetch('/final/start_prediction')
-                .then(response => {
-                    hideLoading("loading");
-                    hideText();
-                    changeButtonColor("mycontain", "green");
-                    changeButtonColor("mycontain_download", "blue");
-                    changeButtonText("mycontain", "Prediction Finished");
-                    removeButtonAttribute("mycontain_download", "disabled");
-                });
-        }
-    </script>
-
-                                            <div class="card-body" id="container"><span class="circle">3.</span>
+                                            <div class="card-body" id="container"><span class="circle_1">3.</span>
                                 <button class="btn btn--radius-2 btn--blue" id="mycontain_download" style="background-color: grey;" disabled>Download Predicted data</button>
                             </div>
-                </div>
+
+                   <div class="card-body" id="container">
+      <span class="circle_1">4.</span>
+      <button class="btn btn--radius-2 btn--blue" id="show_chart" onclick="generateChart()" style="background-color: grey;" disabled>Show Chart</button>
+    </div>
+                <div id="chartContainer"></div>
+
             </div>
         </div>
     </div>
-    <script>
+    <style>
+#chartContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+</style>
 
-
-
-  const downloadButton = document.getElementById('mycontain_download');
-  downloadButton.addEventListener('click', () => {
-    const url = '/download_prediction'; // The URL of your FastAPI endpoint
-    fetch(url)
-      .then(response => {
-        const filename = response.headers.get('Content-Disposition').split('filename=')[1];
-        response.blob().then(blob => {
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = filename;
-          a.click();
-        });
-      });
-  });
+   <script>
+function generateChart() {
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", "/label-distribution");
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+            // The chart was generated successfully
+            var chartImage = document.createElement("img");
+            chartImage.src = "/static/chart_prediction.png";
+            document.getElementById("chartContainer").appendChild(chartImage);
+        }
+    }
+    xhr.send(JSON.stringify({}));
+}
 </script>
+
 
     <!-- Jquery JS-->
     <script src="static/vendor/jquery/jquery.min.js"></script>
@@ -288,10 +253,11 @@ observer.observe(feedbackDiv, { childList: true });
     <script src="static/vendor/datepicker/daterangepicker.js"></script>
 
     <!-- Main JS-->
-    <script src="static/js/global.js"></script>
+    <script src="/static/js/global.js"></script>
+    <script src="/static/js/script.js"></script>
+
 
 </body><!-- This templates was made by Colorlib (https://colorlib.com) -->
-
 </html>
 <!-- end document-->
     
