@@ -39,20 +39,7 @@
                 <div class="card-heading">
                     <div class="title">PET APP</div>
                     <button class="btn logout-btn logout-btn:hover" onclick="Logout()">LOGOUT <i class="fa fa-power-off"></i></button>
-                    <button class="btn home-btn home-btn:hover" onclick="Rerun()">START <i class="fa fa-home"></i></button>
-                    <script>
-                    function Logout() {
-                        fetch('/logout').then(response => {
-                        window.location.href = '/login?logout=True';
-                        });
-                    }
-
-                    function Rerun() {
-                        fetch('/clean').then(response => {
-                        window.location.href = '/basic';
-                        });
-                    }
-                    </script>
+                    <button class="btn home-btn home-btn:hover" onclick="runPythonCode()">START <i class="fa fa-home"></i></button>
                 </div>
                 <div class="card-body">
                     <form method="POST" id="my-form" enctype="multipart/form-data">

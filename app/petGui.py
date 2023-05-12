@@ -143,7 +143,6 @@ async def run(session: SessionService = Depends(get_session_service)):
 @app.get("/final/start_prediction")
 async def label_prediction(request: Request, session: SessionService = Depends(get_session_service)):
     '''Start Predicttion'''
-    session_data, session_id = session.get_session_data(), session.get_session_id()
     try:
         print("Prediction starting..")
         job_id = await submit_job(session, True)

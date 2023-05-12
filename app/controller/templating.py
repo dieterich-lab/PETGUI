@@ -12,21 +12,16 @@ from os.path import isdir, isfile
 import pathlib
 import shutil
 
-from ..dto.session import SessionData, backend, cookie, verifier
+from ..services.session import SessionService
 
 
 router = APIRouter()
-
 templates = Jinja2Templates(directory="templates")
-
 
 local = False # If running app locally
 ssh = "sshpass"
 if local:
     ssh = "/opt/homebrew/bin/sshpass"
-
-
-
 
 
 @router.get("/login", response_class=HTMLResponse)
@@ -36,8 +31,17 @@ async def login_form(request: Request, error=None, logout: bool = False):
     else:
         return templates.TemplateResponse('login.html', {'request': request, 'error': error})
 
+class Session:
+    session: SessionService
 
-@router.post("/basic", name="homepage", dependencies=[Depends(cookie)])
+
+router.state = Session()
+
+
+def get_session_service(request: Request):
+    return request.app.state.session
+
+@router.post("/basic", name="homepage", dependencies=[Depends(get_session_service)])
 async def get_form(request: Request, sample: str = Form(media_type="multipart/form-data"),
                    label: str = Form(media_type="multipart/form-data"),
                    origin_0: str = Form(media_type="multipart/form-data"),
@@ -47,10 +51,11 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
                    model_para: str = Form(media_type="multipart/form-data"),
                    file: UploadFile = File(...),
                    template_0: str = Form(media_type="multipart/form-data"),
-                   session_id: UUID = Depends(cookie), session_data: SessionData = Depends(verifier)):
+                   session: SessionService= Depends(get_session_service)):
+    session_id, session_data = session.get_session_id(), session.get_session_data()
     try:
 
-        await read_log(session_id, session_data, initial=True)
+        await read_log(session, initial=True)
         try:
             file_upload = tarfile.open(fileobj=file.file, mode="r:gz")
             file_upload.extractall(f'{hash(session_id)}/data_uploaded')
@@ -101,14 +106,14 @@ def read_item(request: Request):
     max_num = 100
     return templates.TemplateResponse("progress.html", {"request": request, "max_num": max_num})
 
-@router.get("/logging", name="logging", dependencies=[Depends(cookie)])
+@router.get("/logging", name="logging", dependencies=[Depends(get_session_service)])
 async def logging(request: Request, error: str = None):
     return templates.TemplateResponse("next.html", {"request": request, "error": error})
 
 
-@router.get("/log", name="log", dependencies=[Depends(cookie)])
-async def read_log(session_id: UUID = Depends(cookie), session_data: SessionData = Depends(verifier),
-                   initial: bool = False):
+@router.get("/log", name="log", dependencies=[Depends(get_session_service)])
+async def read_log(session: SessionService= Depends(get_session_service), initial: bool = False):
+    session_id, session_data = session.get_session_id(), session.get_session_data()
     last_pos_file = session_data.last_pos_file
     log_file = session_data.log_file
     if initial:
@@ -138,23 +143,25 @@ async def read_log(session_id: UUID = Depends(cookie), session_data: SessionData
         return {"log": info_lines}
 
 
-@router.get("/download", name="download", dependencies=[Depends(cookie)])
-def download(session_id: UUID = Depends(cookie)):
+@router.get("/download", name="download", dependencies=[Depends(get_session_service)])
+def download(session: SessionService = Depends(get_session_service)):
     """
     Returns:
          final dict, e.g.: dict={p0-i0: {acc: 0.5, ...}, ...}
     """
+    session_id = session.get_session_id()
     return FileResponse(f"{hash(session_id)}/results.json", filename="results.json")
 
-@router.get("/final", response_class=HTMLResponse, name='final', dependencies=[Depends(cookie)])
+@router.get("/final", response_class=HTMLResponse, name='final', dependencies=[Depends(get_session_service)])
 async def get_final_template(request: Request, error = None):
     return templates.TemplateResponse("final_page.html", {"request": request, "error": error})
 
-@router.post("/uploadfile/", dependencies=[Depends(cookie)])
-async def create_upload_file(file: UploadFile = File(...), session_id: UUID = Depends(cookie)):
+@router.post("/uploadfile/", dependencies=[Depends(get_session_service)])
+async def create_upload_file(file: UploadFile = File(...), session: SessionService = Depends(get_session_service)):
     """
     Upload function for the final page
     """
+    session_id = session.get_session_id()
     upload_folder = f"{hash(session_id)}/data_uploaded/unlabeled"
     os.makedirs(upload_folder, exist_ok=True)
     file_path = os.path.join(upload_folder, file.filename)
@@ -163,25 +170,27 @@ async def create_upload_file(file: UploadFile = File(...), session_id: UUID = De
     return {"filename": file.filename, "path": file_path}
 
 
-@router.get("/download_prediction", name="download_prediction", dependencies=[Depends(cookie)])
-def download_predict(session_id: UUID = Depends(cookie)):
+@router.get("/download_prediction", name="download_prediction", dependencies=[Depends(get_session_service)])
+def download_predict(session: SessionService = Depends(get_session_service)):
+    session_id = session.get_session_id()
     return FileResponse(f"{hash(session_id)}/output/predictions.csv", filename="predictions.csv")
 
 
 @router.get("/logout")
-def logout(request: Request, response: Response, session_id: UUID = Depends(cookie), session_data: SessionData = Depends(verifier)):
-    clean(session_data, session_id, logout=True)
-    cookie.delete_from_response(response)
+def logout(request: Request, response: Response, session: SessionService = Depends(get_session_service)):
+    clean(session, logout=True)
+    #cookie.delete_from_response(response)
     request.app.state.session = None
 
 
-@router.get("/clean", name="clean", dependencies=[Depends(cookie)])
-def clean(session_data: SessionData = Depends(verifier), session_id: UUID = Depends(cookie), logout: bool = False,ssh=ssh):
+@router.get("/clean", name="clean", dependencies=[Depends(get_session_service)])
+def clean(session: SessionService = Depends(get_session_service), logout: bool = False, ssh=ssh):
     """
     Iterates over created paths during PET and unlinks them.
     Returns:
         redirection to homepage
     """
+    session_id, session_data = session.get_session_id(), session.get_session_data()
     user = session_data.username
     remote_loc = session_data.remote_loc
     cluster_name = session_data.cluster_name
