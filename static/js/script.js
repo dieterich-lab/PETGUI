@@ -54,8 +54,8 @@ const observer = new MutationObserver(function(mutationsList) {
   for (let mutation of mutationsList) {
     if (mutation.type === 'childList' && feedbackDiv.innerText.trim() !== '') {
       // This function will be called whenever the content of the div changes
-  changeButtonColor("mycontain", "blue");
-  removeButtonAttribute("mycontain", "disabled");
+  changeButtonColor("mycontainer", "blue");
+  removeButtonAttribute("mycontainer", "disabled");
   remove
       // Call your function here or execute any code you want to run when feedback is given
     }
@@ -84,7 +84,35 @@ document.getElementById("file_final").addEventListener("change", function(event)
 
 
 
+var counter = 1;
+var dynamicInput_1 = [];
 
+ function addInput(){
+    var newdiv = document.createElement('div');
+    newdiv.id = dynamicInput_1[counter];
+    newdiv.innerHTML = "Template " + (counter + 1) + " <br><input class='input--style-5 form-control' type='text' placeholder='Next template text' name = template_"+counter +" required> <br><input class='btn btn--radius-2 btn--blue' style='padding: 0 25px;' type='button' value='-' onClick='removeInput("+dynamicInput_1[counter]+");'>";
+    document.getElementById('formulario').appendChild(newdiv);
+    counter++;
+}
+
+  function removeInput(id){
+    var elem = document.getElementById(id);
+    counter--;
+    return elem.parentNode.removeChild(elem);
+  }
+
+  var counter_map = 2;
+var dynamicInput = [];
+
+
+function addInput_map(){
+    var newdiv = document.createElement('div');
+    newdiv.id = dynamicInput[counter_map];
+    newdiv.innerHTML = "Mapping " + (counter_map + 1) +
+    " <div class='row row-space'><div class='col-2'><div class='input-group'><input class='input--style-5 form-control' type='text' placeholder='origin' name=origin_"+ counter_map +" required></div></div><div class='col-2'><div class='input-group'><input class='input--style-5 form-control' type='text' placeholder='mapping' name=mapping_"+counter_map+" required><input class='btn btn--radius-2 btn--blue' style='padding: 0 25px' type='button' value='-' onClick='removeInput("+dynamicInput[counter]+");'></div></div></div>";
+    document.getElementById('formularmap').appendChild(newdiv);
+    counter_map++;
+}
 
 
 
@@ -121,15 +149,15 @@ document.getElementById("file_final").addEventListener("change", function(event)
 
 
         function startPrediction() {
-            changeButtonText("mycontain", "Prediction Started..");
+            changeButtonText("mycontainer", "Prediction Started..");
             showLoading("loading");
             fetch('/final/start_prediction')
                 .then(response => {
                     hideLoading("loading");
                     hideText();
-                    changeButtonColor("mycontain", "green");
+                    changeButtonColor("mycontainer", "green");
                     changeButtonColor("mycontain_download", "blue");
-                    changeButtonText("mycontain", "Prediction Finished");
+                    changeButtonText("mycontainer", "Prediction Finished");
                     removeButtonAttribute("mycontain_download", "disabled");
                     changeButtonColor("show_chart", "blue");
                     removeButtonAttribute("show_chart", "disabled");
@@ -312,7 +340,6 @@ function redirect() {
 button.addEventListener("click", function() {
   window.location.href = "/final";
 });
-
 
 
 

@@ -30,71 +30,6 @@
 
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
 
-    @keyframes spin {
-      to { transform:  translate(-50%, -50%) rotate(360deg); }
-    }
-
-#loadingText {
-  display: none;
-  font-size: 15px;
-  font-weight: bold;
-  margin-bottom: 4px;
-  margin-top: 4px;
-  color: black;
-}
-
-  ul {
-    list-style-type: disc;
-    margin-left: 20px;
-    font-family: Arial, sans-serif;
-    font-size: 16px;
-    line-height: 1.5;
-    color: #333333;
-    text-decoration: none; /* remove underlining from list items */
-  }
-
-    li {
-    margin-bottom: 10px; /* add some spacing between list items */
-    text-decoration: none;
-    pointer-events: none;
-    }
-
-    .progress-ring {
-      position: relative;
-      width: 10rem;
-      height: 10rem;
-      display: inline-block;
-      transform: rotate(-90deg);
-      margin-top: 25px;
-    }
-    .progress-ring .progress-ring__circle {
-      fill: #fff;
-      stroke: #0d6efd;
-      stroke-width: 4;
-      stroke-dasharray: 283;
-      stroke-dashoffset: 0;
-      display: animate;
-
-    }
-    .progress-ring .progress-ring__circle--fill {
-      fill: none;
-      stroke: #f3f3f3;
-      stroke-width: 4;
-      stroke-linecap: round;
-      stroke-dasharray: 283;
-      stroke-dashoffset: 283;
-      transition: stroke-dashoffset 1s ease-out;
-
-    }
-    .progress-ring .progress-ring__percentage {
-      position: relative;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) rotate(90deg); /* changed position */
-      font-size: 1rem;
-      font-weight: bold;
-      fill: black;
-    }
 
     </style>
 </head>
@@ -178,8 +113,6 @@
         });
     }
 
- </script>
-    <script>
       async function downloadFile() {
         const response = await fetch("/download");
         const blob = await response.blob();
@@ -191,8 +124,7 @@
         link.click();
         link.remove();
       }
-    </script>
-<script>
+
     function loadJSON() {
       fetch('/download')
         .then(response => response.json())
@@ -240,36 +172,6 @@ function showTable(jsonData) {
 }
 
 
-  </script>
-<style>
-  #table-container {
-    text-align: center;
-    margin: auto;
-    font-size: 30px; }
-      table {
-  border-collapse: collapse;
-  margin: auto;
-  font-family: Arial, sans-serif;
-  font-size: 14px;
-  color: #333;
-  margin-top: 25px;
-}
-
-th, td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: center;
-}
-
-th {
-  background-color: #f2f2f2;
-}
-
-tr:nth-child(even) {
-  background-color: #f9f9f9;
-}
-
-</style>
  <script type="text/javascript">
   $(function() {
           $('a#test').on('click', function(e) {
@@ -281,65 +183,7 @@ tr:nth-child(even) {
           });
         });
 
- </script>
 
- <style>
-     #logList {
-         height: 100px;
-         overflow: auto;
-         margin-top: 25px;
-     }
-
-   .card-heading {
-   position: relative;
-   }
-
-    .logout-btn {
-    position: absolute;
-    top: 0%;
-    transform: translateY(-50%, 50%);
-    right: 0;
-    color: lightgrey;
-    align-items: center;
-    padding: 15px 25px;
-    }
-
-    .logout-btn:hover {
-    color: white;
-    }
-
-    .home-btn {
-    position: absolute;
-    top: 0%;
-    transform: translateY(-50%, 50%);
-    left: 0;
-    color: lightgrey;
-    align-items: center;
-    padding: 15px 25px;
-    }
-
-    .home-btn:hover {
-    color: white;
-    }
-
- </style>
-<script>
-      function redirect() {
-        window.location.href = "/final";
-      }
-    </script>
-<script>
-    function Rerun() {
-        fetch('/clean').then(response => {
-            window.location.href = '/basic';
-        });
-    }
-
-    function Logout() {
-        fetch('/logout').then(response => {
-            window.location.href = '/login?logout=True';
-        });
-    }
 </script>
 
 <body>
@@ -349,7 +193,7 @@ tr:nth-child(even) {
                 <div class="card-heading">
                     <div class="title">Train Your PET Model</div>
                     <button class="btn logout-btn logout-btn:hover" onclick="Logout()">Logout <i class="fa fa-power-off"></i></button>
-                    <button class="btn home-btn home-btn:hover" onclick="Rerun()">START <i class="fa fa-home"></i></button>
+                    <button class="btn home-btn home-btn:hover" onclick="runPythonCode()">START <i class="fa fa-home"></i></button>
                 </div>
                      <div class="card-body" id="container">
       <a href="#" id="test">
@@ -404,8 +248,6 @@ const animateProgress = () => {
  </script>
 
 
-
-
   <div class="card-body" id="table-container">
        <button id="resultsButton" onclick="loadJSON()" class="btn btn--radius-2" style="background-color: grey;" disabled>
          Show Results
@@ -429,7 +271,7 @@ const animateProgress = () => {
                             </div>
                         </div>
                             <div class="card-body" id="container">
-                                <button class="btn btn--radius-2" style="background-color: grey;" id="rerunButton" onclick="Rerun()" disabled>Run with new configuration</button>
+                                <button class="btn btn--radius-2" style="background-color: grey;" id="rerunButton" onclick="runPythonCode()" disabled>Run with new configuration</button>
                             </div>
                             <div class="card-body" id="container">
                                 <button class="btn btn--radius-2" style="background-color: grey;" id="annotateButton" onclick="redirect()" disabled>Annotate unseen data</button>

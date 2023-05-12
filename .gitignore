@@ -3,4 +3,5 @@ venv/
 DieterichLab_CA.pem
 /data/big
 /static/chart.png
+/static/chart_prediction.png
 log_file

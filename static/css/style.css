@@ -16,15 +16,30 @@
   }
 
    .logout-btn {
-    display: flex;
-    float: right;
+    position: absolute;
+    top: 0%;
+    transform: translateY(-50%, 50%);
+    right: 0;
     color: lightgrey;
-    line-height: 0px;
     align-items: center;
-    padding: 0px 25px;
+    padding: 15px 25px;
     }
 
     .logout-btn:hover {
+    color: white;
+    }
+
+       .home-btn {
+    position: absolute;
+    top: 0%;
+    transform: translateY(-50%, 50%);
+    left: 0;
+    color: lightgrey;
+    align-items: center;
+    padding: 15px 25px;
+    }
+
+    .home-btn:hover {
     color: white;
     }
 
@@ -77,13 +92,10 @@ text-align: start;
   margin-top: 25px;
 }
 
-@keyframes spin {
-  to { transform:  translate(-50%, -50%) rotate(360deg); }
-}
 
-
-
-
+    @keyframes spin {
+      to { transform:  translate(-50%, -50%) rotate(360deg); }
+    }
 
   ul {
     list-style-type: disc;
@@ -116,6 +128,7 @@ text-align: start;
       stroke-dasharray: 283;
       stroke-dashoffset: 0;
       display: animate;
+
     }
     .progress-ring .progress-ring__circle--fill {
       fill: none;
@@ -149,12 +162,6 @@ text-align: start;
   display: inline-block;
 }
 
-#container {
-text-align: center;
-}
-#1container {
-text-align: start;
-}
 
 
      #logList {
@@ -162,19 +169,6 @@ text-align: start;
          overflow: auto;
          margin-top: 25px;
      }
-
-    .logout-btn {
-    display: flex;
-    float: right;
-    color: lightgrey;
-    line-height: 0px;
-    align-items: center;
-    padding: 0px 25px;
-    }
-
-    .logout-btn:hover {
-    color: white;
-    }
 
 
   #table-container {
@@ -203,4 +197,16 @@ th {
 tr:nth-child(even) {
   background-color: #f9f9f9;
 }
+
+    #chartContainer {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+
+   .card-heading {
+   position: relative;
+   }
+
 

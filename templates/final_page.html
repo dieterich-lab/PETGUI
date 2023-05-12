@@ -10,9 +10,7 @@
     <meta name="keywords" content="Colorlib Templates">
 
     <!-- Title Page-->
-    <title>PET APP</title>
-
-
+    <title>Predict Unlabeled Data</title>
 
     <!-- Icons font CSS-->
     <link href="/static/vendor/mdi-font/css/material-design-iconic-font.min.css" rel="stylesheet" media="all">
@@ -37,65 +35,10 @@
             <div class="card card-5">
                 <div class="card-heading">
                     <div class="title">Predict Unlabeled Data</div>
-                    <button class="btn logout-btn logout-btn:hover" onclick="Logout()">Logout <i class="fa fa-power-off"></i></button>
+                    <button class="btn logout-btn logout-btn:hover" onclick="Logout()">LOGOUT <i class="fa fa-power-off"></i></button>
                     <button class="btn home-btn home-btn:hover" onclick="Rerun()">START <i class="fa fa-home"></i></button>
                 </div>
-                <style>
 
-   .card-heading {
-   position: relative;
-   }
-
-    .logout-btn {
-    position: absolute;
-    top: 0%;
-    transform: translateY(-50%, 50%);
-    right: 0;
-    color: lightgrey;
-    align-items: center;
-    padding: 15px 25px;
-    }
-
-    .logout-btn:hover {
-    color: white;
-    }
-
-    .home-btn {
-    position: absolute;
-    top: 0%;
-    transform: translateY(-50%, 50%);
-    left: 0;
-    color: lightgrey;
-    align-items: center;
-    padding: 15px 25px;
-    }
-
-    .home-btn:hover {
-    color: white;
-    }
-
-    #container {
-    text-align: center;
-    }
-    #1container {
-    text-align: start;
-    }
-
-    .circle {
-        float: left;
-        display: inline-block;
-        width: 35px;
-        height: 35px;
-        border-radius: 50%;
-        border: 2px dotted #2c6ed5;
-        background-color: transparent;
-        text-align: center;
-        font-family: "sans";
-        font-size: 1.5em;
-        color: #555;
-        fill: none;
-    }
-</style>
                         <div class="form-row m-b-55">
                             <div class="value">
                                 <div class="row row-space">
@@ -120,83 +63,10 @@
                                 <div id="feedback_file"></div>
                             </div>
 
-                <script>
-
-const feedbackDiv = document.getElementById('feedback');
-
-const observer = new MutationObserver(function(mutationsList) {
-  for (let mutation of mutationsList) {
-    if (mutation.type === 'childList' && feedbackDiv.innerText.trim() !== '') {
-      // This function will be called whenever the content of the div changes
-  changeButtonColor("mycontain", "blue");
-  removeButtonAttribute("mycontain", "disabled");
-  remove
-      // Call your function here or execute any code you want to run when feedback is given
-    }
-  }
-});
-
-observer.observe(feedbackDiv, { childList: true });
-
-
-                function Logout() {
-                    fetch('/logout').then(response => {
-                    window.location.href = '/login?logout=True';
-                    });
-                }
-
-                function Rerun() {
-                    fetch('/clean').then(response => {
-                    window.location.href = '/basic';
-                    });
-                }
-
-
-                    document.getElementById("file").addEventListener("change", function() {
-    var file = this.files[0];
-    var formData = new FormData();
-    formData.append("file", file);
-    var xhr = new XMLHttpRequest();
-    xhr.open("POST", "/uploadfile/");
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                document.getElementById("feedback").textContent = "File uploaded successfully. File name: " + file.name;
-            } else if (xhr.readyState === 4 && xhr.status !== 200) {
-                document.getElementById("feedback").textContent = "Error uploading file.";
-            }
-        };
-    xhr.send(formData);
-});
-                </script>
-                <script>
-    function disableButton(buttonId) {
-		    document.getElementById(buttonId).disabled = true;
-		}
-
-    function showLoading() {
-			document.getElementById("spinner").style.display = "block";
-		}
-	function hideLoading() {
-			document.getElementById("spinner").style.display = "none";
-		}
-    function showText() {
-        document.getElementById("loadingText").style.display = "block";
-    }
-    function hideText() {
-        document.getElementById("loadingText").style.display = "none";
-    }
-    function changeButtonColor(buttonId, color) {
-            document.getElementById(buttonId).removeAttribute("style");
-			document.getElementById(buttonId).setAttribute("class", "btn btn--radius-2 btn--"+color);
-		}
-
-    function removeButtonAttribute(buttonId, attribute) {
-        document.getElementById(buttonId).removeAttribute(attribute);
-    }
 
 
     <div class="card-body" id="container"><span class="circle_1">2.</span>
-        <button class="btn btn--radius-2 btn--blue" id="mycontain" onclick="startPrediction(); disableButton_final(id); showText_final(); showLoading_final()" style="background-color: grey;" disabled>Predict labels using PET Model</button>
+        <button class="btn btn--radius-2 btn--blue" id="mycontainer" onclick="startPrediction(); disableButton_final(id); showText_final(); showLoading_final()" style="background-color: grey;" disabled>Predict labels using PET Model</button>
         <span id="spinner" class="spinner"></span>
               <span id="loadingText">Please wait...</span>
             </div>
