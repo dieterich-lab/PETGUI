@@ -13,14 +13,14 @@ import matplotlib.pyplot as plt
 import random
 from uuid import UUID, uuid4
 
-'''LDAP'''
-from ldap3 import Server, Connection, ALL, Tls, AUTO_BIND_TLS_BEFORE_BIND, core
-from ssl import PROTOCOL_TLSv1_2
 
 
 from app.controller import templating
 from app.dto.session import SessionData, UUID
 from .services.session import SessionService
+from .services.ldap import LdapService
+
+
 
 '''START APP'''
 app = FastAPI()
@@ -33,11 +33,12 @@ if local:
     ssh = "/opt/homebrew/bin/sshpass"
 
     
-class Session:
+class User:
     session: SessionService
+    ldap: LdapService
 
 
-app.state = Session()
+app.state = User()
 
 
 def get_session_service(request: Request):
@@ -56,7 +57,7 @@ def get(request: Request, session: SessionService=Depends(get_session_service)):
 
 @app.post("/login")
 async def login(request: Request, username: str = Form(...), password: str = Form(...)):
-    if not authenticate_ldap(username=username, password=password):
+    if not LdapService.authenticate_ldap(username=username, password=password):
         error = 'Invalid username or password'
         return await templating.login_form(request, error)
     response = RedirectResponse(url=request.url_for("homepage"), status_code=303)
@@ -67,38 +68,12 @@ async def login(request: Request, username: str = Form(...), password: str = For
     os.makedirs(f"./{hash(session_uuid)}", exist_ok=True)  # If run with new conf.
     return response
 
-
 @app.get("/whoami", name="whoami")
 def whoami(session: SessionService = Depends(get_session_service)):
     try:
         return session.get_session_id(), session.get_session_data()
     except AttributeError as e:
         print(str(e))
-
-def authenticate_ldap(username: str, password: str):
-    LDAP_SERVER = 'ldap://ldap2.dieterichlab.org'
-    CA_FILE = 'DieterichLab_CA.pem'
-    USER_BASE = 'dc=dieterichlab,dc=org'
-    LDAP_SEARCH_FILTER = '({name_attribute}={name})'
-    try:
-        tls = Tls(ca_certs_file=CA_FILE, version=PROTOCOL_TLSv1_2)
-        server = Server(LDAP_SERVER, get_info=ALL, tls=tls)
-        conn = Connection(server, auto_bind=AUTO_BIND_TLS_BEFORE_BIND, raise_exceptions=True)
-        conn.bind()
-        conn.search(USER_BASE, LDAP_SEARCH_FILTER.format(name_attribute="uid", name=username))
-        if conn.result['result'] == 0:
-            user_dn = conn.response[0]['dn']
-            try:
-                conn = Connection(server, user_dn, password, auto_bind=AUTO_BIND_TLS_BEFORE_BIND)
-                return True
-            except core.exceptions.LDAPBindError:
-                print("User authentication failed.")
-                return False
-        else:
-            return False
-    except Exception as e:
-        print(str(e))
-        return False
 
 
 async def create_session(request: Request, user: str, response: Response):

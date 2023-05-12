@@ -1,4 +1,4 @@
-from fastapi import Request, Depends, APIRouter, Form, File, UploadFile, Response, HTTPException
+from fastapi import Request, Depends, APIRouter, Form, File, UploadFile, Response, HTTPException, FastAPI
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse, HTMLResponse
 from starlette.responses import FileResponse
@@ -30,13 +30,6 @@ async def login_form(request: Request, error=None, logout: bool = False):
         return templates.TemplateResponse('login.html', {'request': request, 'error': error, 'logout_msg': "Logged out successfully!"})
     else:
         return templates.TemplateResponse('login.html', {'request': request, 'error': error})
-
-class Session:
-    session: SessionService
-
-
-router.state = Session()
-
 
 def get_session_service(request: Request):
     return request.app.state.session
