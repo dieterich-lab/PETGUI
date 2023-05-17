@@ -66,9 +66,7 @@ text-align: start;
     fill: none;
 }
 
-
-
-    #loadingText {
+    .loadingText {
   display: none;
   font-size: 15px;
   font-weight: bold;
@@ -97,10 +95,19 @@ text-align: start;
       to { transform:  translate(-50%, -50%) rotate(360deg); }
     }
 
+
+     #logList {
+         height: 150px;
+         width: 500px;
+         margin-top: 25px;
+         margin-bottom: 25px;
+         overflow: auto;
+     }
+
   ul {
     list-style-type: disc;
-    margin-left: 20px;
-    font-family: Arial, sans-serif;
+    border: 1px solid #ddd;
+    font-family: sans-serif;
     font-size: 16px;
     line-height: 1.5;
     color: #333333;
@@ -114,17 +121,18 @@ text-align: start;
     }
 
     .progress-ring {
-      position: relative;
-      width: 10rem;
-      height: 10rem;
+      margin-right: 50px;
+      width: 7.5rem;
+      height: 7.5rem;
       display: inline-block;
       transform: rotate(-90deg);
       margin-top: 25px;
+
     }
     .progress-ring .progress-ring__circle {
       fill: #fff;
       stroke: #0d6efd;
-      stroke-width: 4;
+      stroke-width: 5;
       stroke-dasharray: 283;
       stroke-dashoffset: 0;
       display: animate;
@@ -133,7 +141,7 @@ text-align: start;
     .progress-ring .progress-ring__circle--fill {
       fill: none;
       stroke: #f3f3f3;
-      stroke-width: 4;
+      stroke-width: 5;
       stroke-linecap: round;
       stroke-dasharray: 283;
       stroke-dashoffset: 283;
@@ -145,8 +153,9 @@ text-align: start;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%) rotate(90deg); /* changed position */
-      font-size: 1rem;
-      font-weight: bold;
+      font-size: 1.5rem;
+      font-family: arial;
+      font-weight: light;
       fill: black;
     }
 
@@ -162,13 +171,6 @@ text-align: start;
   display: inline-block;
 }
 
-
-
-     #logList {
-         height: 100px;
-         overflow: auto;
-         margin-top: 25px;
-     }
 
 
   #table-container {
@@ -198,15 +200,16 @@ tr:nth-child(even) {
   background-color: #f9f9f9;
 }
 
-    #chartContainer {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
+#chartContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
 
-   .card-heading {
-   position: relative;
-   }
+.card-heading {
+position: relative;
+}
+
 
 

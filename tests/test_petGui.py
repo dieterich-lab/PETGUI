@@ -1,9 +1,9 @@
 import json
 import os
 from uuid import uuid4
-
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from app.petGui import app, get_session_service
+from app.petGui import app, get_session_service, User
 import pytest
 from fastapi.responses import RedirectResponse, FileResponse
 from unittest.mock import MagicMock
@@ -11,9 +11,21 @@ from app.dto.session import SessionData, cookie, verifier
 from app.services.session import SessionService
 import io
 from os.path import exists
+from app.controller.templating import router
 
 class TestServer:
     session_id = uuid4()
+    session_data = SessionData(
+        username="username",
+        remote_loc="remote_location",
+        remote_loc_pet="remote_location_pet",
+        cluster_name="cluster_name",
+        last_pos_file="last_pos_file",
+        log_file="log_file"
+    )
+    data = {"username": "user", "password": "pass"}
+    app = FastAPI()
+
     @pytest.fixture()
     def setting(self):
         self.metadata = {
@@ -29,49 +41,45 @@ class TestServer:
             "mapping_1": "good",
             "model_para": "gbert-base"
         }
-
         self.file_path = "data.json"
-        self.data = {"username": "user", "password": "pass"}
-        self.client = TestClient(app)
-
+        yield self.metadata, self.file_path
 
     @pytest.fixture
     def mock_session(self):
-        session_data = SessionData(
-            username="username",
-            remote_loc="remote_location",
-            remote_loc_pet="remote_location_pet",
-            cluster_name="cluster_name",
-            last_pos_file="last_pos_file",
-            log_file="log_file"
-        )
+        self.mock_get_session_service = SessionService(self.session_data, self.session_id)
+        self.mock_verifier = self.session_data        # Not a necessity
+        self.mock_cookie = "long-fake-uuid"       # Not a necessity
 
-        self.mock_get_session_service = SessionService(session_data, self.session_id)
-        self.mock_verifier = session_data
-        self.mock_cookie = "long-fake-uuid"
-
-        app.dependency_overrides[cookie] = lambda: self.mock_cookie
+        app.dependency_overrides[cookie] = lambda: self.mock_cookie       # Not a necessity
         app.dependency_overrides[get_session_service] = lambda: self.mock_get_session_service
-        app.dependency_overrides[verifier] = lambda: self.mock_verifier
+        app.dependency_overrides[verifier] = lambda: self.mock_verifier       # Not a necessity
+        app.state = User()      # Not a necessity
+        app.state.session = self.mock_get_session_service
+        yield app.state.session
 
+
+    @pytest.fixture
+    def test_client(self):
+        self.app.include_router(router)        # Not a necessity
         self.client = TestClient(app)
+        yield self.client
 
-    def test_home(self, setting):
+    def test_home(self, test_client):
         print("Testing app start..")
         response = self.client.get("/")
         assert response.status_code == 200
 
-    def test_login(self, setting):
+    def test_login(self, test_client):
         print("Testing login..")
         response = self.client.post("/login", data=self.data)
         assert response.status_code == 200
 
-    def test_whoami(self, setting, mock_session):
+    def test_whoami(self, test_client, mock_session):
         print("Testing whoami..")
         response = self.client.get("/whoami")
         assert response.status_code == 200
 
-    def test_basic(self, setting, mock_session):
+    def test_basic(self, test_client, setting, mock_session):
         print("Testing homepage..")
         with open("data/yelp_review_polarity_csv.tar.gz", "rb") as f:
             data = io.BytesIO(f.read())
@@ -80,18 +88,20 @@ class TestServer:
             "/basic",
             data=self.metadata,
             files=file,
-            follow_redirects=False,
+            follow_redirects=False
         )
-        assert response.status_code == 303
-        #assert f"{response.next_request}" == f"{self.client.get('/logging', follow_redirects=False).request}"
-        #assert exists("logging.txt")
-        #assert exists(f"data_uploaded/{file['file'][0]}")
 
-    def test_logging(self, setting, mock_session):
+        assert response.status_code == 303
+        assert f"{response.next_request}" == f"{self.client.get('/logging', follow_redirects=False).request}"
+        assert exists(f"{hash(self.session_id)}/data_uploaded")
+        assert exists(f"{hash(self.session_id)}/data.json")
+        assert exists(f"{hash(self.session_id)}/data_uploaded/{file['file'][0]}")
+
+    def test_logging(self, test_client, mock_session):
         print("Testing logging..")
         response = self.client.get("/logging")
         assert response.status_code == 200
-        # assert exists("data.json")
+        assert exists(f"{hash(self.session_id)}/data.json")
         # assert exists("output")
         assert exists("templates/next.html")
 
@@ -103,387 +113,20 @@ class TestServer:
     def mock_check_job(self, mocker):
         mocker.patch("app.petGui.check_job_status", return_value="CD")  # Return job-status
 
-    def test_logging_train(self, setting, mock_session, mock_submit_job, mock_check_job):
-        print("Testing logging..")
+    def test_logging_train(self, test_client, mock_session, mock_submit_job, mock_check_job):
+        print("Testing training..")
         response = self.client.get("/logging/start_train")
         assert response.status_code == 200
         # assert exists("logging.txt")
 
     @pytest.fixture
-    def mock_results(self, mocker):
-        mocker.patch("app.controller.templating.download", return_value=FileResponse(f"{hash(self.mock_get_session_service.get_session_id())}/results.json"))
+    def mock_results(self):
+        with open(f"{hash(self.session_id)}/results.json", "w") as f:
+            json.dump({"results": "good"}, f)
+        yield FileResponse(f"{hash(self.session_id)}")
 
-    def test_results(self, setting, mock_session):
+    def test_results(self, test_client, mock_session, mock_results):
         print("Testing results..")
         response = self.client.get("/download")
+        assert exists(f"{hash(self.session_id)}/results.json")
         assert response.status_code == 200
-
-    # def test_upload_data(self,setting):
-    #     directory = "data/yelp_review_polarity_csv"
-
-
-    # def test_upload_data(self,setting):
-    #     directory = "Pet/data_uploaded/yelp_review_polarity_csv"
-    #
-    #     expected_files = ["train.csv", "test.csv", "readme.txt"]
-    #
-    #     # Check if the directory exists
-    #     assert os.path.isdir(directory), f"Directory {directory} does not exist"
-    #
-    #     # Check if the expected files exist in the directory
-    #     for file_name in expected_files:
-    #         file_path = os.path.join(directory, file_name)
-    #         assert os.path.isdir(file_path), f"Directory {directory} does not exist"
-
-    # def test_save_dict_to_json_file(self,setting):
-    #     with open(self.file_path, 'w') as file:
-    #         json.dump(self.metadata, file)
-    #     assert os.path.exists(self.file_path)
-    #     with open(self.file_path, 'r') as file:
-    #         loaded_dict = json.load(file)
-    #     assert loaded_dict == self.metadata
-    #
-    #
-    # # def test_run(self, setting):
-    # #     response = self.client.get("/run", follow_redirects=False)
-    # #     assert response.status_code == 303
-    # #     assert f"{response.next_request}" == f"{self.client.get('/logging', follow_redirects=False).request}"
-    #
-
-    #
-    #
-    #
-    # # def test_logging(self, setting):
-    # #     response = self.client.get("/logging")
-    # #     assert response.status_code == 200
-    # #     assert exists("data.json")
-    # #     assert exists("output")
-    # #     assert exists("templates/run.html")
-    # #     assert exists("templates/results.html")
-    # #     assert b"PET done!" in response.content
-    #
-    #
-    # def test_read_log(self,setting):
-    #     # Clean up test files
-    #     log_file =  "logging.txt"
-    #     last_pos_file = "last_pos.txt"
-    #     # if os.path.exists(log_file):
-    #     #     os.remove(log_file)
-    #     # if os.path.exists(last_pos_file):
-    #     #     os.remove(last_pos_file)
-    #
-    #     # Prepare test data
-    #     with open(log_file, "w") as f:
-    #         f.write("Creating object A\n")
-    #         f.write("Training Complete\n")
-    #         f.write("Creating object B\n")
-    #         f.write("Saving model\n")
-    #         f.write("Starting evaluation\n")
-    #         f.write("Returning result\n")
-    #
-    #     # Initialize last_pos to the value stored in last_pos.txt, or 0 if the file does not exist
-    #     if os.path.exists(last_pos_file):
-    #         with open(last_pos_file, "r") as file:
-    #             last_pos = int(file.read())
-    #     else:
-    #         last_pos = 0
-    #     # Call the endpoint
-    #
-    #
-    #     response = self.client.get("/log")
-    #
-    #
-    #     # Check the response
-    #     assert response.status_code == 200
-    #
-    #     expected_output = {
-    #         "log": [
-    #             "Creating object A",
-    #             "Training Complete",
-    #             "Creating object B",
-    #             "Saving model",
-    #             "Starting evaluation",
-    #             "Returning result",
-    #         ]
-    #     }
-    #
-    #
-    #     assert response.json() == expected_output
-    #
-    #     # Check that last_pos has been updated correctly
-    #     with open(log_file, "r") as file:
-    #         file.seek(last_pos)
-    #         lines = file.readlines()
-    #         last_pos = file.tell()
-    #     with open(last_pos_file, "w") as file:
-    #         file.write(str(last_pos))
-    #
-    #     #assert last_pos == len(expected_output["log"][-1]) + 1
-    #
-    #     # Clean up test files
-    #     os.remove(log_file)
-    #     os.remove(last_pos_file)
-    #
-    # # def test_results(self, setting):
-    # #     response = self.client.get("/results")
-    # #     assert response.status_code == 200
-    # #     assert exists("results.json")
-    #
-    # def tearDown(self,setting):
-    #     if os.path.exists(self.file_path):
-    #         os.remove(self.file_path)
-    #
-    # def test_download(self,setting):
-    #     # Generate a test dictionary
-    #     test_dict = {
-    #         "p0-i0": {"acc": 0.5},
-    #         "p1-i1": {"acc": 0.8},
-    #         "p2-i2": {"acc": 0.9},
-    #     }
-    #
-    #     # Write the test dictionary to a JSON file
-    #     with open("results.json", "w") as f:
-    #         json.dump(test_dict, f)
-    #
-    #     # Make a GET request to the /download endpoint
-    #     response = self.client.get("/download")
-    #
-    #     # Check that the response status code is 200 OK
-    #     assert response.status_code == 200
-    #
-    #     # Check that the content type of the response is "application/json"
-    #     assert response.headers["content-type"] == "application/json"
-    #
-    #     # Check that the response body is not empty
-    #     assert response.content
-    #
-    #     # Decode the response content to a dictionary
-    #     response_dict = json.loads(response.content)
-    #
-    #     # Check that the response dictionary matches the test dictionary
-    #     assert response_dict == test_dict
-    #
-    # def test_cleanup(self, setting):
-    #     response = self.client.get("/cleanup")
-    #     assert response.status_code == 200
-    #     paths = ["results.json", "data.json", "output", "Pet/data_uploaded", "templates/run.html"]
-    #     for p in paths:
-    #         assert not exists(p)
-    #
-    #
-    # def test_kickoff(self,setting):
-    #     # Prepare test data
-    #
-    #     # Call the API
-    #     with open(self.file_path,"w") as file:
-    #         json.dump(self.metadata, file)
-    #     response = self.client.get("/logging/start_train")
-    #
-    #     # Verify the response status code is 200
-    #     assert response.status_code == 200
-    #
-    #     # Verify the mock function calls
-    #     # json_load_mock.assert_called_once_with(open_mock().__enter__().name, "r")
-    #     # task_report_mock.assert_called_once()
-    #     # pvp_report_mock.assert_called_once()
-    #     # metric_report_mock.assert_called_once()
-    #     # train_mock.assert_called_once_with(data["file"], list(
-    #     #     range(len(data.keys())) - 3))  # Exclude "file", "model_para", and "label" keys from template_cnt
-    #
-    # def test_get_final_template(self,setting):
-    #     response = self.client.get("/final")
-    #     assert response.status_code == 200
-    #
-    # def test_predictions(self,setting):
-    #     # Define the path to the test CSV file
-    #     test_csv_path = "Pet/data_uploaded/yelp_review_polarity_csv/unlabeled.csv"
-    #     # Create a test dataframe with some sample text
-    #     test_df = pd.DataFrame({'text': ['This is a test review', 'Another test review']})
-    #     # Save the test dataframe to a CSV file
-    #     test_df.to_csv(test_csv_path, index=False)
-    #     # Load the CSV file using the code we want to test
-    #     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-    #     model = BertForSequenceClassification.from_pretrained('bert-base-uncased')
-    #     df = pd.read_csv(test_csv_path, header=None, names=['label', 'text'])
-    #     input_ids = []
-    #     attention_masks = []
-    #     for text in df['text']:
-    #         encoded_dict = tokenizer.encode_plus(
-    #             text,
-    #             add_special_tokens=True,
-    #             max_length=64,
-    #             pad_to_max_length=True,
-    #             return_attention_mask=True,
-    #             return_tensors='pt'
-    #         )
-    #         input_ids.append(encoded_dict['input_ids'])
-    #         attention_masks.append(encoded_dict['attention_mask'])
-    #     input_ids = torch.cat(input_ids, dim=0)
-    #     attention_masks = torch.cat(attention_masks, dim=0)
-    #     with torch.no_grad():
-    #         outputs = model(input_ids, attention_mask=attention_masks)
-    #     logits = outputs[0]
-    #     predictions = torch.argmax(logits, dim=1)
-    #     df['label'] = predictions
-    #     df.to_csv('test_predictions.csv', index=False)
-    #     # Load the test predictions CSV file
-    #     test_predictions_df = pd.read_csv('test_predictions.csv')
-    #     # Verify that the predicted labels are integers between 0 and 1
-    #     for label in test_predictions_df['label']:
-    #         assert isinstance(label, int)
-    #         assert label == 0 or label == 1
-    #
-    #     # Test the API endpoint
-    #
-    #     response = self.client.get("/final/start_prediction")
-    #     assert response.status_code == 200
-    #     assert response.json() == {"message": "Predictions generated successfully."}
-    #
-    # def test_results(self):
-    #     # Mock the os.walk and open functions to simulate the directory structure and results.json content
-    #     with mock.patch('os.walk') as mock_walk, mock.patch('builtins.open', mock.mock_open(read_data=json.dumps({
-    #         "test_set_after_training": {
-    #             "acc": 0.9,
-    #             "pre-rec-f1-supp": [
-    #                 [0.8, 0.7, 0.75, 100],
-    #                 [0.9, 0.8, 0.85, 150]
-    #             ]
-    #         }
-    #     }))):
-    #         mock_walk.return_value = ("output/", ["final", "pattern-1"], [])
-    #         mock_walk.side_effect = [
-    #             ("output/final/", [], []),
-    #             ("output/pattern-1/", ["iteration-1"], []),
-    #             ("output/pattern-1/iteration-1", [], ["results.json"]),
-    #         ]
-    #
-    #         # Call the results function
-    #         result = results()
-    #
-    #         # Define the expected output
-    #         expected_scores = {
-    #             "Final": {
-    #                 "acc": 0.9,
-    #                 "pre-rec-f1-supp": [
-    #                     "Label: 0 pre: 0.8, rec: 0.7, f1: 0.75, supp: 100",
-    #                     "Label: 1 pre: 0.9, rec: 0.8, f1: 0.85, supp: 150"
-    #                 ]
-    #             },
-    #             "Pattern-1 Iteration 1": {
-    #                 "acc": 0.9,
-    #                 "pre-rec-f1-supp": [
-    #                     "Label: 0 pre: 0.8, rec: 0.7, f1: 0.75, supp: 100",
-    #                     "Label: 1 pre: 0.9, rec: 0.8, f1: 0.85, supp: 150"
-    #                 ]
-    #             }
-    #         }
-    #
-    #         # Assert that the result matches the expected output
-    #         assert result == expected_scores
-    #
-    #
-    # def test_create_upload_file(self):
-    #     # Create a temporary file for testing
-    #     with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-    #         temp_file.write(b"Test content")
-    #         temp_file.seek(0)
-    #
-    #         # Create a test UploadFile object
-    #         test_upload_file = UploadFile(temp_file.name, file=temp_file)
-    #
-    #         # Call the create_upload_file function
-    #         result = asyncio.run(create_upload_file(file=test_upload_file))
-    #
-    #         # Define the expected output
-    #         expected_result = {
-    #             "filename": temp_file.name,
-    #             "path": os.path.join("./data_uploaded/unlabeled", temp_file.name)
-    #         }
-    #
-    #         # Assert that the result matches the expected output
-    #         assert result == expected_result
-    #
-    #         # Clean up the temporary file
-    #         os.remove(temp_file.name)
-    #
-    #
-    #
-    #
-    #
-    #
-
-
-
-
-        # self.mock_cookie = SessionCookie(
-        #     cookie_name="cookie",
-        #     identifier="mock_session_id",
-        #     auto_error=True,
-        #     secret_key="DONOTUSE",
-        #     cookie_params=cookie_params,
-        # )
-        # self.mock_cookie = MagicMock()
-        # self.mock_cookie.return_value = uuid.uuid4()
-        # Override the cookie dependency of the client instance
-        # cookie_value = mock_cookie()
-        # self.client.app.dependency_overrides[cookie] = mock_cookie
-        # self.mock_uuid = "b85ab5f6-06ab-4636-bc84-5cc2f7b7ccd2"
-
-        # self.mock_cookie = SessionCookie(
-        #     cookie_name="cookie",
-        #     identifier="general_verifier",
-        #     auto_error=True,
-        #     secret_key="DONOTUSE",
-        #     cookie_params=cookie_params,
-        # ).new_uuid()
-        # session_id = uuid.uuid4()
-        # session_data = SessionData(username="testuser", remote_loc="testloc", remote_loc_pet="testpet")
-        # backend.save(session_id, session_data)
-        # cookie_value = cookie.create(session_id)
-        # headers = {"Cookie": f"cookie={cookie_value}"}
-
-
-        #self.client._cookie_jar.update_cookies({"cookie_name": "valid_cookie"})
-        #self.client.cookies.set("cookie", "valid_cookie")
-        # yield
-        # self.client.close()
-
-    # @mock.patch('app.login.authenticate_ldap')
-    # @mock.patch('app.login.create_session')
-    # async def test_login(self, mock_create_session, mock_authenticate_ldap):
-    #     mock_authenticate_ldap.return_value = True
-    #     mock_create_session.return_value = None
-    #     response = await self.client.post("/login", data={"username": "testuser", "password": "testpass"})
-    #     assert response.status_code == 303
-    #     assert response.url == "/homepage"
-    #     assert "testuser" in os.environ
-    #     assert os.environ["testuser"] == "testpass"
-    # @patch('__main__.authenticate', return_value=True)
-    # def test_login_successful(self, mock_authenticate):
-    #     response = client.post("/login", json={"username": "johndoe", "password": "password123"})
-    #     assert response.status_code == 200
-    #     assert response.json() == {"message": "Login successful"}
-    #
-    # @patch('__main__.authenticate', return_value=False)
-    # def test_login_failed(self, mock_authenticate):
-    #     response = self.client.post("/login", json={"username": "johndoe", "password": "incorrect_password"})
-    #     assert response.status_code == 200
-    #     assert response.json() == {"message": "Login successful"}
-    # def mock_cookie(self):
-    #     def _mock_cookie(self):
-    #         return "valid_cookie"
-    #     return _mock_cookie
-
-    # def session_cookie(self):
-    #     cookie_params = {
-    #         "httponly": True,
-    #         "samesite": "lax",
-    #         "secure": True,
-    #     }
-    #     return SessionCookie(
-    #         cookie_name="cookie",
-    #         identifier="general_verifier",
-    #         auto_error=True,
-    #         secret_key="DONOTUSE",
-    #         cookie_params=cookie_params,
-    #     )

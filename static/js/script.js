@@ -1,10 +1,10 @@
 
 
 function Logout() {
-        fetch('/logout').then(response => {
-            window.location.href = '/login';
-        });
-    }
+    fetch('/logout').then(response => {
+        window.location.href = '/login?logout=True';
+    });
+}
 
 function addEventListenersForIndex() {
   document.getElementById("file-uploader").addEventListener("change", function() {
@@ -115,22 +115,9 @@ function addInput_map(){
 }
 
 
-
-
-
-
-
     function disableButton_final(buttonId) {
 		    document.getElementById(buttonId).disabled = true;
 		}
-
-    function showLoading_final() {
-			document.getElementById("spinner").style.display = "block";
-		}
-
-    function showText_final() {
-        document.getElementById("loadingText").style.display = "block";
-    }
 
     function changeButtonColor(buttonId, color) {
             document.getElementById(buttonId).removeAttribute("style");
@@ -146,25 +133,20 @@ function addInput_map(){
             button.textContent = text;
      }
 
-
-
-        function startPrediction() {
-            changeButtonText("mycontainer", "Prediction Started..");
-            showLoading("loading");
-            fetch('/final/start_prediction')
-                .then(response => {
-                    hideLoading("loading");
-                    hideText();
-                    changeButtonColor("mycontainer", "green");
-                    changeButtonColor("mycontain_download", "blue");
-                    changeButtonText("mycontainer", "Prediction Finished");
-                    removeButtonAttribute("mycontain_download", "disabled");
-                    changeButtonColor("show_chart", "blue");
-                    removeButtonAttribute("show_chart", "disabled");
-                });
-        }
-
-
+    function startPrediction() {
+        changeButtonText("mycontainer", "Prediction Started..");
+        fetch('/final/start_prediction')
+            .then(response => {
+                hideLoading();
+                hideText();
+                changeButtonColor("mycontainer", "green");
+                changeButtonColor("mycontain_download", "blue");
+                changeButtonText("mycontainer", "Prediction Finished");
+                removeButtonAttribute("mycontain_download", "disabled");
+                changeButtonColor("show_chart", "blue");
+                removeButtonAttribute("show_chart", "disabled");
+            });
+    }
 
 
   const downloadButton = document.getElementById('mycontain_download');
@@ -202,12 +184,13 @@ function addInput_map(){
     }
     function hideText() {
         document.getElementById("loadingText").style.display = "none";
+
     }
 
 
      function startTraining() {
-         changeButtonText("trainButton", "Training Starting..");
-         const intervalId = setInterval(refreshLog, 10000);
+        changeButtonText("trainButton", "Training Starting..");
+        const intervalId = setInterval(refreshLog, 10000);
      }
 
      function disableButton() {
@@ -241,6 +224,9 @@ function addInput_map(){
               clearInterval(interval);
               return;
             } else if (logList.childElementCount >= 1) {
+              document.getElementById("progress-ring-div").style.display = "flex";
+              document.getElementById("Prog-text").style.display = "flex";
+              document.getElementById("Log-text").style.display = "inline-block";
               showList();
               hideLoading();
               hideText();
@@ -270,9 +256,6 @@ function addInput_map(){
         .then(data => showTable(data))
         .catch(error => console.error(error));
     }
-
-
-
 
 
 
@@ -328,10 +311,6 @@ function redirect() {
             window.location.href = '/basic';
         });
     }
-
-
-
-
 
 
     const button = document.getElementById("another");

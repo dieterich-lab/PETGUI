@@ -38,7 +38,6 @@
                     <button class="btn logout-btn logout-btn:hover" onclick="Logout()">LOGOUT <i class="fa fa-power-off"></i></button>
                     <button class="btn home-btn home-btn:hover" onclick="runPythonCode()">START <i class="fa fa-home"></i></button>
                 </div>
-
                         <div class="form-row m-b-55">
                             <div class="value">
                                 <div class="row row-space">
@@ -55,47 +54,32 @@
                         </div>
 
 
-                <div class="card-body" id="container"><span class="circle_1">1.</span>
-                                <label class="btn btn--radius-2 btn--blue">
-                                      Upload unlabeled data as a csv file
-                                <input type="file" accept=".csv" name="file_final" id="file_final" style="display:none;">
-                                </label>
-                                <div id="feedback_file"></div>
-                            </div>
-
-
+    <div class="card-body" id="container"><span class="circle_1">1.</span>
+        <label class="btn btn--radius-2 btn--blue">
+              Upload unlabeled data as a csv file
+        <input type="file" accept=".csv" name="file_final" id="file_final" style="display:none;">
+        </label>
+        <div id="feedback_file"></div>
+    </div>
 
     <div class="card-body" id="container"><span class="circle_1">2.</span>
-        <button class="btn btn--radius-2 btn--blue" id="mycontainer" onclick="startPrediction(); disableButton_final(id); showText_final(); showLoading_final()" style="background-color: grey;" disabled>Predict labels using PET Model</button>
-        <span id="spinner" class="spinner"></span>
-              <span id="loadingText">Please wait...</span>
-            </div>
-    <div id="loading" style="display: none;">
-      <div class="spinner"></div>
+        <button class="btn btn--radius-2 btn--blue" id="mycontainer" onclick="startPrediction(); disableButton_final(id); showText(); showLoading()" style="background-color: grey;" disabled>Predict labels using PET Model</button>
+        <span class="spinner" id="spinner"></span>
+        <div class="loadingText" id="loadingText"> Please wait...</div>
     </div>
 
-
-
-                                            <div class="card-body" id="container"><span class="circle_1">3.</span>
-                                <button class="btn btn--radius-2 btn--blue" id="mycontain_download" style="background-color: grey;" disabled>Download Predicted data</button>
-                            </div>
-
-                   <div class="card-body" id="container">
-      <span class="circle_1">4.</span>
-      <button class="btn btn--radius-2 btn--blue" id="show_chart" onclick="generateChart()" style="background-color: grey;" disabled>Show Chart</button>
+    <div class="card-body" id="container"><span class="circle_1">3.</span>
+        <button class="btn btn--radius-2 btn--blue" id="mycontain_download" style="background-color: grey;" disabled>Download Predicted data</button>
     </div>
-                <div id="chartContainer"></div>
 
+    <div class="card-body" id="container"><span class="circle_1">4.</span>
+        <button class="btn btn--radius-2 btn--blue" id="show_chart" onclick="generateChart()" style="background-color: grey;" disabled>Show Chart</button>
+    </div>
+
+    <div id="chartContainer"></div>
             </div>
         </div>
     </div>
-    <style>
-#chartContainer {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-</style>
 
    <script>
 function generateChart() {
