@@ -7,6 +7,8 @@ import json, os, tarfile, subprocess
 from subprocess import PIPE
 from uuid import UUID, uuid4
 
+from ..dto.session import cookie
+
 '''LDAP'''
 from os.path import isdir, isfile
 import pathlib
@@ -31,6 +33,7 @@ async def login_form(request: Request, error=None, logout: bool = False):
     else:
         return templates.TemplateResponse('login.html', {'request': request, 'error': error})
 
+
 def get_session_service(request: Request):
     return request.app.state.session
 
@@ -44,10 +47,9 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
                    model_para: str = Form(media_type="multipart/form-data"),
                    file: UploadFile = File(...),
                    template_0: str = Form(media_type="multipart/form-data"),
-                   session: SessionService= Depends(get_session_service)):
+                   session: SessionService = Depends(get_session_service)):
     session_id, session_data = session.get_session_id(), session.get_session_data()
     try:
-
         await read_log(session, initial=True)
         try:
             file_upload = tarfile.open(fileobj=file.file, mode="r:gz")
@@ -83,7 +85,6 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
         redirect_url = request.url_for('logging')
         print(para_dic)
         return RedirectResponse(redirect_url, status_code=303)
-
     except Exception as e:
         error = str(e)
         return templates.TemplateResponse("index.html", {"request": request, "error": error})
@@ -172,7 +173,7 @@ def download_predict(session: SessionService = Depends(get_session_service)):
 @router.get("/logout")
 def logout(request: Request, response: Response, session: SessionService = Depends(get_session_service)):
     clean(session, logout=True)
-    #cookie.delete_from_response(response)
+    cookie.delete_from_response(response)
     request.app.state.session = None
 
 

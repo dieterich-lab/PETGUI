@@ -68,50 +68,10 @@
             button.textContent = text;
     }
 
-     function startTraining() {
-         changeButtonText("trainButton", "Training Starting..");
-         const intervalId = setInterval(refreshLog, 10000);
-     }
-
      function disableButton() {
 			document.getElementById("trainButton").disabled = true;
 		}
 
-
-    function refreshLog() {
-      return fetch("/log")
-        .then(response => response.json())
-        .then(data => {
-          const logList = document.getElementById("logList");
-          data.log.forEach(line => {
-            const li = document.createElement("li");
-            currentStep++;
-            li.textContent = line;
-            logList.appendChild(li);
-            animateProgress();
-
-            if (li.textContent.includes('Training Complete')) {
-              changeButtonColor("trainButton", "green");
-              changeButtonText("trainButton", "Training Complete");
-              changeButtonColor("resultsButton", "blue");
-              removeButtonAttribute("resultsButton", "disabled");
-              changeButtonColor("rerunButton", "blue");
-              removeButtonAttribute("rerunButton", "disabled");
-              changeButtonColor("annotateButton", "blue");
-              removeButtonAttribute("annotateButton", "disabled");
-
-              const interval = document.getElementById("intervalId");
-              clearInterval(interval);
-              return;
-            } else if (logList.childElementCount >= 1) {
-              showList();
-              hideLoading();
-              hideText();
-              changeButtonText("trainButton", "Training Started");
-            }
-          });
-        });
-    }
 
       async function downloadFile() {
         const response = await fetch("/download");
@@ -200,22 +160,32 @@ function showTable(jsonData) {
           <div class="button-container">
        <button id="trainButton" onclick="startTraining(); disableButton(); showLoading(); showText()" class="btn btn--radius-2 btn--blue">
         Start Training
-       </button> <span id="spinner" class="spinner"></span>
-              <span id="loadingText">Please wait...</span>
-          </div>
-       <ul class="disabled" id="logList" style="display: none;"></ul>
-          <div class="disabled" id="loading" style="display: none;">
-              <div class="progress-ring"></div>
-          </div>
-      </a>
+       </button></div></a>
 
-                         <div class="d-flex justify-content-center">
-    <svg class="progress-ring" viewBox="0 0 100 100">
-      <circle class="progress-ring__circle" cx="50" cy="50" r="45"/>
-      <circle class="progress-ring__circle--fill" cx="50" cy="50" r="45"/>
-      <text class="progress-ring__percentage" x="100%" y="-100%" dominant-baseline="middle" text-anchor="middle">0%</text>
-    </svg>
-  </div>
+                         <div class="row" style="transform: translate(-25%, 0%);">
+                                    <div class="col-2">
+                                        <div class="input-group-desc">
+                                            <h4 id="Prog-text" style="font-family: sans-serif; transform: translate(50%,50%); display: none; color: black;">Progress</h4>
+                                            <div style="display: none" id="progress-ring-div">
+                                            <svg class="progress-ring" viewBox="0 0 100 100">
+                                              <circle class="progress-ring__circle" cx="50" cy="50" r="45"/>
+                                              <circle class="progress-ring__circle--fill" cx="50" cy="50" r="45"/>
+                                              <text class="progress-ring__percentage" x="100%" y="-100%" dominant-baseline="middle" text-anchor="middle">0%</text>
+                                            </svg>
+                                          </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-2">
+                                        <div class="input-group-desc">
+                                            <h4 id="Log-text" style="font-family: sans-serif; transform: translate(250%,50%); display: none; color: black;">Logs</h4>
+                                                   <ul class="disabled" id="logList" style="display: none;"></ul>
+          <div class="disabled" id="loading" style="display: none;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+        <span class="spinner" id="spinner"></span>
+        <div class="loadingText" id="loadingText"> Please wait...</div>
+
                          <script>
     let steps;
 fetch('/steps').then(res => res.json()).then(data => parseInt(data.steps)).then(value => {steps = value});
@@ -250,29 +220,14 @@ const animateProgress = () => {
 
   <div class="card-body" id="table-container">
        <button id="resultsButton" onclick="loadJSON()" class="btn btn--radius-2" style="background-color: grey;" disabled>
-         Show Results
-      </button>
-
+         Show Results</button>
   <p id='showData'></p>
   <p id='msg'></p>
-
-
-
-      </div>
-
-                        <div class="form-row m-b-55">
-                            <div class="value">
-                                <div class="row row-space">
-                                    <div class="col-2">
-                                    </div>
-                                    <div class="col-2">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+  </div>
                             <div class="card-body" id="container">
                                 <button class="btn btn--radius-2" style="background-color: grey;" id="rerunButton" onclick="runPythonCode()" disabled>Run with new configuration</button>
                             </div>
+                         <span class="title" style="display: block; color: #000;">OR</span>
                             <div class="card-body" id="container">
                                 <button class="btn btn--radius-2" style="background-color: grey;" id="annotateButton" onclick="redirect()" disabled>Annotate unseen data</button>
                             </div>

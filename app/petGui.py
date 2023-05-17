@@ -71,7 +71,7 @@ async def login(request: Request, username: str = Form(...), password: str = For
 @app.get("/whoami", name="whoami")
 def whoami(session: SessionService = Depends(get_session_service)):
     try:
-        return session.get_session_id(), session.get_session_data()
+        return session
     except AttributeError as e:
         print(str(e))
 
@@ -89,7 +89,6 @@ async def create_session(request: Request, user: str, response: Response):
     session = request.app.state.session
     session.create_cookie(response=response)
     await session.create_backend()
-    print(session_id, hash(session_id))
     return session
 
 
