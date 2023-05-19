@@ -11,6 +11,8 @@ from app.dto.session import SessionData, cookie, verifier
 from app.services.session import SessionService
 import io
 from os.path import exists
+import pandas as pd
+import matplotlib.pyplot as plt
 from app.controller.templating import router
 
 class TestServer:
@@ -130,3 +132,64 @@ class TestServer:
         response = self.client.get("/download")
         assert exists(f"{hash(self.session_id)}/results.json")
         assert response.status_code == 200
+
+    @pytest.fixture
+    def test_label_distribution(self,mocker, test_client, setting, mock_session):
+        # Mock the get_session_service dependency
+        # Create a mock dataframe with known label values
+        df = pd.DataFrame({"label": ["A", "B", "C", "A", "B", "C", "A", "B", "C", "A", "B", "C"]})
+        predictions_file = f"{hash(self.session_id)}/data_uploaded/predictions.csv"
+        df.to_csv(predictions_file)
+
+        # Mock the matplotlib plot and save it to a temporary file
+        fig, ax = plt.subplots()
+        ax.bar(["A", "B", "C"], [4, 4, 4])
+        ax.set_title("Label Counts")
+        ax.set_xlabel("Label")
+        ax.set_ylabel("Number of Examples")
+        table_data = [["Label", "Text"], ["A", "mock text..."], ["B", "mock text..."], ["C", "mock text..."]]
+        table = ax.table(cellText=table_data, loc="bottom", cellLoc="left", bbox=[0, -0.8, 1, 0.5])
+        table.auto_set_column_width(col=list(range(2)))
+        chart_file = "chart_prediction.png"
+        plt.savefig(chart_file, dpi=100)
+
+        # Call the label_distribution function and check the response
+        client = TestClient(app)
+        response = client.post("/label-distribution")
+        assert response.status_code == 200
+        assert response.json() == {"message": "Label distribution chart created successfully."}
+        assert predictions_file.exists()
+        assert chart_file.exists()
+
+    @pytest.fixture
+    def test_extract_file(self,mocker, test_client, setting, mock_session):
+
+       # Create a mock dataframe with known label values
+        df = pd.DataFrame({"label": ["A", "B", "C", "A", "B", "C", "A", "B", "C", "A", "B", "C"]})
+        train_file = f"{hash(self.session_id)}/data_uploaded/train.csv"
+        test_file =  f"{hash(self.session_id)}/data_uploaded/test.csv"
+        df.to_csv(train_file, index=False)
+        df.to_csv(test_file, index=False)
+
+        # Mock the matplotlib plot and save it to a temporary file
+        fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(7, 5))
+        ax1.bar(["A", "B", "C"], [4, 4, 4], width=0.5)
+        ax1.set_title("Train Label Distribution")
+        ax1.set_xlabel("Label")
+        ax1.set_ylabel("Count")
+        ax2.bar(["A", "B", "C"], [4, 4, 4], width=0.5)
+        ax2.set_title("Test Label Distribution")
+        ax2.set_xlabel("Label")
+        ax2.set_ylabel("Count")
+        chart_file = "chart.png"
+        plt.savefig(chart_file, dpi=100)
+
+        # Call the extract_file function and check the response
+        client = TestClient(app)
+        with open(train_file, "rb") as f1, open(test_file, "rb") as f2:
+            response = client.post("/extract-file", files={"file": ("data.tar.gz", f1), "file": ("data.tar.gz", f2)})
+        assert response.status_code == 200
+        assert response.json() == {"message": "File extracted successfully."}
+        assert train_file.exists()
+        assert test_file.exists()
+        assert chart_file.exists()
