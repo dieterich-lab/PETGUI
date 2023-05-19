@@ -73,7 +73,7 @@
     </div>
 
     <div class="card-body" id="container"><span class="circle_1">4.</span>
-        <button class="btn btn--radius-2 btn--blue" id="show_chart" onclick="generateChart()" style="background-color: grey;" disabled>Show Chart</button>
+        <button class="btn btn--radius-2 btn--blue" id="show_chart" onclick="toggleChart()" style="background-color: grey;" disabled>Show Chart</button>
     </div>
 
     <div id="chartContainer"></div>
@@ -82,20 +82,33 @@
     </div>
 
    <script>
-function generateChart() {
-    var xhr = new XMLHttpRequest();
-    xhr.open("POST", "/label-distribution");
-    xhr.setRequestHeader("Content-Type", "application/json");
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
-            // The chart was generated successfully
-            var chartImage = document.createElement("img");
-            chartImage.src = "/static/chart_prediction.png";
-            document.getElementById("chartContainer").appendChild(chartImage);
+function toggleChart() {
+    var chart = document.getElementById("chartContainer");
+    var btn = document.getElementById("show_chart");
+   if (chart.style.display === "none") {
+    chart.style.display = "flex";
+    btn.textContent = "Hide Chart";
+    var img = document.getElementById("img");
+    if (img === null) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "/label-distribution");
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+                // The chart was generated successfully
+                var chartImage = document.createElement("img");
+                chartImage.src = "/static/chart_prediction.png";
+                document.getElementById("chartContainer").appendChild(chartImage);
+            }
         }
+        xhr.send(JSON.stringify({}));
+        }
+    } else {
+        chart.style.display = "none";
+        btn.textContent = "Show Chart";
     }
-    xhr.send(JSON.stringify({}));
 }
+
 </script>
 
 

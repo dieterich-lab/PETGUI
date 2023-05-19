@@ -10,13 +10,10 @@ import subprocess
 from subprocess import PIPE
 import pandas as pd
 import matplotlib.pyplot as plt
-import random
 from uuid import UUID, uuid4
 
-
-
 from app.controller import templating
-from app.dto.session import SessionData, UUID
+from app.dto.session import SessionData
 from .services.session import SessionService
 from .services.ldap import LdapService
 
@@ -27,6 +24,7 @@ app = FastAPI()
 '''Include routers'''
 app.include_router(templating.router)
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
 local = False # If running app locally
 ssh = "sshpass"
 if local:
@@ -49,7 +47,7 @@ def main():
     return RedirectResponse(url="/login")
 
 @app.get("/get_cookie")
-def get(request: Request, session: SessionService=Depends(get_session_service)):
+def get(request: Request):
     cookies = request.cookies
     session = get_session_service(request)
     print(cookies, session)

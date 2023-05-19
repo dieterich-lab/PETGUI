@@ -7,7 +7,7 @@ import json, os, tarfile, subprocess
 from subprocess import PIPE
 from uuid import UUID, uuid4
 
-from ..dto.session import cookie
+from ..services.session import cookie
 
 '''LDAP'''
 from os.path import isdir, isfile

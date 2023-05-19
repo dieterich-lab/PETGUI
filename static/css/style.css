@@ -201,7 +201,7 @@ tr:nth-child(even) {
 }
 
 #chartContainer {
-  display: flex;
+  display: none;
   justify-content: center;
   align-items: center;
 }

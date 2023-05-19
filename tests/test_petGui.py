@@ -7,8 +7,8 @@ from app.petGui import app, get_session_service, User
 import pytest
 from fastapi.responses import RedirectResponse, FileResponse
 from unittest.mock import MagicMock
-from app.dto.session import SessionData, cookie, verifier
-from app.services.session import SessionService
+from app.dto.session import SessionData
+from app.services.session import SessionService, cookie, verifier
 import io
 from os.path import exists
 from app.controller.templating import router
