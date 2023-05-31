@@ -5,8 +5,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from app.petGui import app, get_session_service, User
 import pytest
-from fastapi.responses import RedirectResponse, FileResponse
-from unittest.mock import MagicMock
+from fastapi.responses import FileResponse
 from app.dto.session import SessionData, cookie, verifier
 from app.services.session import SessionService
 import io
@@ -15,6 +14,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from app.controller.templating import router
 
+
 class TestServer:
     session_id = uuid4()
     session_data = SessionData(
@@ -22,8 +22,8 @@ class TestServer:
         remote_loc="remote_location",
         remote_loc_pet="remote_location_pet",
         cluster_name="cluster_name",
-        last_pos_file="last_pos_file",
-        log_file="log_file"
+        last_pos_file=f"{hash(session_id)}/last_pos_file.txt",
+        log_file=f"{hash(session_id)}/log_file.txt"
     )
     data = {"username": "user", "password": "pass"}
     app = FastAPI()
@@ -47,7 +47,7 @@ class TestServer:
         yield self.metadata, self.file_path
 
     @pytest.fixture
-    def mock_session(self):
+    def mock_session(self, mocker):
         self.mock_get_session_service = SessionService(self.session_data, self.session_id)
         self.mock_verifier = self.session_data        # Not a necessity
         self.mock_cookie = "long-fake-uuid"       # Not a necessity
@@ -57,6 +57,7 @@ class TestServer:
         app.dependency_overrides[verifier] = lambda: self.mock_verifier       # Not a necessity
         app.state = User()      # Not a necessity
         app.state.session = self.mock_get_session_service
+        mocker.patch("app.petGui.create_session", return_value=app.state.session)
         yield app.state.session
 
 
@@ -71,7 +72,11 @@ class TestServer:
         response = self.client.get("/")
         assert response.status_code == 200
 
-    def test_login(self, test_client):
+    @pytest.fixture
+    def mock_user(self, mocker):
+        mocker.patch("app.services.ldap.LdapService.authenticate_ldap", return_value=True)  # Return user authentication
+
+    def test_login(self, test_client, mock_user, mock_session):
         print("Testing login..")
         response = self.client.post("/login", data=self.data)
         assert response.status_code == 200
@@ -79,6 +84,7 @@ class TestServer:
     def test_whoami(self, test_client, mock_session):
         print("Testing whoami..")
         response = self.client.get("/whoami")
+        print(response.content)
         assert response.status_code == 200
 
     def test_basic(self, test_client, setting, mock_session):
@@ -92,12 +98,12 @@ class TestServer:
             files=file,
             follow_redirects=False
         )
-
         assert response.status_code == 303
         assert f"{response.next_request}" == f"{self.client.get('/logging', follow_redirects=False).request}"
         assert exists(f"{hash(self.session_id)}/data_uploaded")
         assert exists(f"{hash(self.session_id)}/data.json")
         assert exists(f"{hash(self.session_id)}/data_uploaded/{file['file'][0]}")
+        assert exists(f"{self.session_data.log_file}")
 
     def test_logging(self, test_client, mock_session):
         print("Testing logging..")
@@ -106,6 +112,7 @@ class TestServer:
         assert exists(f"{hash(self.session_id)}/data.json")
         # assert exists("output")
         assert exists("templates/next.html")
+
 
     @pytest.fixture
     def mock_submit_job(self, mocker):
@@ -119,10 +126,9 @@ class TestServer:
         print("Testing training..")
         response = self.client.get("/logging/start_train")
         assert response.status_code == 200
-        # assert exists("logging.txt")
 
     @pytest.fixture
-    def mock_results(self):
+    def mock_results(self, mock_session):
         with open(f"{hash(self.session_id)}/results.json", "w") as f:
             json.dump({"results": "good"}, f)
         yield FileResponse(f"{hash(self.session_id)}")
@@ -134,7 +140,7 @@ class TestServer:
         assert response.status_code == 200
 
     @pytest.fixture
-    def test_label_distribution(self,mocker, test_client, setting, mock_session):
+    def test_label_distribution(self, mocker, test_client, setting, mock_session):
         # Mock the get_session_service dependency
         # Create a mock dataframe with known label values
         df = pd.DataFrame({"label": ["A", "B", "C", "A", "B", "C", "A", "B", "C", "A", "B", "C"]})

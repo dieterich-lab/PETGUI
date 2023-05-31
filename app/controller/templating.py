@@ -87,6 +87,7 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
         return RedirectResponse(redirect_url, status_code=303)
     except Exception as e:
         error = str(e)
+        print(error)
         return templates.TemplateResponse("index.html", {"request": request, "error": error})
 
 
@@ -106,7 +107,7 @@ async def logging(request: Request, error: str = None):
 
 
 @router.get("/log", name="log", dependencies=[Depends(get_session_service)])
-async def read_log(session: SessionService= Depends(get_session_service), initial: bool = False):
+async def read_log(session: SessionService = Depends(get_session_service), initial: bool = False):
     session_id, session_data = session.get_session_id(), session.get_session_data()
     last_pos_file = session_data.last_pos_file
     log_file = session_data.log_file
@@ -146,9 +147,11 @@ def download(session: SessionService = Depends(get_session_service)):
     session_id = session.get_session_id()
     return FileResponse(f"{hash(session_id)}/results.json", filename="results.json")
 
+
 @router.get("/final", response_class=HTMLResponse, name='final', dependencies=[Depends(get_session_service)])
 async def get_final_template(request: Request, error = None):
     return templates.TemplateResponse("final_page.html", {"request": request, "error": error})
+
 
 @router.post("/uploadfile/", dependencies=[Depends(get_session_service)])
 async def create_upload_file(file: UploadFile = File(...), session: SessionService = Depends(get_session_service)):
