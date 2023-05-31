@@ -1,5 +1,4 @@
 import json
-import os
 from uuid import uuid4
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -57,7 +56,7 @@ class TestServer:
         app.dependency_overrides[verifier] = lambda: self.mock_verifier       # Not a necessity
         app.state = User()      # Not a necessity
         app.state.session = self.mock_get_session_service
-        mocker.patch("app.petGui.create_session", return_value=app.state.session)
+        mocker.patch("app.controller.session.create_session", return_value=app.state.session)
         yield app.state.session
 
 
