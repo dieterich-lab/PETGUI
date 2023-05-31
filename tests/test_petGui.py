@@ -73,10 +73,14 @@ class TestServer:
         assert response.status_code == 200
 
     @pytest.fixture
-    def mock_user(self, mocker):
-        mocker.patch("app.services.ldap.LdapService.authenticate_ldap", return_value=True)  # Return user authentication
+    def mock_user_dn(self, mocker):
+        mocker.patch("app.services.ldap.get_dn_of_user", return_value="user")  # Return user dn
 
-    def test_login(self, test_client, mock_user, mock_session):
+    @pytest.fixture
+    def mock_bind(self, mocker):
+        mocker.patch("app.services.ldap.bind", return_value=True)  # Return user authentication
+
+    def test_login(self, test_client, mock_user_dn, mock_bind, mock_session):
         print("Testing login..")
         response = self.client.post("/login", data=self.data)
         assert response.status_code == 200

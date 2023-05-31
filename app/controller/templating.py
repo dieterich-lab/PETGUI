@@ -37,6 +37,7 @@ async def login_form(request: Request, error=None, logout: bool = False):
 def get_session_service(request: Request):
     return request.app.state.session
 
+
 @router.post("/basic", name="homepage", dependencies=[Depends(get_session_service)])
 async def get_form(request: Request, sample: str = Form(media_type="multipart/form-data"),
                    label: str = Form(media_type="multipart/form-data"),
