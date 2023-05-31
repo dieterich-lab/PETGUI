@@ -13,6 +13,9 @@ import io
 from os.path import exists
 import pandas as pd
 import matplotlib.pyplot as plt
+from pathlib import Path
+import tarfile
+
 from app.controller.templating import router
 
 class TestServer:
@@ -133,24 +136,38 @@ class TestServer:
         assert exists(f"{hash(self.session_id)}/results.json")
         assert response.status_code == 200
 
-    @pytest.fixture
+
+
     def test_label_distribution(self,mocker, test_client, setting, mock_session):
         # Mock the get_session_service dependency
         # Create a mock dataframe with known label values
-        df = pd.DataFrame({"label": ["A", "B", "C", "A", "B", "C", "A", "B", "C", "A", "B", "C"]})
-        predictions_file = f"{hash(self.session_id)}/data_uploaded/predictions.csv"
+        data = {
+            'label': [0, 1, 0, 1, 1],
+            'text': [
+                "I'm writing this review to give you a heads up before you see this Doctor.",
+                "I don't know what Dr. Goldberg was like before moving to Arizona",
+                "Been going to Dr. Goldberg for over 10 years.",
+                "I am having a good time here.",
+                "I am having a bad time here.",
+
+            ]
+        }
+        directory_path = f"{hash(self.session_id)}/output"
+        os.makedirs(directory_path, exist_ok=True)
+        predictions_file = Path(f"{hash(self.session_id)}/output/predictions.csv")
+        df = pd.DataFrame(data)
         df.to_csv(predictions_file)
 
         # Mock the matplotlib plot and save it to a temporary file
         fig, ax = plt.subplots()
-        ax.bar(["A", "B", "C"], [4, 4, 4])
+        ax.bar(["A", "B", "C","D","E"], [4, 4, 4,4,4])
         ax.set_title("Label Counts")
         ax.set_xlabel("Label")
         ax.set_ylabel("Number of Examples")
-        table_data = [["Label", "Text"], ["A", "mock text..."], ["B", "mock text..."], ["C", "mock text..."]]
+        table_data = [["Label", "Text"], ["A", "mock text..."], ["B", "mock text..."], ["C", "mock text..."],["D", "mock text..."],["E", "mock text..."]]
         table = ax.table(cellText=table_data, loc="bottom", cellLoc="left", bbox=[0, -0.8, 1, 0.5])
         table.auto_set_column_width(col=list(range(2)))
-        chart_file = "chart_prediction.png"
+        chart_file = Path("chart_prediction.png")
         plt.savefig(chart_file, dpi=100)
 
         # Call the label_distribution function and check the response
@@ -161,15 +178,24 @@ class TestServer:
         assert predictions_file.exists()
         assert chart_file.exists()
 
-    @pytest.fixture
+    
     def test_extract_file(self,mocker, test_client, setting, mock_session):
 
        # Create a mock dataframe with known label values
         df = pd.DataFrame({"label": ["A", "B", "C", "A", "B", "C", "A", "B", "C", "A", "B", "C"]})
-        train_file = f"{hash(self.session_id)}/data_uploaded/train.csv"
-        test_file =  f"{hash(self.session_id)}/data_uploaded/test.csv"
+        train_file = Path(f"{hash(self.session_id)}/data_uploaded/train.csv")
+        test_file = Path(f"{hash(self.session_id)}/data_uploaded/test.csv")
+
+        directory_path = f"{hash(self.session_id)}/data_uploaded"
+
+        os.makedirs(directory_path, exist_ok=True)
         df.to_csv(train_file, index=False)
         df.to_csv(test_file, index=False)
+
+        tar_file_path = f"{hash(self.session_id)}/data_uploaded/data.tar.gz"
+        with tarfile.open(tar_file_path, "w:gz") as tar:
+            tar.add(train_file, arcname="train.csv")
+            tar.add(test_file, arcname="test.csv")
 
         # Mock the matplotlib plot and save it to a temporary file
         fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(7, 5))
@@ -181,15 +207,16 @@ class TestServer:
         ax2.set_title("Test Label Distribution")
         ax2.set_xlabel("Label")
         ax2.set_ylabel("Count")
-        chart_file = "chart.png"
+        chart_file = Path("chart.png")
         plt.savefig(chart_file, dpi=100)
 
         # Call the extract_file function and check the response
         client = TestClient(app)
-        with open(train_file, "rb") as f1, open(test_file, "rb") as f2:
-            response = client.post("/extract-file", files={"file": ("data.tar.gz", f1), "file": ("data.tar.gz", f2)})
+        with open(tar_file_path, "rb") as tar_file:
+            response = client.post("/extract-file", files={"file": ("data.tar.gz", tar_file)})
         assert response.status_code == 200
         assert response.json() == {"message": "File extracted successfully."}
         assert train_file.exists()
         assert test_file.exists()
         assert chart_file.exists()
+
