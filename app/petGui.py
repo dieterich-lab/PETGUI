@@ -18,7 +18,7 @@ from uuid import UUID, uuid4
 from app.controller import templating
 from app.dto.session import SessionData, UUID
 from .services.session import SessionService
-from .services.ldap import LdapService
+import app.services.ldap as ldap
 
 
 
@@ -35,7 +35,6 @@ if local:
     
 class User:
     session: SessionService
-    ldap: LdapService
 
 
 app.state = User()
@@ -57,16 +56,20 @@ def get(request: Request, session: SessionService=Depends(get_session_service)):
 
 @app.post("/login")
 async def login(request: Request, username: str = Form(...), password: str = Form(...)):
-    if not LdapService.authenticate_ldap(username=username, password=password):
+    try:
+        dn = ldap.get_dn_of_user(username)
+        ldap.bind(dn, password)
+        response = RedirectResponse(url=request.url_for("homepage"), status_code=303)
+        session = await create_session(request, username, response)
+        session_uuid = session.get_session_id()
+        os.environ[f"{hash(session_uuid)}"] = password
+        os.makedirs(f"./{hash(session_uuid)}", exist_ok=True)  # If run with new conf.
+        return response
+    except Exception as e:
+        print(str(e))
         error = 'Invalid username or password'
         return await templating.login_form(request, error)
-    response = RedirectResponse(url=request.url_for("homepage"), status_code=303)
-    session = await create_session(request, username, response)
-    session_uuid = session.get_session_id()
-    print(session_uuid, hash(session_uuid))
-    os.environ[f"{hash(session_uuid)}"] = password
-    os.makedirs(f"./{hash(session_uuid)}", exist_ok=True)  # If run with new conf.
-    return response
+
 
 @app.get("/whoami", name="whoami")
 def whoami(session: SessionService = Depends(get_session_service)):
