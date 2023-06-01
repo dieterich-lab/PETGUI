@@ -12,13 +12,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import random
 from uuid import UUID, uuid4
-
-
-
 from app.controller import templating
-from app.dto.session import SessionData, UUID
+from app.controller import session
 from .services.session import SessionService
-import app.services.ldap as ldap
+
 
 
 
@@ -26,6 +23,7 @@ import app.services.ldap as ldap
 app = FastAPI()
 '''Include routers'''
 app.include_router(templating.router)
+app.include_router(session.session_router)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 local = False # If running app locally
 ssh = "sshpass"
@@ -54,22 +52,6 @@ def get(request: Request, session: SessionService=Depends(get_session_service)):
     print(cookies, session)
     return {"sess": session, "cook": cookies}
 
-@app.post("/login")
-async def login(request: Request, username: str = Form(...), password: str = Form(...)):
-    try:
-        dn = ldap.get_dn_of_user(username)
-        ldap.bind(dn, password)
-        response = RedirectResponse(url=request.url_for("homepage"), status_code=303)
-        session = await create_session(request, username, response)
-        session_uuid = session.get_session_id()
-        os.environ[f"{hash(session_uuid)}"] = password
-        os.makedirs(f"./{hash(session_uuid)}", exist_ok=True)  # If run with new conf.
-        return response
-    except Exception as e:
-        print(str(e))
-        error = 'Invalid username or password'
-        return await templating.login_form(request, error)
-
 
 @app.get("/whoami", name="whoami")
 def whoami(session: SessionService = Depends(get_session_service)):
@@ -77,22 +59,6 @@ def whoami(session: SessionService = Depends(get_session_service)):
         return session
     except AttributeError as e:
         print(str(e))
-
-
-async def create_session(request: Request, user: str, response: Response):
-    session_id = uuid4()
-    remote_loc = f"/home/{user}/{hash(session_id)}/"
-    remote_loc_pet = f"/home/{user}/{hash(session_id)}/pet/"
-    cluster_name = "cluster.dieterichlab.org"
-    log_file = f"{hash(session_id)}/logging.txt"
-    last_pos_file = f"{hash(session_id)}/last_pos.txt"
-    data = SessionData(username=user, remote_loc=remote_loc, remote_loc_pet=remote_loc_pet, cluster_name=cluster_name,
-                       log_file=log_file, last_pos_file=last_pos_file)
-    request.app.state.session = SessionService(data, session_id)
-    session = request.app.state.session
-    session.create_cookie(response=response)
-    await session.create_backend()
-    return session
 
 
 @app.get("/steps", name="steps")

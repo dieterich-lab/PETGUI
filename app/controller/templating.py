@@ -9,7 +9,6 @@ from uuid import UUID, uuid4
 
 from ..dto.session import cookie
 
-'''LDAP'''
 from os.path import isdir, isfile
 import pathlib
 import shutil
