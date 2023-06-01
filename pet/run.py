@@ -16,8 +16,8 @@ if model == "gbert-base":
     model_name_or_path = "bert-base-cased"
 else: # Clinical Bert
     '''Get Model Directory''' #TODO
-    model_type = ""
-    model_name_or_path = ""
+    model_type = "bert"
+    model_name_or_path = "GerMedBERT/medbert-512"
 
 task_name = [file_name.split(sep) for sep in ["_", ".", "-", "/"] if sep in file_name][0][0]
 

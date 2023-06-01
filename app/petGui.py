@@ -45,7 +45,7 @@ def get_session_service(request: Request):
 
 @app.get("/", name="start")
 def main():
-    return RedirectResponse(url="/login")
+    return RedirectResponse(url="/start")
 
 @app.get("/get_cookie")
 def get(request: Request, session: SessionService=Depends(get_session_service)):

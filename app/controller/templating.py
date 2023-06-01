@@ -26,16 +26,26 @@ if local:
     ssh = "/opt/homebrew/bin/sshpass"
 
 
-@router.get("/login", response_class=HTMLResponse)
-async def login_form(request: Request, error=None, logout: bool = False):
+def get_session_service(request: Request):
+    try:
+        return request.app.state.session
+    except:
+        return False
+
+
+@router.get("/start", response_class=HTMLResponse)
+def start(request: Request):
+    return templates.TemplateResponse("start.html", {"request": request})
+
+@router.get("/login")
+async def login_form(request: Request, error=None, logout: bool = False,
+                     session: SessionService = Depends(get_session_service)):
     if logout:
         return templates.TemplateResponse('login.html', {'request': request, 'error': error, 'logout_msg': "Logged out successfully!"})
+    elif session:
+        return RedirectResponse(request.url_for("homepage"), status_code=303)
     else:
         return templates.TemplateResponse('login.html', {'request': request, 'error': error})
-
-
-def get_session_service(request: Request):
-    return request.app.state.session
 
 
 @router.post("/basic", name="homepage", dependencies=[Depends(get_session_service)])

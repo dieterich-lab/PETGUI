@@ -27,20 +27,22 @@
 
     <!-- Main CSS-->
     <link href="/static/css/main.css" rel="stylesheet" media="all">
-
-
+    <link href="/static/css/style.css" rel="stylesheet">
 </head>
+
 <body>
     <div class="page-wrapper bg-gra-03 p-t-45 p-b-50">
         <div class="wrapper wrapper--w790">
             <div class="card card-5">
                 <div class="card-heading">
-                    <h2 class="title">PETGUI LOGIN</h2>
+                    <div class="title">PETGUI Login</div>
+                    <button class="btn home-btn home-btn:hover" onclick="window.location.href = '/start';">START <i class="fa fa-home"></i></button>
                 </div>
                 {% if logout_msg %}
                 <div class="alert alert-success">{{ logout_msg }}</div>
                 {% endif %}
-            <div class="card-body">
+
+        <div class="card-body">
              <h4 class="mb-4" style="text-align: center; font-family: arial; color: dark-grey">Please enter your login information (ldap uid and password) for the DieterichLab server: <cite>cluster.dieterichlab.org</cite></h4>
             {% if error %}
                 <div class="alert alert-danger">{{ error }}</div>
@@ -51,15 +53,19 @@
             <input type="text" class="form-control" id="username" name="username" placeholder="mmustermann" required>
         </div>
         <div class="p-t-15">
-        <div class="form-group">
-            <label for="password" style="font-size: 16px; padding-bottom: 5px;">Password</label>
-            <input type="password" class="form-control" id="password" name="password" placeholder="iqu1TMWCEw1gWvr7" required>
+            <div class="form-group">
+                <label for="password" style="font-size: 16px; padding-bottom: 5px;">Password</label>
+                <input type="password" class="form-control" id="password" name="password" placeholder="iqu1TMWCEw1gWvr7" required>
+            </div>
+            <div class="p-t-20">
+                <button class="btn btn--radius-2 btn--blue" style="padding: 0 25px;" type="submit">Login</button>
+            </div>
         </div>
-        <div class="p-t-20">
-        <button class="btn btn--radius-2 btn--blue" style="padding: 0 25px;" type="submit">Login</button>
-    </form>
-</div>
-
+            </form>
+        </div>
+        </div>
+        </div>
+    </div>
 
     <!-- Jquery JS-->
     <script src="/static/vendor/jquery/jquery.min.js"></script>
@@ -70,7 +76,7 @@
 
     <!-- Main JS-->
     <script src="/static/js/global.js"></script>
-
+    <script src="/static/js/script.js"></script>
 </body><!-- This templates was made by Colorlib (https://colorlib.com) -->
 
 </html>

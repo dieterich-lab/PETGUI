@@ -6,6 +6,12 @@ function Logout() {
     });
 }
 
+function Login() {
+    fetch('/login').then(response => {
+        window.location.href = '/login';
+    });
+}
+
 function addEventListenersForIndex() {
   document.getElementById("file-uploader").addEventListener("change", function() {
     var formData = new FormData(document.getElementById("my-form"));
@@ -307,8 +313,7 @@ function redirect() {
 
     function runPythonCode() {
         fetch('/clean').then(response => {
-            console.log('Python code executed successfully');
-            window.location.href = '/basic';
+            window.location.href = '/start';
         });
     }
 
