@@ -284,11 +284,32 @@ async def extract_file(file: UploadFile = File(...), session: SessionService = D
     session_id = session.get_session_id()
     file_upload = tarfile.open(fileobj=file.file, mode="r:gz")
     file_upload.extractall(f'{hash(session_id)}/data_uploaded')
+    # Print the extracted file names
+    extracted_files = [member.name for member in file_upload.getmembers()]
+    print("Extracted files:", extracted_files)
+
+    # Identify the extracted folder
+    extracted_folder = None
+    for root, dirs, files in os.walk(f'{hash(session_id)}/data_uploaded'):
+        if len(dirs) == 1:  # Assuming only one subdirectory within the extracted files
+            extracted_folder = dirs[0]
+            break
+
+    if extracted_folder is None:
+        print("No subdirectory found in the extracted files.")
+        return
+
+    print("Extracted folder:", extracted_folder)
+
+    # Assuming train.csv and test.csv are within the extracted folder
+    train_path = os.path.join(f'{hash(session_id)}/data_uploaded', extracted_folder, 'train.csv')
+    test_path = os.path.join(f'{hash(session_id)}/data_uploaded', extracted_folder, 'test.csv')
 
     # Read the train and test data into dataframes
+    # Read the train and test data into dataframes
     columns = ["label", "text"]
-    train_df = pd.read_csv(f'{hash(session_id)}/data_uploaded/yelp_review_polarity_csv/train.csv', names=columns)
-    test_df = pd.read_csv(f'{hash(session_id)}/data_uploaded/yelp_review_polarity_csv/test.csv', names=columns)
+    train_df = pd.read_csv(train_path, names=columns)
+    test_df = pd.read_csv(test_path, names=columns)
 
     # Plot the distribution of labels for train and test data separately
     fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(7, 5))
