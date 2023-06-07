@@ -8,6 +8,7 @@
     <meta name="description" content="Colorlib Templates">
     <meta name="author" content="Colorlib">
     <meta name="keywords" content="Colorlib Templates">
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
 
     <!-- Title Page-->
     <title>Train Your PET Model</title>
@@ -21,7 +22,7 @@
     <!-- Vendor CSS-->
     <link href="static/vendor/select2/select2.min.css" rel="stylesheet" media="all">
     <link href="static/vendor/datepicker/daterangepicker.css" rel="stylesheet" media="all">
-
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
     <!-- Main CSS-->
     <link href="static/css/main.css" rel="stylesheet" media="all">
     <!-- Local CSS-->
@@ -132,18 +133,6 @@ function showTable(jsonData) {
 }
 
 
- <script type="text/javascript">
-  $(function() {
-          $('a#test').on('click', function(e) {
-            e.preventDefault()
-            $.getJSON('/logging/start_train',
-                function(data) {
-            });
-            return false;
-          });
-        });
-
-
 </script>
 
 <body>
@@ -153,15 +142,17 @@ function showTable(jsonData) {
                 <div class="card-heading">
                     <div class="title">Train Your PET Model</div>
                     <button class="btn logout-btn logout-btn:hover" onclick="Logout()">Logout <i class="fa fa-power-off"></i></button>
-                    <button class="btn home-btn home-btn:hover" onclick="runPythonCode()">START <i class="fa fa-home"></i></button>
+                    <button class="btn home-btn home-btn:hover" onclick="redirectHome()">HOME <i class="fa fa-home"></i></button>
                 </div>
                      <div class="card-body" id="container">
-      <a href="#" id="test">
-          <div class="button-container">
-       <button id="trainButton" onclick="startTraining(); disableButton(); showLoading(); showText()" class="btn btn--radius-2 btn--blue">
+          <a href="#" id="test"><div class="button-container">
+       <button id="trainButton" onclick="startTraining(); showAbort(); disableButton(); showLoading(); showText();" class="btn btn--radius-2 btn--blue">
         Start Training
        </button></div></a>
-
+      <div class="button-container" style="display: none;" id="abortButton">
+          <button style="float: right;" onclick="abortJob();" class="btn btn--radius-2 btn--red">
+        Abort
+          </button></div>
                          <div class="row" style="transform: translate(-25%, 0%);">
                                     <div class="col-2">
                                         <div class="input-group-desc">
@@ -202,9 +193,20 @@ const animateProgress = () => {
   progressRing.style.strokeDashoffset = circumference * (1 - progress) - circumference;
   progressPercentage.textContent = `${Math.floor(progress * 100)}%`;
 };
-</script>
+   function showAbort() {
+        const btn = document.getElementById("abortButton");
+        btn.style.display = "inline";
+        }
 
-                         <script type="text/javascript">
+            function abortJob() {
+        return fetch("/abort_job")
+        .then(response => {window.location.href = '/basic?message=Training aborted successfully!';}
+        );
+    }
+    </script>
+
+
+ <script type="text/javascript">
   $(function() {
           $('a#test').on('click', function(e) {
             e.preventDefault()
@@ -215,21 +217,21 @@ const animateProgress = () => {
           });
         });
 
- </script>
 
+    </script>
 
   <div class="card-body" id="table-container">
-       <button id="resultsButton" onclick="loadJSON()" class="btn btn--radius-2" style="background-color: grey;" disabled>
+       <button id="resultsButton" onclick="loadJSON()" class="btn btn--radius-2 btn--blue" disabled>
          Show Results</button>
   <p id='showData'></p>
   <p id='msg'></p>
   </div>
                             <div class="card-body" id="container">
-                                <button class="btn btn--radius-2" style="background-color: grey;" id="rerunButton" onclick="runPythonCode()" disabled>Run with new configuration</button>
+                                <button class="btn btn--radius-2 btn--blue" id="rerunButton" onclick="redirectNewConf()" disabled>Run with new configuration</button>
                             </div>
                          <span class="title" style="display: block; color: #000;">OR</span>
                             <div class="card-body" id="container">
-                                <button class="btn btn--radius-2" style="background-color: grey;" id="annotateButton" onclick="redirect()" disabled>Annotate unseen data</button>
+                                <button class="btn btn--radius-2 btn--blue" id="annotateButton" onclick="redirect()" disabled>Annotate unseen data</button>
                             </div>
                 </div>
             </div>

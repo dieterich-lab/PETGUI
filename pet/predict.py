@@ -1,6 +1,7 @@
 import pandas as pd
 from transformers import BertTokenizer, BertForSequenceClassification
 import torch
+import glob
 
 df = pd.read_csv("./data_uploaded/unlabeled/unlabeled.csv", header=None, names=['label', 'text'])
 tokenizer = BertTokenizer.from_pretrained('output/final/p0-i0')

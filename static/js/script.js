@@ -62,8 +62,6 @@ const observer = new MutationObserver(function(mutationsList) {
       // This function will be called whenever the content of the div changes
   changeButtonColor("mycontainer", "blue");
   removeButtonAttribute("mycontainer", "disabled");
-  remove
-      // Call your function here or execute any code you want to run when feedback is given
     }
   }
 });
@@ -139,10 +137,17 @@ function addInput_map(){
             button.textContent = text;
      }
 
-    function startPrediction() {
+    function checkPrediction() {
+        fetch('final/start_prediction');
         changeButtonText("mycontainer", "Prediction Started..");
-        fetch('/final/start_prediction')
-            .then(response => {
+        const predictInt = setInterval(check, 10000);
+    }
+
+    function check() {
+        fetch('/final/start_prediction?check=True')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status == "CD") {
                 hideLoading();
                 hideText();
                 changeButtonColor("mycontainer", "green");
@@ -151,6 +156,7 @@ function addInput_map(){
                 removeButtonAttribute("mycontain_download", "disabled");
                 changeButtonColor("show_chart", "blue");
                 removeButtonAttribute("show_chart", "disabled");
+                }
             });
     }
 
@@ -172,7 +178,6 @@ function addInput_map(){
   });
 
 
-
     function showLoading() {
 			document.getElementById("spinner").style.display = "block";
 		}
@@ -190,7 +195,6 @@ function addInput_map(){
     }
     function hideText() {
         document.getElementById("loadingText").style.display = "none";
-
     }
 
 
@@ -200,9 +204,12 @@ function addInput_map(){
      }
 
      function disableButton() {
-			document.getElementById("trainButton").disabled = true;
-		}
+        document.getElementById("trainButton").disabled = true;
+    }
 
+    function hideAbort() {
+        document.getElementById("abortButton").style.display = "none";
+    }
 
     function refreshLog() {
       return fetch("/log")
@@ -217,13 +224,14 @@ function addInput_map(){
             animateProgress();
 
             if (li.textContent.includes('Training Complete')) {
+              const btn = document.getElementById("abortButton");
+              if (btn.checked) {
+                  btn.style.display = "none";
+              }
               changeButtonColor("trainButton", "green");
               changeButtonText("trainButton", "Training Complete");
-              changeButtonColor("resultsButton", "blue");
               removeButtonAttribute("resultsButton", "disabled");
-              changeButtonColor("rerunButton", "blue");
               removeButtonAttribute("rerunButton", "disabled");
-              changeButtonColor("annotateButton", "blue");
               removeButtonAttribute("annotateButton", "disabled");
 
               const interval = document.getElementById("intervalId");
@@ -306,14 +314,20 @@ function showTable(jsonData) {
 
 
 
-function redirect() {
-        window.location.href = "/final";
-      }
+    function redirect() {
+            window.location.href = "/final";
+          }
 
 
-    function runPythonCode() {
+    function redirectHome() {
         fetch('/clean').then(response => {
             window.location.href = '/start';
+        });
+    }
+
+    function redirectNewConf() {
+        fetch('/clean').then(response => {
+            window.location.href = '/basic';
         });
     }
 

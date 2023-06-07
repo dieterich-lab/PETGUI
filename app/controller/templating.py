@@ -16,11 +16,10 @@ import shutil
 
 from ..services.session import SessionService
 
-
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
-local = False # If running app locally
+local = False  # If running app locally
 ssh = "sshpass"
 if local:
     ssh = "/opt/homebrew/bin/sshpass"
@@ -37,13 +36,19 @@ def get_session_service(request: Request):
 def start(request: Request):
     return templates.TemplateResponse("start.html", {"request": request})
 
+
 @router.get("/login")
-async def login_form(request: Request, error=None, logout: bool = False,
-                     session: SessionService = Depends(get_session_service)):
+def login_form(request: Request, error=None, logout: bool = False,
+               session: SessionService = Depends(get_session_service)):
     if logout:
-        return templates.TemplateResponse('login.html', {'request': request, 'error': error, 'logout_msg': "Logged out successfully!"})
+        return templates.TemplateResponse('login.html', {'request': request, 'error': error,
+                                                         'logout_msg': "Logged out successfully!"})
     elif session:
-        return RedirectResponse(request.url_for("homepage"), status_code=303)
+        try:
+            session.get_session_id()
+            return RedirectResponse(request.url_for("homepage"), status_code=303)
+        except:
+            return templates.TemplateResponse('login.html', {'request': request, 'error': error})
     else:
         return templates.TemplateResponse('login.html', {'request': request, 'error': error})
 
@@ -66,31 +71,33 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
             file_upload = tarfile.open(fileobj=file.file, mode="r:gz")
             file_upload.extractall(f'{hash(session_id)}/data_uploaded')
         except:
-            return templates.TemplateResponse('index.html', {'request': request, 'error': "Invalid File Type: Please upload your data as a zip file with the extension '.tar.gz'"})
+            return templates.TemplateResponse('index.html', {'request': request,
+                                                             'error': "Invalid File Type: Please upload your data as a zip file with the extension '.tar.gz'"})
         da = await request.form()
         da = jsonable_encoder(da)
         template_counter = 1
         origin_counter = 2
         mapping_counter = 2
-        para_dic = {"file": "".join(next(os.walk(f"./{hash(session_id)}/data_uploaded/"))[1]), "sample": sample, "label": label,
+        para_dic = {"file": "".join(next(os.walk(f"./{hash(session_id)}/data_uploaded/"))[1]), "sample": sample,
+                    "label": label,
                     "template_0": template_0, "origin_0": origin_0,
-                    "mapping_0": mapping_0,  "origin_1": origin_1,
+                    "mapping_0": mapping_0, "origin_1": origin_1,
                     "mapping_1": mapping_1, "model_para": model_para}
-        while f"template_{str(template_counter)}" in da: # Template
+        while f"template_{str(template_counter)}" in da:  # Template
             template_key = f"template_{str(template_counter)}"
             para_dic[template_key] = da[template_key]
             template_counter = template_counter + 1
-        while f"origin_{str(origin_counter)}" in da: # Label
+        while f"origin_{str(origin_counter)}" in da:  # Label
             origin_key = f"origin_{str(origin_counter)}"
             para_dic[origin_key] = da[origin_key]
-            origin_counter = origin_counter+1
-        while f"mapping_{str(mapping_counter)}" in da: # Verbalizer
+            origin_counter = origin_counter + 1
+        while f"mapping_{str(mapping_counter)}" in da:  # Verbalizer
             mapping_key = f"mapping_{str(mapping_counter)}"
             para_dic[mapping_key] = da[mapping_key]
-            mapping_counter = mapping_counter+1
+            mapping_counter = mapping_counter + 1
         with open(f'{hash(session_id)}/data.json', 'w') as f:
             json.dump(para_dic, f)
-        if origin_counter <2:
+        if origin_counter < 2:
             return templates.TemplateResponse('index.html', {'request': request,
                                                              'error': "Please fill in all required parameters."})
         redirect_url = request.url_for('logging')
@@ -103,14 +110,19 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
 
 
 @router.get("/basic", response_class=HTMLResponse, name='homepage')
-async def get_form(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+def get_form(request: Request, message: str = None):
+    if message:
+        return templates.TemplateResponse("index.html",
+                                          {"request": request, "message": message})
+    else:
+        return templates.TemplateResponse("index.html", {"request": request})
 
 
 @router.get("/progress", response_class=HTMLResponse, name="progress")
 def read_item(request: Request):
     max_num = 100
     return templates.TemplateResponse("progress.html", {"request": request, "max_num": max_num})
+
 
 @router.get("/logging", name="logging", dependencies=[Depends(get_session_service)])
 async def logging(request: Request, error: str = None):
@@ -143,7 +155,8 @@ async def read_log(session: SessionService = Depends(get_session_service), initi
             ["Creating", "Returning", "Saving", "Starting evaluation", "'acc'", "RESULT ", "Training Complete"])
                       or "input_ids" in line and os.environ[f"{hash(session_id)}_inp"] == "False"]
 
-        info_lines = [line for line in info_lines if line not in list(filter(lambda x: "input_ids" in x, info_lines))[1:]]
+        info_lines = [line for line in info_lines if
+                      line not in list(filter(lambda x: "input_ids" in x, info_lines))[1:]]
         if any(["input_ids" in line for line in info_lines]):
             os.environ[f"{hash(session_id)}_inp"] = "True"
         return {"log": info_lines}
@@ -160,8 +173,12 @@ def download(session: SessionService = Depends(get_session_service)):
 
 
 @router.get("/final", response_class=HTMLResponse, name='final', dependencies=[Depends(get_session_service)])
-async def get_final_template(request: Request, error = None):
-    return templates.TemplateResponse("final_page.html", {"request": request, "error": error})
+def get_final_template(request: Request, message: str = None):
+    if message:
+        return templates.TemplateResponse("final_page.html",
+                                          {"request": request, "message": message})
+    else:
+        return templates.TemplateResponse("final_page.html", {"request": request})
 
 
 @router.post("/uploadfile/", dependencies=[Depends(get_session_service)])
@@ -171,11 +188,13 @@ async def create_upload_file(file: UploadFile = File(...), session: SessionServi
     """
     session_id = session.get_session_id()
     upload_folder = f"{hash(session_id)}/data_uploaded/unlabeled"
-    os.makedirs(upload_folder, exist_ok=True)
-    file_path = os.path.join(upload_folder, file.filename)
+    if os.path.exists(upload_folder):
+        shutil.rmtree(upload_folder)
+    os.makedirs(upload_folder)
+    file_path = os.path.join(upload_folder, "unlabeled.csv")
     with open(file_path, "wb") as file_object:
         file_object.write(file.file.read())
-    return {"filename": file.filename, "path": file_path}
+    return {"filename": "unlabeled.csv", "path": file_path}
 
 
 @router.get("/download_prediction", name="download_prediction", dependencies=[Depends(get_session_service)])
@@ -205,7 +224,7 @@ def clean(session: SessionService = Depends(get_session_service), logout: bool =
     log_file = session_data.log_file
 
     paths = ["logging.txt", "last_pos.txt", "output", "results.json", "data.json", "data_uploaded", "static/chart.png"]
-    paths = [f"{hash(session_id)}/"+path for path in paths]
+    paths = [f"{hash(session_id)}/" + path for path in paths]
     for path in paths if not logout else [f"{hash(session_id)}"]:
         file_path = pathlib.Path(path)
         if isfile(path):
@@ -214,7 +233,7 @@ def clean(session: SessionService = Depends(get_session_service), logout: bool =
             shutil.rmtree(path)
     try:
         rm_cmd = [ssh, '-e', 'ssh',
-                   f'{user}@{cluster_name}', f'rm -r {remote_loc} /home/{user}/{log_file.split("/")[-1]}']
+                  f'{user}@{cluster_name}', f'rm -r {remote_loc} /home/{user}/{log_file.split("/")[-1]}']
         proc = subprocess.Popen(rm_cmd, env={"SSHPASS": os.environ[f"{hash(session_id)}"]}, shell=False, stdout=PIPE,
                                 stderr=PIPE)
         outs, errs = proc.communicate()

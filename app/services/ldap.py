@@ -14,6 +14,7 @@ try:
     conn = Connection(server, auto_bind=AUTO_BIND_TLS_BEFORE_BIND, raise_exceptions=True)
 except Exception as e:
     print("Exception in init: ", str(e))
+    raise Exception
 
 
 def get_dn_of_user(username: str):
@@ -27,6 +28,7 @@ def get_dn_of_user(username: str):
             raise Exception
     except Exception as e:
         print("Exception in get_dn", str(e))
+        raise Exception
 
 
 def bind(dn: str, password: str):
@@ -35,4 +37,4 @@ def bind(dn: str, password: str):
         return True
     except core.exceptions.LDAPBindError:
         print("User authentication failed.")
-        return False
+        raise Exception

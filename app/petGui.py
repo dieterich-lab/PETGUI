@@ -1,3 +1,4 @@
+import glob
 from fastapi import FastAPI, Depends, UploadFile, File, Request, Response, Form
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -12,7 +13,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import random
 from uuid import UUID, uuid4
-
+import shutil
 
 
 from app.controller import templating
@@ -35,6 +36,8 @@ if local:
     
 class User:
     session: SessionService
+    job_id: str
+    job_status: str
 
 
 app.state = User()
@@ -48,7 +51,7 @@ def main():
     return RedirectResponse(url="/start")
 
 @app.get("/get_cookie")
-def get(request: Request, session: SessionService=Depends(get_session_service)):
+def get(request: Request, session: SessionService = Depends(get_session_service)):
     cookies = request.cookies
     session = get_session_service(request)
     print(cookies, session)
@@ -60,7 +63,8 @@ async def login(request: Request, username: str = Form(...), password: str = For
         dn = ldap.get_dn_of_user(username)
         ldap.bind(dn, password)
         response = RedirectResponse(url=request.url_for("homepage"), status_code=303)
-        session = await create_session(request, username, response)
+        session = SessionService()
+        request.app.state.session = await session.create_session(username, response)
         session_uuid = session.get_session_id()
         os.environ[f"{hash(session_uuid)}"] = password
         os.makedirs(f"./{hash(session_uuid)}", exist_ok=True)  # If run with new conf.
@@ -68,7 +72,7 @@ async def login(request: Request, username: str = Form(...), password: str = For
     except Exception as e:
         print(str(e))
         error = 'Invalid username or password'
-        return await templating.login_form(request, error)
+        return templating.login_form(request, error)
 
 
 @app.get("/whoami", name="whoami")
@@ -77,22 +81,6 @@ def whoami(session: SessionService = Depends(get_session_service)):
         return session
     except AttributeError as e:
         print(str(e))
-
-
-async def create_session(request: Request, user: str, response: Response):
-    session_id = uuid4()
-    remote_loc = f"/home/{user}/{hash(session_id)}/"
-    remote_loc_pet = f"/home/{user}/{hash(session_id)}/pet/"
-    cluster_name = "cluster.dieterichlab.org"
-    log_file = f"{hash(session_id)}/logging.txt"
-    last_pos_file = f"{hash(session_id)}/last_pos.txt"
-    data = SessionData(username=user, remote_loc=remote_loc, remote_loc_pet=remote_loc_pet, cluster_name=cluster_name,
-                       log_file=log_file, last_pos_file=last_pos_file)
-    request.app.state.session = SessionService(data, session_id)
-    session = request.app.state.session
-    session.create_cookie(response=response)
-    await session.create_backend()
-    return session
 
 
 @app.get("/steps", name="steps")
@@ -106,27 +94,64 @@ def get_steps(session: SessionService = Depends(get_session_service)):
 
 
 @app.get("/logging/start_train")
-async def run(session: SessionService = Depends(get_session_service)):
+async def run(request: Request, session: SessionService = Depends(get_session_service)):
     """
     Kicks off PET by calling train method.
     """
     '''Start PET'''
     print("Training starting..")
-    job_id = await submit_job(session, False)
-    t = threading.Thread(target=check_job_status, args=(session, job_id, False))
-    t.start()
+    try:
+        request.app.state.job_id = await submit_job(session, False)
+        t = threading.Thread(target=check_job_status, args=(request, session, request.app.state.job_id, False))
+        t.start()
+    except Exception as e:
+        return RedirectResponse(url=f"/basic?message={str(e)}", status_code=303)
+
+
+
+@app.get("/abort_job")
+async def run(request: Request, session: SessionService = Depends(get_session_service), final: bool = False):
+    """
+    Aborts current job.
+    """
+    try:
+        request.app.state.job_status = None
+        user = session.session_data.username
+        cluster_name = session.session_data.cluster_name
+        job_id = request.app.state.job_id
+        print(f"Aborting job with id: {job_id}")
+        ssh_cmd = ["sshpass", '-e', 'ssh', f'{user}@{cluster_name}',
+                   f'scancel {job_id}']
+        outs, errs = bash_cmd(session, ssh_cmd, shell=True)
+        print(outs, errs)
+    except Exception as e:
+        print(str(e))
+        pass
+    if final:
+        return
+    else:
+        return RedirectResponse(request.url_for("clean"), status_code=303)
+
 
 
 @app.get("/final/start_prediction")
-async def label_prediction(request: Request, session: SessionService = Depends(get_session_service)):
+async def label_prediction(request: Request, session: SessionService = Depends(get_session_service), check: bool = False):
     '''Start Predicttion'''
-    try:
-        print("Prediction starting..")
-        job_id = await submit_job(session, True)
-        return check_job_status(session, job_id, True)
-    except Exception as e:
-        error = "Something went wrong, please reload the page and try again"
-        return await templating.get_final_template(request, error)
+    if check:
+        try:
+            if request.app.state.job_status == "CD":
+                return {"status": "CD"}
+        except:
+            pass
+    else:
+        try:
+            print("Prediction starting..")
+            request.app.state.job_id = await submit_job(session, True)
+            t = threading.Thread(target = check_job_status, args = (request, session, request.app.state.job_id, True))
+            t.start()
+        except Exception as e:
+            error = "Something went wrong, please reload the page and try again"
+            return templating.get_final_template(request, error)
 
 
 async def submit_job(session: SessionService = Depends(get_session_service), predict: bool = False):
@@ -176,6 +201,7 @@ async def submit_job(session: SessionService = Depends(get_session_service), pre
         outs, errs = bash_cmd(session, ssh_cmd)
         # Get the job ID from the output of the sbatch command
         job_id = outs.decode('utf-8').strip().split()[-1]
+        print(job_id)
         return job_id
 
 
@@ -187,7 +213,7 @@ def bash_cmd(session: SessionService = Depends(get_session_service), cmd=None, s
     return outs, errs
 
 
-def check_job_status(session: SessionService = Depends(get_session_service), job_id: str = None, predict: bool = False):
+def check_job_status(request: Request, session: SessionService = Depends(get_session_service), job_id: str = None, predict: bool = False):
     user = session.session_data.username
     remote_loc_pet = session.session_data.remote_loc_pet
     cluster_name = session.session_data.cluster_name
@@ -206,7 +232,8 @@ def check_job_status(session: SessionService = Depends(get_session_service), job
                            f'cat {remote_loc_pet}predictions.csv', f'> {hash(session_id)}/output/predictions.csv']
                 outs, errs = bash_cmd(session, scp_cmd, shell=True)
                 print(outs, errs)
-                return {"status": "finished"}
+                request.app.state.job_status = "CD"
+                return {"Prediction": "finished"}
             else:
                 with open(f'{hash(session_id)}/logging.txt', 'a') as file:
                     file.write('Training Complete\n')
@@ -227,9 +254,12 @@ def check_job_status(session: SessionService = Depends(get_session_service), job
                     print(outs, errs)
                 '''Call Results'''
                 results(session)
-                return {"Pet": "finished"}
+                return {"Training": "finished"}
+        elif status == "CA":
+            return
         elif status == "F":
-            raise Exception("Job could not finish. Please login and try again")
+            raise Exception
+
 
         time.sleep(5)
 
@@ -282,13 +312,17 @@ def results(session: SessionService = Depends(get_session_service)):
 @app.post("/extract-file")
 async def extract_file(file: UploadFile = File(...), session: SessionService = Depends(get_session_service)):
     session_id = session.get_session_id()
+    upload_folder = f"{hash(session_id)}/data_uploaded/"
+    if os.path.exists(upload_folder):
+        shutil.rmtree(upload_folder)
+    os.makedirs(upload_folder)
     file_upload = tarfile.open(fileobj=file.file, mode="r:gz")
     file_upload.extractall(f'{hash(session_id)}/data_uploaded')
 
     # Read the train and test data into dataframes
     columns = ["label", "text"]
-    train_df = pd.read_csv(f'{hash(session_id)}/data_uploaded/yelp_review_polarity_csv/train.csv', names=columns)
-    test_df = pd.read_csv(f'{hash(session_id)}/data_uploaded/yelp_review_polarity_csv/test.csv', names=columns)
+    train_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/train.csv')), names=columns)
+    test_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/test.csv')), names=columns)
 
     # Plot the distribution of labels for train and test data separately
     fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(7, 5))

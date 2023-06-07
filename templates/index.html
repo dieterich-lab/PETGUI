@@ -39,8 +39,11 @@
                 <div class="card-heading">
                     <div class="title">PET APP</div>
                     <button class="btn logout-btn logout-btn:hover" onclick="Logout()">LOGOUT <i class="fa fa-power-off"></i></button>
-                    <button class="btn home-btn home-btn:hover" onclick="runPythonCode()">START <i class="fa fa-home"></i></button>
+                    <button class="btn home-btn home-btn:hover" onclick="redirectHome()">HOME <i class="fa fa-home"></i></button>
                 </div>
+                {% if message %}
+                <div class="alert alert-success">{{ message }}</div>
+                {% endif %}
                 <div class="card-body">
                     <form method="POST" id="my-form" enctype="multipart/form-data">
   <label for="file"><span class="circle">1.</span> <h5>Upload csv data in a zip file. The uploaded zip file contains the train and test dataset in csv format and a readme file</h5></label>

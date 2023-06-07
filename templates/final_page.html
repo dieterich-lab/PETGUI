@@ -21,14 +21,13 @@
     <!-- Vendor CSS-->
     <link href="/static/vendor/select2/select2.min.css" rel="stylesheet" media="all">
     <link href="/static/vendor/datepicker/daterangepicker.css" rel="stylesheet" media="all">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
 
     <!-- Main CSS-->
     <link href="/static/css/main.css" rel="stylesheet" media="all">
     <link href="/static/css/style.css" rel="stylesheet">
 
 </head>
-
-
 <body>
     <div class="page-wrapper bg-gra-03 p-t-45 p-b-50">
         <div class="wrapper wrapper--w790">
@@ -36,23 +35,11 @@
                 <div class="card-heading">
                     <div class="title">Predict Unlabeled Data</div>
                     <button class="btn logout-btn logout-btn:hover" onclick="Logout()">LOGOUT <i class="fa fa-power-off"></i></button>
-                    <button class="btn home-btn home-btn:hover" onclick="runPythonCode()">START <i class="fa fa-home"></i></button>
+                    <button class="btn home-btn home-btn:hover" onclick="redirectHome()">HOME <i class="fa fa-home"></i></button>
                 </div>
-                        <div class="form-row m-b-55">
-                            <div class="value">
-                                <div class="row row-space">
-
-                                    <div class="col-2">
-
-                                    </div>
-
-                                    <div class="col-2">
-
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
+                {% if message %}
+                <div class="alert alert-success">{{ message }}</div>
+                {% endif %}
 
     <div class="card-body" id="container"><span class="circle_1">1.</span>
         <label class="btn btn--radius-2 btn--blue">
@@ -63,17 +50,26 @@
     </div>
 
     <div class="card-body" id="container"><span class="circle_1">2.</span>
-        <button class="btn btn--radius-2 btn--blue" id="mycontainer" onclick="startPrediction(); disableButton_final(id); showText(); showLoading()" style="background-color: grey;" disabled>Predict labels using PET Model</button>
+        <a href="#" id="predict">
+        <button class="btn btn--radius-2 btn--blue" id="mycontainer" onclick="showAbort(); checkPrediction(); disableButton_final(id); showText(); showLoading()"
+                 disabled>
+            Predict labels using PET Model</button></a>
+
+        <div class="button-container" style="display: none;" id="abortButton">
+          <button style="float: right;" onclick="abortJob();" class="btn btn--radius-2 btn--red">
+        Abort
+          </button></div>
+
         <span class="spinner" id="spinner"></span>
         <div class="loadingText" id="loadingText"> Please wait...</div>
-    </div>
+        </div>
 
     <div class="card-body" id="container"><span class="circle_1">3.</span>
-        <button class="btn btn--radius-2 btn--blue" id="mycontain_download" style="background-color: grey;" disabled>Download Predicted data</button>
+        <button class="btn btn--radius-2 btn--blue" id="mycontain_download" disabled>Download Predicted data</button>
     </div>
 
     <div class="card-body" id="container"><span class="circle_1">4.</span>
-        <button class="btn btn--radius-2 btn--blue" id="show_chart" onclick="generateChart()" style="background-color: grey;" disabled>Show Chart</button>
+        <button class="btn btn--radius-2 btn--blue" id="show_chart" onclick="generateChart()" disabled>Show Chart</button>
     </div>
 
     <div id="chartContainer"></div>
@@ -81,7 +77,8 @@
         </div>
     </div>
 
-   <script>
+<script>
+
 function generateChart() {
     var xhr = new XMLHttpRequest();
     xhr.open("POST", "/label-distribution");
@@ -96,8 +93,19 @@ function generateChart() {
     }
     xhr.send(JSON.stringify({}));
 }
-</script>
+   function showAbort() {
+        const btn = document.getElementById("abortButton");
+        btn.style.display = "inline";
+        }
 
+            function abortJob() {
+        return fetch("/abort_job?final=True")
+        .then(response => {window.location.href = '/final?message=Predicting aborted successfully!';}
+        );
+    }
+
+
+    </script>
 
     <!-- Jquery JS-->
     <script src="static/vendor/jquery/jquery.min.js"></script>
@@ -109,7 +117,6 @@ function generateChart() {
     <!-- Main JS-->
     <script src="/static/js/global.js"></script>
     <script src="/static/js/script.js"></script>
-
 
 </body><!-- This templates was made by Colorlib (https://colorlib.com) -->
 </html>
