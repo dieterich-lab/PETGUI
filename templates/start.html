@@ -8,8 +8,6 @@
     <meta name="description" content="Colorlib Templates">
     <meta name="author" content="Colorlib">
     <meta name="keywords" content="Colorlib Templates">
-    <script src="/static/js/bootstrap.bundle.min.js"></script>
-
 
     <!-- Title Page-->
     <title>Login</title>
@@ -79,8 +77,13 @@
             <div class="card card-5">
                 <div class="card-heading">
                     <div class="title">Welcome to PETGUI!</div>
-                    <button class="btn logout-btn logout-btn:hover" onclick="Logout()">LOGOUT <i class="fa fa-power-off"></i></button>
-                    <button class="btn login-btn login-btn:hover" onclick="Login()">LOGIN <i class="fa fa-sign-in"></i></button>
+                    {% if session %}
+                        <button class="btn logout-btn logout-btn:hover" onclick="Logout()">LOGOUT <i class="fa fa-power-off"></i></button>
+                        <button class="btn login-btn login-btn:hover" onclick="window.location.href = '/basic';">PROCEED <i class="fa fa-sign-in"></i></button>
+                    {% else %}
+                        <button class="btn login-btn login-btn:hover" onclick="Login()">LOGIN <i class="fa fa-sign-in"></i></button>
+                    {% endif %}
+
                 </div>
                 <div class="card-body">
                     <h4 class="mb-4"> We introduce <span style="color: purple; font-weight: bold;">PETGUI</span>: A user-friendly interface for training and testing a language model through <b>P</b>attern <b>E</b>xploiting <b>T</b>raining (PET).<br>
@@ -90,7 +93,10 @@
                         By reformulating input examples as cloze-style phrases, <span style="font-style: italic">PET</span> has been shown to significantly outperform standard supervised training.
                    <section class="container" style="margin-top: 15px;">
                     <div id="col-1">
+                        <figure>
                       <img src="static/pet.png" width="125%">
+                        <figcaption style="font-size: 12px">Fig.1 - https://arxiv.org/pdf/2001.07676.pdf</figcaption>
+                            </figure>
                     </div>
                     <div id="col-2">
                       <p> In this illustration, the pattern <span style="font-style: italic">"It was ___ ."</span> is a cloze-style phrase, textually explaining to the model what the task is about,
@@ -104,28 +110,21 @@
                         More concretely, with <span style="color: purple; font-weight: bold;">PETGUI</span> you can choose to: </p>
                         <ul style="margin-left: 17px; font-size: 15px;">
                             <li><strong>Train</strong> either <span style="font-style: italic">bert-base-cased</span> or <span style="font-style: italic">medbert-512</span> on a labeled dataset</li>
-                            <li>Test the trained model on unlabeled data by <b>generating predictions</b></li>
-                            <li>Download statistics on <b>model performance</b> during training and the resulting predictions file</li>
-                            <li>See <b>statistics on label distribution</b> of the provided dataset</li>
-                        </ul>
-                    <h3 class="mb-4" style="margin-top: 3rem; background: rgb(86, 106, 238, 0.2);">Limitations</h3>
-                    <p style="font-size: 15px;">In its current form, <span style="color: purple; font-weight: bold;">PETGUI</span> is limited to training and testing a model on data in the following way:</p>
-                        <ul style="margin-left: 17px; font-size: 15px;">
-                            <li> <b>File format and naming convention</b>: The provided training data must be a <span style="font-style: italic">tar.gz</span> file
-                                containing <span style="font-style: italic">train.csv</span> and <span style="font-style: italic">test.csv</span> respectively.
-                                For the unlabeled data, a <span style="font-style: italic">.txt</span> file is expected with a comma (",") as a separator in the
-                                first colum at the beginning of each line</li>
-                            <li><b>Maximum capacity</b>: The max number of definable patterns for one training pass is 5</li>
+                            <li><strong>Label</strong> data using the trained model</li>
+                            <li>View statistics on <b>model performance</b> during training
+                            <li> Download the <strong>labeled</strong> data</li>
+                            <li>View <b>label distribution statistics</b> of training data and labeled data</li>
                         </ul>
                     <h3 class="mb-4" style="margin-top: 3rem; background: rgb(86, 106, 238, 0.2);">Getting Started</h3>
-                    <p>To begin using <span style="color: purple; font-weight: bold;">PETGUI</span>, please log in with your LDAP credentials for the <span style="font-style: italic">DieterichLab</span> server. <br>
-                        If you encounter any issues during the login process or have any questions, please don't hesitate to <a href="mailto:petgui@support.com">contact our support team</a> for assistance.
+                    <p>To begin using <span style="color: purple; font-weight: bold;">PETGUI</span>, please make sure you have a working WireGuard VPN connection to the <span style="font-style: italic">DieterichLab</span> infrastructure.
+                         To log in with your according LDAP credentials for the <span style="font-style: italic">DieterichLab</span> server, please click the button in the header section.
                         </p>
                     <h4 class="mb-4" style="margin-top: 3rem;"> Thank you for visiting <span style="color: purple; font-weight: bold;">PETGUI</span>, and we hope you have a productive and enjoyable experience.</h4>
 
                     <h3 class="mb-4" style="margin-top: 3rem; background: rgb(86, 106, 238, 0.2);">References</h3>
                     <ul style="margin-left: 17px; font-size: 15px;">
-                        <li><a href="https://github.com/timoschick/pet/">Pattern-Exploiting Training (PET)</a></li>
+                        <li><span style="font-style: italic">Pattern-Exploiting Training (PET)</span>, https://github.com/timoschick/pet/</li>
+                        <li id="PET"><span style="font-style: italic">Exploiting Cloze Questions for Few-Shot Text Classification and Natural Language Inference</span>, Timo Schick and Hinrich Schütze, 2021, https://arxiv.org/abs/2001.07676</li>
                     </ul>
 
 <!-- Jquery JS-->

@@ -5,3 +5,4 @@ DieterichLab_CA.pem
 /static/chart.png
 /static/chart_prediction.png
 log_file
+medbert-512

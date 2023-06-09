@@ -37,7 +37,7 @@ if local:
     
 class User:
     session: SessionService
-    job_id: str
+    job_id: str = None
     job_status: str
 
 
@@ -149,7 +149,6 @@ async def submit_job(session: SessionService = Depends(get_session_service), pre
     session_id = session.get_session_id()
 
     if predict:
-
         try:
             scp_cmd = ["sshpass", '-e', 'scp', '-r', f'{str(hash(session_id))}/data_uploaded/unlabeled',
                        f'{user}@{cluster_name}:{remote_loc_pet}data_uploaded/']
@@ -168,8 +167,8 @@ async def submit_job(session: SessionService = Depends(get_session_service), pre
         mkdir_cmd = ["sshpass", '-e', 'ssh', f'{user}@{cluster_name}', f'mkdir {remote_loc}']
         outs, errs = bash_cmd(session, mkdir_cmd)
         dir = hash(session_id)
-
         files = ["pet", "data.json", "train.sh", "data_uploaded", "predict.sh"]
+        files.append("medbert-512") if os.environ[f"{hash(session_id)}_medbert"] == "True" else None
         files = [str(dir) + "/" + f if f == "data.json" or f == "data_uploaded" else f for f in files]
         print(files)
         for f in files:

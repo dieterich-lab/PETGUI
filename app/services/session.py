@@ -6,7 +6,6 @@ class SessionService:
     def __init__(self, session_data: SessionData = None, session_id: UUID = None):
         self.session_data = None
         self.session_id = None
-        self.job_id = None
 
     async def create_session(self, user, response):
         self.session_id = uuid4()
@@ -35,9 +34,3 @@ class SessionService:
 
     def get_session_data(self):
         return self.session_data
-
-    def set_job_id(self, job_id):
-        self.job_id = job_id
-
-    def get_job_id(self):
-        return self.job_id

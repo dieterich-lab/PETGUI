@@ -32,8 +32,11 @@ def get_session_service(request: Request):
 
 
 @router.get("/start", response_class=HTMLResponse)
-def start(request: Request):
-    return templates.TemplateResponse("start.html", {"request": request})
+def start(request: Request, session: SessionService = Depends(get_session_service)):
+    if session:
+        return templates.TemplateResponse("start.html", {"request": request, "session": True})
+    else:
+        return templates.TemplateResponse("start.html", {"request": request, "session": False})
 
 
 @router.get("/login")
@@ -77,6 +80,7 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
         template_counter = 1
         origin_counter = 2
         mapping_counter = 2
+        os.environ[f"{hash(session_id)}_medbert"] = "True" if model_para == "GerMedBERT/medbert-512" else "False"
         para_dic = {"file": "".join(next(os.walk(f"./{hash(session_id)}/data_uploaded/"))[1]), "sample": sample,
                     "label": label,
                     "template_0": template_0, "origin_0": origin_0,
@@ -204,13 +208,13 @@ def download_predict(session: SessionService = Depends(get_session_service)):
 
 @router.get("/logout")
 def logout(request: Request, response: Response, session: SessionService = Depends(get_session_service)):
-    clean(session, logout=True)
+    clean(request, session, logout=True)
     cookie.delete_from_response(response)
     request.app.state.session = None
 
 
 @router.get("/clean", name="clean", dependencies=[Depends(get_session_service)])
-def clean(session: SessionService = Depends(get_session_service), logout: bool = False, ssh=ssh):
+def clean(request: Request, session: SessionService = Depends(get_session_service), logout: bool = False, ssh=ssh):
     """
     Iterates over created paths during PET and unlinks them.
     Returns:
@@ -230,12 +234,11 @@ def clean(session: SessionService = Depends(get_session_service), logout: bool =
             file_path.unlink()
         elif isdir(path):
             shutil.rmtree(path)
-    try:
+    if request.app.state.job_id:
         rm_cmd = [ssh, '-e', 'ssh',
                   f'{user}@{cluster_name}', f'rm -r {remote_loc} /home/{user}/{log_file.split("/")[-1]}']
         proc = subprocess.Popen(rm_cmd, env={"SSHPASS": os.environ[f"{hash(session_id)}"]}, shell=False, stdout=PIPE,
                                 stderr=PIPE)
         outs, errs = proc.communicate()
         print(outs, errs)
-    except:
-        pass
+        request.app.state.job_id = None
