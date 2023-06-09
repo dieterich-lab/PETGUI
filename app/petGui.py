@@ -13,13 +13,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import random
 from uuid import UUID, uuid4
+
 import shutil
 
-
 from app.controller import templating
-from app.dto.session import SessionData, UUID
+from app.controller import session
 from .services.session import SessionService
-import app.services.ldap as ldap
+
 
 
 
@@ -27,6 +27,7 @@ import app.services.ldap as ldap
 app = FastAPI()
 '''Include routers'''
 app.include_router(templating.router)
+app.include_router(session.session_router)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 local = False # If running app locally
 ssh = "sshpass"
@@ -56,23 +57,6 @@ def get(request: Request, session: SessionService = Depends(get_session_service)
     session = get_session_service(request)
     print(cookies, session)
     return {"sess": session, "cook": cookies}
-
-@app.post("/login")
-async def login(request: Request, username: str = Form(...), password: str = Form(...)):
-    try:
-        dn = ldap.get_dn_of_user(username)
-        ldap.bind(dn, password)
-        response = RedirectResponse(url=request.url_for("homepage"), status_code=303)
-        session = SessionService()
-        request.app.state.session = await session.create_session(username, response)
-        session_uuid = session.get_session_id()
-        os.environ[f"{hash(session_uuid)}"] = password
-        os.makedirs(f"./{hash(session_uuid)}", exist_ok=True)  # If run with new conf.
-        return response
-    except Exception as e:
-        print(str(e))
-        error = 'Invalid username or password'
-        return templating.login_form(request, error)
 
 
 @app.get("/whoami", name="whoami")
@@ -318,11 +302,30 @@ async def extract_file(file: UploadFile = File(...), session: SessionService = D
     os.makedirs(upload_folder)
     file_upload = tarfile.open(fileobj=file.file, mode="r:gz")
     file_upload.extractall(f'{hash(session_id)}/data_uploaded')
+    # Print the extracted file names
+    extracted_files = [member.name for member in file_upload.getmembers()]
+    print("Extracted files:", extracted_files)
+
+    # Identify the extracted folder
+    extracted_folder = None
+    for root, dirs, files in os.walk(f'{hash(session_id)}/data_uploaded'):
+        if len(dirs) == 1:  # Assuming only one subdirectory within the extracted files
+            extracted_folder = dirs[0]
+            break
+
+    if extracted_folder is None:
+        print("No subdirectory found in the extracted files.")
+        return
+
+    print("Extracted folder:", extracted_folder)
 
     # Read the train and test data into dataframes
+    # Read the train and test data into dataframes
     columns = ["label", "text"]
+
     train_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/train.csv')), names=columns)
     test_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/test.csv')), names=columns)
+
 
     # Plot the distribution of labels for train and test data separately
     fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(7, 5))

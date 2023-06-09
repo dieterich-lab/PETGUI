@@ -58,10 +58,22 @@
       <div class="alert alert-danger">{{ error }}</div>
     {% endif %}
     <div id="chart-container" style="display: none">
-      <img id="myChart" src="/static/chart.png">
+      <img id="myChart" src="/static/chart.png?version=2">
     </div>
     <div id="stats-container"></div>
   </div>
+                        <script>
+                            var counter = 1;
+var dynamicInput_1 = [];
+
+ function addInput_new(){
+    var newdiv = document.createElement('div');
+    newdiv.id = dynamicInput_1[counter];
+    newdiv.innerHTML = "Template " + (counter + 1) + " <br><div class=\"input-group\" ><input class='input--style-5 form-control' type='text' placeholder='Next template text' name = template_"+counter +" required> <br><button class='btn btn--radius-2 btn--blue' style='padding: 0 25px;'  onClick='removeInput("+dynamicInput_1[counter]+");'>-</button></div>";
+    document.getElementById('template input').appendChild(newdiv);
+    counter++;
+}
+                        </script>
                         <span class="circle">2.</span><div class="form-row m-b-55">
                             <div class="name">Define column numbers:</div>
                             <div class="value">
@@ -81,15 +93,16 @@
                         </div><span class="circle">3.</span>
                         <div class="form-row"id="formulario">
                             <div class="name">Define templates:</div>
-                            <div class="value">
+                            <div class="value" id = "template input">
                                 <div id="dynamicInput[0]">
                                 <div class="input-group" >
                                     <input class="input--style-5 form-control" type="text" placeholder = "Example: It was_." name="template_0"  required>
-                                    <button class="btn btn--radius-2 btn--blue" style="padding: 0 25px;" type ="button" onClick="addInput();">+</button>
+                                    <button class="btn btn--radius-2 btn--blue" style="padding: 0 25px;" type ="button" onClick="addInput_new();">+</button>
                                     </div>
                                     </div>
                                 </div>
                             </div>
+
 
                         <span class="circle">4.</span><div class="form-row m-b-55">
                             <div class="name">Define verbalizer mappings:</div>
@@ -131,8 +144,8 @@
                                     <input type="radio" checked="checked" name="model_para" value="gbert-base" required>
                                     <span class="checkmark"></span>
                                 </label>
-                                <label class="radio-container">gbert-base-clinical
-                                    <input type="radio" name="model_para" value="gbert-base-clinicalL" required>
+                                <label class="radio-container">medbertde
+                                    <input type="radio" name="model_para" value="GerMedBERT/medbert-512" required>
                                     <span class="checkmark"></span>
                                 </label>
                             </div>
