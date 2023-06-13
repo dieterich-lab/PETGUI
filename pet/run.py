@@ -13,11 +13,11 @@ file_name = data["file"]
 model = data["model_para"]
 if model == "gbert-base":
     model_type = "bert"
-    model_name_or_path = "bert-base-cased"
+    model_name_or_path = "deepset/gbert-base"
 else: # Clinical Bert
     '''Get Model Directory'''
     model_type = "bert"
-    model_name_or_path = "medbert-512"
+    model_name_or_path =  "/prj/doctoral_letters/PETGUI/med_bert_local"
 
 task_name = [file_name.split(sep) for sep in ["_", ".", "-", "/"] if sep in file_name][0][0]
 
