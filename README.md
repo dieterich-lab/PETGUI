@@ -1,14 +1,17 @@
 # PETGUI
+
 We introduce **PETGUI**: A user-friendly interface for training and testing a language model through <b>P</b>attern <b>E</b>xploiting <b>T</b>raining (<span style="font-style: italic">PET</span>) <a href="#pet" role="doc-noteref">[Schick et al., 2021]</a>.<br>
+
 
 ## Contents
 + [*Pattern Exploiting Training*](#-pattern-exploiting-training-)
 + [PETGUI Requirements](#petgui-requirements)
 + [Start PETGUI](#start-petgui)
 + [Run PETGUI](#run-petgui)
-  + [Training Parameter Guidelines](#training-parameter-guidelines)
+  - [Training Parameter Guidelines](#training-parameter-guidelines)
 + [Limitations](#limitations)
 + [References](#references)
++ [TODOs](#todos)
 
 ### *Pattern Exploiting Training*
 <p style="font-size: 15px;"><span style="font-style: italic">PET</span> is a <strong>semi-supervised training strategy for language models</strong>.
@@ -49,7 +52,7 @@ INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
 ### Run PETGUI
 
 Upon starting **PETGUI**, you will automatically be redirected to the Start page, where you can proceed to login.  
-Whilst following the below steps, please follow the [guidelines](#petgui-guidelines) 
+Whilst following the below steps, please follow the [guidelines](#training-parameter-guidelines) 
 
 | Steps                                                                                                                                                                                                                                                                                                                                                                                                                                                            | What you will see                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -72,9 +75,14 @@ In its current form, PETGUI is limited to training and testing a model on data i
                                 containing <span style="font-style: italic">train.csv</span> and <span style="font-style: italic">test.csv</span> respectively.
                                 For the unlabeled data, a <span style="font-style: italic">.csv</span> file is expected with the first column throughout the data lines empty.
 * **Maximum capacity:** The max number of definable patterns for one training pass is 5
+
                        
 ### References
 <ol style="margin-left: 17px; font-size: 15px;">
-    <li id="pet">Schick et al., 2021. Exploiting Cloze Questions for Few-Shot Text Classification and Natural Language Inference. <span style="font-style: italic">https://arxiv.org/abs/2001.07676</span></li>
-<li id="schick">Schick et al., 2021. Pattern-Exploiting Training (PET). <span style="font-style: italic">https://github.com/timoschick/pet/</span></li>
+    <li id="pet">Timo Schick and Hinrich Schütze. (2021). Exploiting Cloze Questions for Few-Shot Text Classification and Natural Language Inference. arXiv preprint arXiv:2001.07676. Retrieved from <a href="https://arxiv.org/abs/2001.07676">(https://arxiv.org/abs/2001.07676)</a></li>
+<li id="schick">Timo Schick. (2023). Pattern-Exploiting Training (PET) [GitHub repository]. Retrieved from <a href="https://github.com/timoschick/pet/">https://github.com/timoschick/pet/</a></li>
 </ol>
+
+
+### TODOs         
+- [ ] …
