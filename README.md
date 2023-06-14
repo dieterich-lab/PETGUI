@@ -1,7 +1,7 @@
 # PETGUI
 A working training process in PETGUI
 
-##Pattern Exploiting Training
+## Pattern Exploiting Training
 PET was introduced in 2020 as a semi-supervised training strategy for language models. By reformulating input examples as cloze-style phrases, PET has been shown to significantly outperform standard supervised training.
 
 In this illustration, the pattern "It was ___ ." is a cloze-style phrase, textually explaining to the model what the task is about, in this case: sentiment classification.
