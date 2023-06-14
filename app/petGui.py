@@ -39,6 +39,7 @@ class User:
     session: SessionService
     job_id: str = None
     job_status: str
+    event: threading.Event = None
 
 
 app.state = User()
@@ -86,6 +87,7 @@ async def run(request: Request, session: SessionService = Depends(get_session_se
     print("Training starting..")
     try:
         request.app.state.job_id = await submit_job(session, False)
+        request.app.state.event = threading.Event()
         t = threading.Thread(target=check_job_status, args=(request, session, request.app.state.job_id, False))
         t.start()
     except Exception as e:
@@ -131,6 +133,7 @@ async def label_prediction(request: Request, session: SessionService = Depends(g
         try:
             print("Prediction starting..")
             request.app.state.job_id = await submit_job(session, True)
+            request.app.state.event = threading.Event()
             t = threading.Thread(target = check_job_status, args = (request, session, request.app.state.job_id, True))
             t.start()
         except Exception as e:
@@ -202,7 +205,7 @@ def check_job_status(request: Request, session: SessionService = Depends(get_ses
     cluster_name = session.session_data.cluster_name
     log_file = session.session_data.log_file
     session_id = session.get_session_id()
-    while True:
+    while request.app.state.event:
         cmd = ["sshpass", '-e', 'ssh', f'{user}@{cluster_name}', f"squeue -j {job_id} -h -t all | awk '{{print $5}}'"]
         outs, errs = bash_cmd(session, cmd)
         status = outs.decode("utf-8").strip().split()[-1]
@@ -254,6 +257,7 @@ def check_job_status(request: Request, session: SessionService = Depends(get_ses
         # Update the log file on the local machine
         with open(f"{log_file}", 'w') as f:
             f.write(log_contents)
+
 
 
 def results(session: SessionService = Depends(get_session_service)):

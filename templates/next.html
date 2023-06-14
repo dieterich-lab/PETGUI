@@ -31,7 +31,7 @@
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
 
 
-    </style>
+
 </head>
 
  <script>
@@ -140,16 +140,16 @@ function showTable(jsonData) {
             <div class="card card-5">
                 <div class="card-heading">
                     <div class="title">Train Your PET Model</div>
-                    <button class="btn logout-btn logout-btn:hover" onclick="Logout()">Logout <i class="fa fa-power-off"></i></button>
-                    <button class="btn home-btn home-btn:hover" onclick="redirectHome()">HOME <i class="fa fa-home"></i></button>
+                    <button class="btn logout-btn logout-btn:hover" onclick="pageLoad(); Logout();">Logout <i class="fa fa-power-off"></i></button>
+                    <button class="btn home-btn home-btn:hover" onclick="pageLoad(); redirectHome();">HOME <i class="fa fa-home"></i></button>
                 </div>
                      <div class="card-body" id="container">
           <a href="#" id="test"><div class="button-container">
-       <button id="trainButton" onclick="startTraining(); showAbort(); disableButton(); showLoading(); showText();" class="btn btn--radius-2 btn--blue">
+       <button id="trainButton" onclick="document.getElementById('test').style.pointerEvents = 'none'; startTraining(); showAbort(); disableButton(); showLoading(); showText();" class="btn btn--radius-2 btn--blue">
         Start Training
        </button></div></a>
       <div class="button-container" style="display: none;" id="abortButton">
-          <button style="float: right;" onclick="abortJob();" class="btn btn--radius-2 btn--red">
+          <button style="float: right;" onclick="pageLoad(); abortJob();" class="btn btn--radius-2 btn--red">
         Abort
           </button></div>
                          <div class="row" style="transform: translate(-25%, 0%);">
@@ -226,11 +226,11 @@ const animateProgress = () => {
   <p id='msg'></p>
   </div>
                             <div class="card-body" id="container">
-                                <button class="btn btn--radius-2 btn--blue" id="rerunButton" onclick="redirectNewConf()" disabled>Run with new configuration</button>
+                                <button class="btn btn--radius-2 btn--blue" id="rerunButton" onclick="pageLoad(); redirectNewConf();" disabled>Run with new configuration</button>
                             </div>
                          <span class="title" style="display: block; color: #000;">OR</span>
                             <div class="card-body" id="container">
-                                <button class="btn btn--radius-2 btn--blue" id="annotateButton" onclick="redirect()" disabled>Annotate unseen data</button>
+                                <button class="btn btn--radius-2 btn--blue" id="annotateButton" onclick="pageLoad(); redirect();" disabled>Annotate unseen data</button>
                             </div>
                 </div>
             </div>
@@ -247,6 +247,7 @@ const animateProgress = () => {
     <!-- Main JS-->
     <script src="static/js/global.js"></script>
     <script src="/static/js/script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gasparesganga-jquery-loading-overlay@2.1.7/dist/loadingoverlay.min.js"></script>
 
 
 

@@ -28,6 +28,7 @@
 
 
 </head>
+
 <style>
 .container {
   display: flex;
@@ -71,19 +72,21 @@
     }
 
 </style>
+
+
 <body>
+
     <div class="page-wrapper bg-gra-03 p-t-45 p-b-50">
         <div class="wrapper wrapper--w790">
             <div class="card card-5">
                 <div class="card-heading">
                     <div class="title">Welcome to PETGUI!</div>
                     {% if session %}
-                        <button class="btn logout-btn logout-btn:hover" onclick="Logout()">LOGOUT <i class="fa fa-power-off"></i></button>
+                        <button class="btn logout-btn logout-btn:hover" onclick="Logout();">LOGOUT <i class="fa fa-power-off"></i></button>
                         <button class="btn login-btn login-btn:hover" onclick="window.location.href = '/basic';">PROCEED <i class="fa fa-sign-in"></i></button>
                     {% else %}
-                        <button class="btn login-btn login-btn:hover" onclick="Login()">LOGIN <i class="fa fa-sign-in"></i></button>
+                        <button class="btn login-btn login-btn:hover" onclick="Login();">LOGIN <i class="fa fa-sign-in"></i></button>
                     {% endif %}
-
                 </div>
                 <div class="card-body">
                     <h4 class="mb-4"> We introduce <span style="color: purple; font-weight: bold;">PETGUI</span>: A user-friendly interface for training and testing a language model through <b>P</b>attern <b>E</b>xploiting <b>T</b>raining (PET).<br>
@@ -127,6 +130,7 @@
                         <li>Schick et al., 2021. Exploiting Cloze Questions for Few-Shot Text Classification and Natural Language Inference. <span style="font-style: italic">https://arxiv.org/abs/2001.07676</span></li>
                     </ul>
 
+
 <!-- Jquery JS-->
 <script src="/static/vendor/jquery/jquery.min.js"></script>
 <!-- Vendor JS-->
@@ -136,7 +140,9 @@
 <!-- Main JS-->
 <script src="/static/js/global.js"></script>
 <script src="/static/js/script.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gasparesganga-jquery-loading-overlay@2.1.7/dist/loadingoverlay.min.js"></script>
 
 </body><!-- This template was made by Colorlib (https://colorlib.com) -->
+
 </html>
 <!-- end document -->

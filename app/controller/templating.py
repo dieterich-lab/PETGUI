@@ -6,7 +6,9 @@ from fastapi.encoders import jsonable_encoder
 import json, os, tarfile, subprocess
 from subprocess import PIPE
 from uuid import UUID, uuid4
-
+import threading
+from threading import Event
+import app.petGui
 from ..dto.session import cookie
 
 from os.path import isdir, isfile
@@ -146,6 +148,7 @@ async def read_log(session: SessionService = Depends(get_session_service), initi
             os.environ[f"{hash(session_id)}_log"] = str(0)
             f = os.open(log_file, os.O_CREAT)
             os.environ[f"{hash(session_id)}_inp"] = "False"
+            print(os.environ[f"{hash(session_id)}_inp"])
     else:
         with open(log_file, "r") as file:
             file.seek(int(os.environ[f"{hash(session_id)}_log"]))
@@ -162,6 +165,7 @@ async def read_log(session: SessionService = Depends(get_session_service), initi
                       line not in list(filter(lambda x: "input_ids" in x, info_lines))[1:]]
         if any(["input_ids" in line for line in info_lines]):
             os.environ[f"{hash(session_id)}_inp"] = "True"
+            print(os.environ[f"{hash(session_id)}_inp"])
         return {"log": info_lines}
 
 
@@ -207,14 +211,17 @@ def download_predict(session: SessionService = Depends(get_session_service)):
 
 
 @router.get("/logout")
-def logout(request: Request, response: Response, session: SessionService = Depends(get_session_service)):
-    clean(request, session, logout=True)
+async def logout(request: Request, response: Response, session: SessionService = Depends(get_session_service)):
+    if request.app.state.event:
+        request.app.state.event.set()   # Stop job threads
+        request.app.state.event = None
+    await clean(request, session, logout=True)
     cookie.delete_from_response(response)
     request.app.state.session = None
 
 
 @router.get("/clean", name="clean", dependencies=[Depends(get_session_service)])
-def clean(request: Request, session: SessionService = Depends(get_session_service), logout: bool = False, ssh=ssh):
+async def clean(request: Request, session: SessionService = Depends(get_session_service), logout: bool = False, ssh=ssh):
     """
     Iterates over created paths during PET and unlinks them.
     Returns:
@@ -241,4 +248,5 @@ def clean(request: Request, session: SessionService = Depends(get_session_servic
                                 stderr=PIPE)
         outs, errs = proc.communicate()
         print(outs, errs)
+        await app.petGui.run(request, session)
         request.app.state.job_id = None

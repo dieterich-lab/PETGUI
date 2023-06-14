@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" xmlns="http://www.w3.org/1999/html">
+<html lang="en" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
 
 <head>
     <!-- Required meta tags-->
@@ -35,8 +35,8 @@
             <div class="card card-5">
                 <div class="card-heading">
                     <div class="title">PET APP</div>
-                    <button class="btn logout-btn logout-btn:hover" onclick="Logout()">LOGOUT <i class="fa fa-power-off"></i></button>
-                    <button class="btn home-btn home-btn:hover" onclick="redirectHome()">HOME <i class="fa fa-home"></i></button>
+                    <button class="btn logout-btn logout-btn:hover" onclick="Logout();">LOGOUT <i class="fa fa-power-off"></i></button>
+                    <button class="btn home-btn home-btn:hover" onclick="redirectHome();">HOME <i class="fa fa-home"></i></button>
                 </div>
                 {% if message %}
                 <div class="alert alert-success">{{ message }}</div>
@@ -60,15 +60,19 @@
     <div id="stats-container"></div>
   </div>
                         <script>
-                            var counter = 1;
+var counter = 1;
 var dynamicInput_1 = [];
 
  function addInput_new(){
-    var newdiv = document.createElement('div');
-    newdiv.id = dynamicInput_1[counter];
-    newdiv.innerHTML = "Template " + (counter + 1) + " <br><div class=\"input-group\" ><input class='input--style-5 form-control' type='text' placeholder='Next template text' name = template_"+counter +" required> <br><button class='btn btn--radius-2 btn--blue' style='padding: 0 25px;'  onClick='removeInput("+dynamicInput_1[counter]+");'>-</button></div>";
-    document.getElementById('template input').appendChild(newdiv);
-    counter++;
+    if (counter < 5) {
+        var newdiv = document.createElement('div');
+        newdiv.id = dynamicInput_1[counter];
+        newdiv.innerHTML = "Template " + (counter + 1) + " <br><div class=\"input-group\" ><input class='input--style-5 form-control' type='text' placeholder='Next template text' name = template_"+counter +" required> <br><button class='btn btn--radius-2 btn--blue' style='padding: 0 25px;'  onClick='removeInput("+dynamicInput_1[counter]+");'>-</button></div>";
+        document.getElementById('template input').appendChild(newdiv);
+        counter++;
+    } else {
+    return;
+    }
 }
                         </script>
                         <span class="circle">2.</span><div class="form-row m-b-55">
@@ -92,8 +96,8 @@ var dynamicInput_1 = [];
                             <div class="name">Define templates:</div>
                             <div class="value" id = "template input">
                                 <div id="dynamicInput[0]">
-                                <div class="input-group" >
-                                    <input class="input--style-5 form-control" type="text" placeholder = "Example: It was_." name="template_0"  required>
+                                <div class="input-group">
+                                    <input class="input--style-5 form-control" type="text" placeholder = "Example: It was_." name="template_0" required>
                                     <button class="btn btn--radius-2 btn--blue" style="padding: 0 25px;" type ="button" onClick="addInput_new();">+</button>
                                     </div>
                                     </div>
@@ -165,10 +169,24 @@ var dynamicInput_1 = [];
     <!-- Main JS-->
     <script src="/static/js/global.js"></script>
     <script src="/static/js/script.js"></script>
+    <script src="/static/js/script_add_input.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/gasparesganga-jquery-loading-overlay@2.1.7/dist/loadingoverlay.min.js"></script>
+
     <script>
       addEventListenersForIndex();
+
+
+        function loadPage() {
+        $.LoadingOverlay("show");
+        }
+
+        // Hide it after 3 seconds
+        setTimeout(function(){
+            $.LoadingOverlay("hide");
+        }, 3000);
     </script>
-    <script src="/static/js/script_add_input.js"></script>
+
 
 
 

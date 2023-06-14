@@ -34,8 +34,8 @@
             <div class="card card-5">
                 <div class="card-heading">
                     <div class="title">Predict Unlabeled Data</div>
-                    <button class="btn logout-btn logout-btn:hover" onclick="Logout()">LOGOUT <i class="fa fa-power-off"></i></button>
-                    <button class="btn home-btn home-btn:hover" onclick="redirectHome()">HOME <i class="fa fa-home"></i></button>
+                    <button class="btn logout-btn logout-btn:hover" onclick="pageLoad(); Logout();">LOGOUT <i class="fa fa-power-off"></i></button>
+                    <button class="btn home-btn home-btn:hover" onclick="pageLoad(); redirectHome();">HOME <i class="fa fa-home"></i></button>
                 </div>
                 {% if message %}
                 <div class="alert alert-success">{{ message }}</div>
@@ -56,7 +56,7 @@
             Predict labels using PET Model</button></a>
 
         <div class="button-container" style="display: none;" id="abortButton">
-          <button style="float: right;" onclick="abortJob();" class="btn btn--radius-2 btn--red">
+          <button style="float: right;" onclick="pageLoad(); abortJob();" class="btn btn--radius-2 btn--red">
         Abort
           </button></div>
 
@@ -117,6 +117,9 @@ function generateChart() {
     <!-- Main JS-->
     <script src="/static/js/global.js"></script>
     <script src="/static/js/script.js"></script>
+
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gasparesganga-jquery-loading-overlay@2.1.7/dist/loadingoverlay.min.js"></script>
 
 </body><!-- This templates was made by Colorlib (https://colorlib.com) -->
 </html>

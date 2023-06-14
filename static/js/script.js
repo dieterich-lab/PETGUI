@@ -1,7 +1,15 @@
 
+function pageLoad() {
+    $.LoadingOverlay("show");
+}
+
+function hideLoad() {
+    $.LoadingOverlay("hide");
+}
 
 function Logout() {
     fetch('/logout').then(response => {
+        hideLoad();
         window.location.href = '/login?logout=True';
     });
 }
@@ -301,12 +309,14 @@ function showTable(jsonData) {
 
     function redirectHome() {
         fetch('/clean').then(response => {
+            hideLoad();
             window.location.href = '/start';
         });
     }
 
     function redirectNewConf() {
         fetch('/clean').then(response => {
+        hideLoad();
             window.location.href = '/basic';
         });
     }
