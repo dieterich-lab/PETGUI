@@ -1,5 +1,20 @@
 # PETGUI
 A working training process in PETGUI
+
+##Pattern Exploiting Training
+PET was introduced in 2020 as a semi-supervised training strategy for language models. By reformulating input examples as cloze-style phrases, PET has been shown to significantly outperform standard supervised training.
+
+In this illustration, the pattern "It was ___ ." is a cloze-style phrase, textually explaining to the model what the task is about, in this case: sentiment classification.
+For this, PET works in the following way: A Pretrained Language Model is first trained on each of such patterns (1).
+Secondly, an ensemble of these models annotates unlabeled training data (2).
+Finally, a classifier is trained on the resulting soft-labeled dataset. (3).
+
+![Image](https://user-images.githubusercontent.com/63499872/245711289-23f4440f-1116-40ea-8447-1af20abff25c.png)
+
+## Requirements
+
+## Install/Start application
+
 ## Run Training and Prediction
 
 | Steps                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |What you will see|
@@ -24,4 +39,11 @@ In its current form, PETGUI is limited to training and testing a model on data i
                                 For the unlabeled data, a <span style="font-style: italic">.txt</span> file is expected with a comma (",") as a separator in the
                                 first colum at the beginning of each line
 * **Maximum capacity:** The max number of definable patterns for one training pass is 5
-                       
+
+### <a name="TODOS"></a> TODOs         
+
+### <a name="References"></a> References
+[1] Timo Schick and Hinrich Schütze. (2021). Exploiting Cloze Questions for Few-Shot Text Classification and Natural Language Inference. arXiv preprint arXiv:2001.07676. Retrieved from [https://arxiv.org/abs/2001.07676](https://arxiv.org/abs/2001.07676)
+
+
+[2] Timo Schick. (2023). Pattern-Exploiting Training (PET) [GitHub repository]. Retrieved from [https://github.com/timoschick/pet/](https://github.com/timoschick/pet/)
