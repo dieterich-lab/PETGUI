@@ -1,14 +1,19 @@
 import json
+import time
+from unittest import mock
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
+
+from tests.session_service import SessionServiceMock
 from app.petGui import app, get_session_service, User
 import pytest
 from fastapi.responses import FileResponse, RedirectResponse
 from app.dto.session import SessionData, cookie, verifier
 from app.services.session import SessionService
 import io
+import os
 from os.path import exists
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -16,6 +21,7 @@ from pathlib import Path
 import tarfile
 
 from app.controller.templating import router
+
 
 
 class TestServer:
@@ -31,32 +37,33 @@ class TestServer:
     data = {"username": "user", "password": "pass"}
     app = FastAPI()
 
-
     @pytest.fixture()
     def setting(self):
         self.metadata = {
             "file": "yelp_review_polarity_csv",
             "sample": "1",
             "label": "0",
-            "template_0": "It was _ .",
-            "template_1": "All in all _ .",
-            "template_2": "Just _ .",
+            "template_0": "Es war _.",
+            "template_1": "Im Großen und Ganzen _ .",
+            "template_2": "Einfach nur_ .",
             "origin_0": "1",
-            "mapping_0": "bad",
+            "mapping_0": "schlecht",
             "origin_1": "2",
-            "mapping_1": "good",
+            "mapping_1": "gut",
             "model_para": "gbert-base"
         }
-        self.file_path = "data.json"
-        yield self.metadata, self.file_path
+        yield self.metadata,
 
     @pytest.fixture
-    async def mock_session(self, mocker, mock_user_dn, mock_bind):
+    def mock_get_session_service(self, mocker):
+        yield SessionServiceMock(self.session_data, self.session_id)
+
+
+    @pytest.fixture
+    def mock_session(self, mock_get_session_service):
         self.mock_verifier = self.session_data        # Not a necessity
         self.mock_cookie = "long-fake-uuid"       # Not a necessity
-
-
-        self.mock_get_session_service = SessionService(self.session_data, self.session_id)
+        self.mock_get_session_service = mock_get_session_service
 
         app.dependency_overrides[cookie] = lambda: self.mock_cookie       # Not a necessity
         app.dependency_overrides[get_session_service] = lambda: self.mock_get_session_service
@@ -64,15 +71,23 @@ class TestServer:
 
         app.state = User()      # Not a necessity
         app.state.session = self.mock_get_session_service
-        #mocker.patch("app.controller.session.create_session", return_value=app.state.session)
         yield app.state.session
 
+
+    @pytest.fixture
+    def helper_mock(self, mocker, mock_get_session_service):
+        mock_request = mocker.MagicMock(Request)
+        sess = SessionServiceMock(self.session_data, self.session_id)
+        response = RedirectResponse(url=mock_request.url_for("homepage"), status_code=303)
+        sess.create_session(self.session_data.username, response)
+        mocker.patch("app.services.session.SessionService.create_session", return_value=sess)
 
 
     @pytest.fixture
     def test_client(self):
         self.app.include_router(router)        # Not a necessity
         self.client = TestClient(app)
+        self.request = Request
         yield self.client
 
     def test_home(self, test_client):
@@ -88,16 +103,10 @@ class TestServer:
     def mock_bind(self, mocker):
         mocker.patch("app.services.ldap.bind", return_value=True)  # Return user authentication
 
-
-    @patch.object(SessionService, "create_session")
-    def test_login(self, test_client, mock_user_dn, mock_bind, mock_session):
+    def test_login(self, test_client, mock_user_dn, mock_bind, helper_mock):
         print("Testing login..")
-        session = SessionService()
-        mock_response = RedirectResponse(url="/basic", status_code=303)
-        session.create_session(self.session_data.username, mock_response)
         response = self.client.post("/login", data=self.data)
         assert response.status_code == 200
-
 
     def test_whoami(self, test_client, mock_session):
         print("Testing whoami..")
@@ -107,21 +116,65 @@ class TestServer:
 
     def test_basic(self, test_client, setting, mock_session):
         print("Testing homepage..")
-        with open("data/yelp_review_polarity_csv.tar.gz", "rb") as f:
+        with open("data/GE-yelp_review_polarity_csv.tar.gz", "rb") as f:
             data = io.BytesIO(f.read())
         file = {"file": ("yelp_review_polarity_csv", data, "multipart/form-data")}
         response = self.client.post(
             "/basic",
             data=self.metadata,
             files=file,
-            follow_redirects=False
+            follow_redirects=True
         )
-        #assert response.status_code == 303
+        assert response.status_code == 303
         assert f"{response.next_request}" == f"{self.client.get('/logging', follow_redirects=False).request}"
         assert exists(f"{hash(self.session_id)}/data_uploaded")
         assert exists(f"{hash(self.session_id)}/data.json")
         assert exists(f"{hash(self.session_id)}/data_uploaded/{file['file'][0]}")
         assert exists(f"{self.session_data.log_file}")
+
+
+    def test_extract_file(self, test_client, setting, mock_session):
+
+       # Create a mock dataframe with known label values
+        df = pd.DataFrame({"label": ["A", "B", "C", "A", "B", "C", "A", "B", "C", "A", "B", "C"]})
+        train_file = Path(f"{hash(self.session_id)}/data_uploaded/train.csv")
+        test_file = Path(f"{hash(self.session_id)}/data_uploaded/test.csv")
+
+        directory_path = f"{hash(self.session_id)}/data_uploaded"
+
+        os.makedirs(directory_path, exist_ok=True)
+        df.to_csv(train_file, index=False)
+        df.to_csv(test_file, index=False)
+
+        tar_file_path = f"{hash(self.session_id)}/data_uploaded/yelp_review_polarity_csv"
+        with tarfile.open(tar_file_path, "w:gz") as tar:
+            tar.add(train_file, arcname="train.csv")
+            tar.add(test_file, arcname="test.csv")
+
+        # Mock the matplotlib plot and save it to a temporary file
+        fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(7, 5))
+        ax1.bar(["A", "B", "C"], [4, 4, 4], width=0.5)
+        ax1.set_title("Train Label Distribution")
+        ax1.set_xlabel("Label")
+        ax1.set_ylabel("Count")
+        ax2.bar(["A", "B", "C"], [4, 4, 4], width=0.5)
+        ax2.set_title("Test Label Distribution")
+        ax2.set_xlabel("Label")
+        ax2.set_ylabel("Count")
+        chart_file = Path("chart.png")
+        plt.savefig(chart_file, dpi=100)
+
+        #Call the extract_file function and check the response
+
+        with open("data/GE-yelp_review_polarity_csv.tar.gz", "rb") as tar_file:
+            response = self.client.post("/extract-file", files={"file": ("data.tar.gz", tar_file)})
+        assert response.status_code == 200
+        print(response.content, response.json(), response.stream, response.read())
+        assert response.json() == {"message": "File extracted successfully."}
+        assert train_file.exists()
+        assert test_file.exists()
+        assert chart_file.exists()
+
 
     def test_logging(self, test_client, mock_session):
         print("Testing logging..")
@@ -201,44 +254,5 @@ class TestServer:
         assert chart_file.exists()
 
     
-    def test_extract_file(self,mocker, test_client, setting, mock_session):
 
-       # Create a mock dataframe with known label values
-        df = pd.DataFrame({"label": ["A", "B", "C", "A", "B", "C", "A", "B", "C", "A", "B", "C"]})
-        train_file = Path(f"{hash(self.session_id)}/data_uploaded/train.csv")
-        test_file = Path(f"{hash(self.session_id)}/data_uploaded/test.csv")
-
-        directory_path = f"{hash(self.session_id)}/data_uploaded"
-
-        os.makedirs(directory_path, exist_ok=True)
-        df.to_csv(train_file, index=False)
-        df.to_csv(test_file, index=False)
-
-        tar_file_path = f"{hash(self.session_id)}/data_uploaded/data.tar.gz"
-        with tarfile.open(tar_file_path, "w:gz") as tar:
-            tar.add(train_file, arcname="train.csv")
-            tar.add(test_file, arcname="test.csv")
-
-        # Mock the matplotlib plot and save it to a temporary file
-        fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(7, 5))
-        ax1.bar(["A", "B", "C"], [4, 4, 4], width=0.5)
-        ax1.set_title("Train Label Distribution")
-        ax1.set_xlabel("Label")
-        ax1.set_ylabel("Count")
-        ax2.bar(["A", "B", "C"], [4, 4, 4], width=0.5)
-        ax2.set_title("Test Label Distribution")
-        ax2.set_xlabel("Label")
-        ax2.set_ylabel("Count")
-        chart_file = Path("chart.png")
-        plt.savefig(chart_file, dpi=100)
-
-        # Call the extract_file function and check the response
-        client = TestClient(app)
-        with open(tar_file_path, "rb") as tar_file:
-            response = client.post("/extract-file", files={"file": ("data.tar.gz", tar_file)})
-        assert response.status_code == 200
-        assert response.json() == {"message": "File extracted successfully."}
-        assert train_file.exists()
-        assert test_file.exists()
-        assert chart_file.exists()
 

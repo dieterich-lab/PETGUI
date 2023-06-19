@@ -17,7 +17,7 @@ if model == "gbert-base":
 else: # Clinical Bert
     '''Get Model Directory'''
     model_type = "bert"
-    model_name_or_path =  "/prj/doctoral_letters/PETGUI/med_bert_local"
+    model_name_or_path = "/prj/doctoral_letters/PETGUI/med_bert_local"
 
 task_name = [file_name.split(sep) for sep in ["_", ".", "-", "/"] if sep in file_name][0][0]
 
