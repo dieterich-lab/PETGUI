@@ -1,4 +1,6 @@
 import glob
+import pathlib
+
 from fastapi import FastAPI, Depends, UploadFile, File, Request, Response, Form
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -297,13 +299,14 @@ def results(session: SessionService = Depends(get_session_service)):
 
 
 @app.post("/extract-file")
-async def extract_file(file: UploadFile = File(...), session: SessionService = Depends(get_session_service)):
+async def extract_file(request: Request, file: UploadFile = File(...), session: SessionService = Depends(get_session_service)):
     session_id = session.get_session_id()
     upload_folder = f"{hash(session_id)}/data_uploaded/"
+
     if os.path.exists(upload_folder):
         shutil.rmtree(upload_folder)
     os.makedirs(upload_folder)
-    file_upload = tarfile.open(fileobj=file.file, mode="r:gz")
+    file_upload = tarfile.open(fileobj=file.file, mode="r:gz", encoding="utf-8")
     file_upload.extractall(f'{hash(session_id)}/data_uploaded')
     # Print the extracted file names
     extracted_files = [member.name for member in file_upload.getmembers()]
@@ -355,7 +358,7 @@ async def extract_file(file: UploadFile = File(...), session: SessionService = D
     # Save the chart to a file
     plt.savefig("static/chart.png", dpi=100)
 
-    return {"message": "File extracted successfully."}
+    print("message", "File extracted successfully.")
 
 
 @app.post("/label-distribution")

@@ -116,6 +116,10 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
 
 @router.get("/basic", response_class=HTMLResponse, name='homepage')
 def get_form(request: Request, message: str = None):
+    try:
+        pathlib.Path("static/chart.png").unlink()
+    except:
+        pass
     if message:
         return templates.TemplateResponse("index.html",
                                           {"request": request, "message": message})
