@@ -4,16 +4,17 @@ We introduce **PETGUI**: A user-friendly interface for training and testing a la
 
 
 ## 🔎 Contents
-- [*Pattern Exploiting Training*](#-pattern-exploiting-training-)
-- [🧰 PETGUI Requirements](#---petgui-requirements)
-- [🛫 Start PETGUI](#---start-petgui)
-- [⚙️ Run PETGUI](#---run-petgui)
-  * [🧾 Training Parameter Guidelines](#---training-parameter-guidelines)
-- [➕ Features](#--features)
-- [➖ Limitations](#--limitations)
-- [🗃️ References](#----references)
-- [❎ TODOs](#--todos)
+- [*Pattern Exploiting Training*](#pet)
+- [🧰 PETGUI Requirements](#requirements)
+- [🛫 Start PETGUI](#start)
+- [⚙️ Run PETGUI](#run)
+  * [🧾 Training Parameter Guidelines](#guidelines)
+- [➕ Features](#features)
+- [➖ Limitations](#limitations)
+- [🗃️ References](#references)
+- [❎ TODOs](#todos)
 
+<a id="pet"></a>
 ### *Pattern Exploiting Training*
 <p style="font-size: 15px;"><span style="font-style: italic">PET</span> is a <strong>semi-supervised training strategy for language models</strong>.
                         By reformulating input examples as cloze-style phrases, it has been shown to significantly outperform standard supervised training.
@@ -29,7 +30,7 @@ in this case: <span style="font-style: italic;"> sentiment classification</span>
 Secondly, an ensemble of these models annotates unlabeled training data <strong>(2)</strong>. <br> Finally, a classifier is trained on the resulting soft-labeled dataset <strong>(3)</strong>.</p>
 
 
-
+<a id="requirements"></a>
 ### 🧰 PETGUI Requirements
 To run **PETGUI** **locally** on your machine, you need a **working VPN connection** to the *DieterichLab* server and **ldap credentials** for accessing the *DieterichLab* cluster at: *[username]@cluster.dieterichlab.org*.  
 You may then proceed with the following steps:
@@ -37,6 +38,7 @@ You may then proceed with the following steps:
 2. Create and activate a Python3 virtual environment: `python3 -m venv venv` & `source venv/bin/activate`
 3. Install all madatory packages in requirements.txt: `pip install -r requirements.txt`
 
+<a id="start"></a>
 ### 🛫 Start PETGUI
 To start **PETGUI locally** on your machine, open you terminal in the repository folder */PETGUI* and input the bash command: `uvicorn app.petGui:app`.  
 This will open the application in a new browser tab under your localhost address. Simply click the link to your localhost in the response body: 
@@ -50,6 +52,7 @@ INFO:     Application startup complete.
 INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
 
 ```
+<a id="run"></a>
 ### ⚙️ Run PETGUI
 
 Upon starting **PETGUI**, you will automatically be redirected to the Start page, where you can proceed to login.  
@@ -64,10 +67,12 @@ Whilst following the below steps, please follow the [guidelines](#training-param
 | **5.** Next, you have the option to either re-train with new parameters (`Run with new configuration`) or use your trained model to label new data (`Annotate unseen data`).                                                                                                                                                                                                                                                                                     | ![img_6.png](static/img_6.png)                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | **6.** To annotate unlabeled data, first `Upload unlabeled data as a csv file` and make sure, that the first column in your dataset contains nothing throughout your data lines. `Predict Labels Using PET Model` will start the prediction process. Upon completion, you may download the generated prediction file with `Download Predicted Data`. `Show Chart` will display the label distribution of the annotated file, along with some sample annotations: | ![img_7.png](static/img_7.png)|
 
+<a id="guidelines"></a>
 #### 🧾 Training Parameter Guidelines
  * Make sure to include the underscore character: "_" when defining your templates, such that it acts as a placeholder, for example: "Es war \_ ." will become "Es war [verbalizer1]." and "Es war [verbalizer2].", with the verbalizers denoting textualized labels, e.g. bad & good. 
  * You may add more templates and verbalizers by clicking `+` and removing with `-`.  
 
+<a id="features"></a>
 ### ➕ Features
 This GUI offers a step-by-step approach to training and deploying a language model on PET. Concretely, with PETGUI you can choose to:
 
@@ -77,6 +82,7 @@ This GUI offers a step-by-step approach to training and deploying a language mod
 * Download the produced file with <strong>labeled</strong> data
 * View <b>label distribution statistics</b> of training data and labeled data
 
+<a id="limitations"></a>
 ### ➖ Limitations
 In its current form, PETGUI is limited to training and testing a model on data in the following way:
 * **VPN use:** You must have a working WireGuard VPN connection to the _Dieterichlab_ server.
@@ -85,14 +91,14 @@ In its current form, PETGUI is limited to training and testing a model on data i
                                 For the unlabeled data, a <span style="font-style: italic">.csv</span> file is expected with the first column throughout the data lines empty.
 * **Maximum capacity:** The max number of definable patterns for one training pass is 5
 
-  ​                     
+<a id="references"></a>  ​                     
 ### 🗃️ References
 <ol style="margin-left: 17px; font-size: 15px;">
     <li id="pet">Timo Schick and Hinrich Schütze. (2021). Exploiting Cloze Questions for Few-Shot Text Classification and Natural Language Inference. arXiv preprint arXiv:2001.07676. Retrieved from <a href="https://arxiv.org/abs/2001.07676">(https://arxiv.org/abs/2001.07676)</a></li>
 <li id="schick">Timo Schick. (2023). Pattern-Exploiting Training (PET) [GitHub repository]. Retrieved from <a href="https://github.com/timoschick/pet/">https://github.com/timoschick/pet/</a></li>
 </ol>
 
-
+<a id="todos"></a>
 ### ❎ TODOs         
 - [ ] **Add sample line of training data** for user to see according column numbers for data and labels
 - [ ] If unlabeled data is not included in training data, **use training data in place of it**
