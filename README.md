@@ -101,8 +101,8 @@ In its current form, PETGUI is limited to training and testing a model on data i
 <a id="todos"></a>
 ### ❎ TODOs         
 - [ ] **Add sample line of training data** for user to see according column numbers for data and labels
-- [ ] If unlabeled data is not included in training data, **use training data in place of it**
-- [ ] **Warn user about inconsistent language** in training data and its parameter definitions
+- [x] If unlabeled data is not included in training data, **use training data in place of it**
+- [x] **Hint at user consistent language use** in training data and its parameter definitions
 - [ ] Implement **"Hide table"** for model performance statistics
 - [ ] **Display file guideline** for predictions on last page
 - [ ] …
