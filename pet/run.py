@@ -19,7 +19,7 @@ else: # Clinical Bert
     model_type = "bert"
     model_name_or_path = "/prj/doctoral_letters/PETGUI/med_bert_local"
 
-task_name = [file_name.split(sep) for sep in ["_", ".", "-", "/"] if sep in file_name][0][0]
+task_name = file_name.split(".")[0].lower()
 
 '''Configure Data Preprocessor'''
 # define task name
@@ -31,6 +31,8 @@ custom_task_processor.MyTaskDataProcessor.LABELS = recursive_json_read(data, "or
 custom_task_processor.MyTaskDataProcessor.TEXT_A_COLUMN = int(data["sample"])
 # define labels column
 custom_task_processor.MyTaskDataProcessor.LABEL_COLUMN = int(data["label"])
+
+custom_task_processor.MyTaskDataProcessor.UNLABELED_FILE_NAME = "unlabeled.csv" if "unlabeled" in data else "train.csv"
 # save entries as new task
 custom_task_processor.report()  # save task
 

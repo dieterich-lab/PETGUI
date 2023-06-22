@@ -71,23 +71,18 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
     session_id, session_data = session.get_session_id(), session.get_session_data()
     try:
         await read_log(session, initial=True)
-        try:
-            file_upload = tarfile.open(fileobj=file.file, mode="r:gz", errors="ignore")
-            file_upload.extractall(f'{hash(session_id)}/data_uploaded')
-        except:
-            return templates.TemplateResponse('index.html', {'request': request,
-                                                             'error': "Invalid File Type: Please upload your data as a zip file with the extension '.tar.gz'"})
         da = await request.form()
         da = jsonable_encoder(da)
         template_counter = 1
         origin_counter = 2
         mapping_counter = 2
         os.environ[f"{hash(session_id)}_medbert"] = "True" if model_para == "GerMedBERT/medbert-512" else "False"
-        para_dic = {"file": "".join(next(os.walk(f"./{hash(session_id)}/data_uploaded/"))[1]), "sample": sample,
+        para_dic = {"file": file.filename.split(".")[0], "sample": sample,
                     "label": label,
                     "template_0": template_0, "origin_0": origin_0,
                     "mapping_0": mapping_0, "origin_1": origin_1,
                     "mapping_1": mapping_1, "model_para": model_para}
+
         while f"template_{str(template_counter)}" in da:  # Template
             template_key = f"template_{str(template_counter)}"
             para_dic[template_key] = da[template_key]
@@ -107,6 +102,8 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
                                                              'error': "Please fill in all required parameters."})
         redirect_url = request.url_for('logging')
         print(para_dic)
+        if f"{hash(session_id)}_unlabeled" in os.environ:
+            para_dic["unlabeled"] = True
         return RedirectResponse(redirect_url, status_code=303)
     except Exception as e:
         error = str(e)
@@ -134,7 +131,9 @@ def read_item(request: Request):
 
 
 @router.get("/logging", name="logging", dependencies=[Depends(get_session_service)])
-async def logging(request: Request, error: str = None):
+async def logging(request: Request, error: str = None, session: SessionService = Depends(get_session_service)):
+    session_id = session.get_session_id()
+
     return templates.TemplateResponse("next.html", {"request": request, "error": error})
 
 

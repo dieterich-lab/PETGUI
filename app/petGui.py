@@ -2,6 +2,7 @@ import glob
 import pathlib
 
 from fastapi import FastAPI, Depends, UploadFile, File, Request, Response, Form
+from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 import json
@@ -31,12 +32,14 @@ app = FastAPI()
 app.include_router(templating.router)
 app.include_router(session.session_router)
 app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
 local = False # If running app locally
 ssh = "sshpass"
 if local:
     ssh = "/opt/homebrew/bin/sshpass"
 
-    
+
+
 class User:
     session: SessionService
     job_id: str = None
@@ -306,8 +309,12 @@ async def extract_file(request: Request, file: UploadFile = File(...), session: 
     if os.path.exists(upload_folder):
         shutil.rmtree(upload_folder)
     os.makedirs(upload_folder)
-    file_upload = tarfile.open(fileobj=file.file, mode="r:gz", errors="ignore")
-    file_upload.extractall(f'{hash(session_id)}/data_uploaded')
+    try:
+        file_upload = tarfile.open(fileobj=file.file, mode="r:gz", errors="ignore")
+        file_upload.extractall(f'{hash(session_id)}/data_uploaded')
+    except:
+        return templates.TemplateResponse('index.html', {'request': request,
+                                                             'error': "Invalid File Type: Please upload your data as a zip file with the extension '.tar.gz'"})
     # Print the extracted file names
     extracted_files = [member.name for member in file_upload.getmembers()]
     print("Extracted files:", extracted_files)
@@ -319,9 +326,16 @@ async def extract_file(request: Request, file: UploadFile = File(...), session: 
             extracted_folder = dirs[0]
             break
 
-    if extracted_folder is None:
-        print("No subdirectory found in the extracted files.")
-        return
+        elif len(dirs) == 0:
+            extracted_folder = pathlib.Path(f'{hash(session_id)}/data_uploaded/{file.filename.split(".")[0]}')
+            extracted_folder.mkdir(parents=True, exist_ok=True)
+            for f in files:
+                try:
+                    shutil.move(f'{hash(session_id)}/data_uploaded/{f}', extracted_folder)
+                except FileNotFoundError as e:
+                    print(os.curdir, str(e))
+        if "unlabeled" in files:
+            os.environ[f"{hash(session_id)}_unlabeled"] = "True"
 
     print("Extracted folder:", extracted_folder)
 
