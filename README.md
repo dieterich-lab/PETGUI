@@ -5,13 +5,14 @@ We introduce **PETGUI**: A user-friendly interface for training and testing a la
 
 ## 🔎 Contents
 + [*Pattern Exploiting Training*](#-pattern-exploiting-training-)
-+ [PETGUI Requirements](#petgui-requirements)
-+ [Start PETGUI](#start-petgui)
-+ [Run PETGUI](#run-petgui)
-  - [Training Parameter Guidelines](#training-parameter-guidelines)
-+ [Limitations](#limitations)
-+ [References](#references)
-+ [TODOs](#todos)
++ [🧰 PETGUI Requirements](#petgui-requirements)
++ [🛫 Start PETGUI](#start-petgui)
++ [⚙️ Run PETGUI](#run-petgui)
+  - [🧾 Training Parameter Guidelines](#training-parameter-guidelines)
++ [➕ Features](#features)
++ [➖ Limitations](#limitations)
++ [🗃️ References](#references)
++ [❎ TODOs](#todos)
 
 ### *Pattern Exploiting Training*
 <p style="font-size: 15px;"><span style="font-style: italic">PET</span> is a <strong>semi-supervised training strategy for language models</strong>.
