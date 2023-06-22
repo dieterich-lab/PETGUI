@@ -105,7 +105,6 @@ In its current form, PETGUI is limited to training and testing a model on data i
 - [x] **Hint at user consistent language use** in training data and its parameter definitions
 - [ ] Implement **"Hide table"** for model performance statistics
 - [ ] **Display file guideline** for predictions on last page
-- [ ] …
 - [ ] **On unconventional shutdown** (no logout): 
   * abort processes
   * delete created user folder structure after some time  
