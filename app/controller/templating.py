@@ -72,7 +72,7 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
     try:
         await read_log(session, initial=True)
         try:
-            file_upload = tarfile.open(fileobj=file.file, mode="r:gz")
+            file_upload = tarfile.open(fileobj=file.file, mode="r:gz", errors="ignore")
             file_upload.extractall(f'{hash(session_id)}/data_uploaded')
         except:
             return templates.TemplateResponse('index.html', {'request': request,

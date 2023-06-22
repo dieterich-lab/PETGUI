@@ -306,7 +306,7 @@ async def extract_file(request: Request, file: UploadFile = File(...), session: 
     if os.path.exists(upload_folder):
         shutil.rmtree(upload_folder)
     os.makedirs(upload_folder)
-    file_upload = tarfile.open(fileobj=file.file, mode="r:gz", encoding="utf-8")
+    file_upload = tarfile.open(fileobj=file.file, mode="r:gz", errors="ignore")
     file_upload.extractall(f'{hash(session_id)}/data_uploaded')
     # Print the extracted file names
     extracted_files = [member.name for member in file_upload.getmembers()]
