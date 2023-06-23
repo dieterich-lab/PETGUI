@@ -77,7 +77,8 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
         origin_counter = 2
         mapping_counter = 2
         os.environ[f"{hash(session_id)}_medbert"] = "True" if model_para == "GerMedBERT/medbert-512" else "False"
-        para_dic = {"file": file.filename.split(".")[0], "sample": sample,
+        para_dic = {"file": [direc for direc in os.listdir(f"{hash(session_id)}/data_uploaded")
+                             if os.path.isdir(f"{hash(session_id)}/data_uploaded/{direc}")][0], "sample": sample,
                     "label": label,
                     "template_0": template_0, "origin_0": origin_0,
                     "mapping_0": mapping_0, "origin_1": origin_1,
@@ -108,7 +109,7 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
     except Exception as e:
         error = str(e)
         print(error)
-        return templates.TemplateResponse("index.html", {"request": request, "error": error})
+        return templates.TemplateResponse("index.html", {"request": request, "error": "Invalid folder structure: Please make sure your uploaded folder matches the specified format."})
 
 
 @router.get("/basic", response_class=HTMLResponse, name='homepage')

@@ -325,7 +325,6 @@ async def extract_file(request: Request, file: UploadFile = File(...), session: 
         if len(dirs) == 1:  # Assuming only one subdirectory within the extracted files
             extracted_folder = dirs[0]
             break
-
         elif len(dirs) == 0:
             extracted_folder = pathlib.Path(f'{hash(session_id)}/data_uploaded/{file.filename.split(".")[0]}')
             extracted_folder.mkdir(parents=True, exist_ok=True)
