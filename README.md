@@ -91,9 +91,9 @@ This GUI offers a step-by-step approach to training and deploying a language mod
 In its current form, PETGUI is limited to training and testing a model on data in the following way:
 * **VPN use:** You must have a working WireGuard VPN connection to the _Dieterich Lab_ server.
 * **File format and naming convention:** The provided training data must be a <span style="font-style: italic">tar.gz</span> file
-                                containing <span style="font-style: italic">train.csv</span> and <span style="font-style: italic">test.csv</span> respectively.
-                                For the unlabeled data, a <span style="font-style: italic">.csv</span> file is expected with the first column throughout the data lines empty.
-* **Maximum capacity:** The max number of definable patterns for one training pass is 5
+                                containing _train.csv_, _test.csv_ and _unlabeled.csv_ respectively.
+                                For labeling data, a <span style="font-style: italic">.csv</span> file is expected with the first column throughout the data lines empty.
+* **Maximum capacity:** The maximum number of definable patterns as well as labels for one training pass is 5
 
 <a id="references"></a>  ​                     
 ### 🗃️ References
