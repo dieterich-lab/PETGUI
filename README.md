@@ -34,7 +34,7 @@ Secondly, an ensemble of these models annotates unlabeled training data <strong>
 ### 🧰 PETGUI Requirements
 To run **PETGUI** **locally** on your machine, you need a **working VPN connection** to the *DieterichLab* server and **ldap credentials** for accessing the *DieterichLab* cluster at: *[username]@cluster.dieterichlab.org*.  
 You may then proceed with the following steps:
-1. Clone this repository using `git clone …`, either through *HTTPS*: `https://github.com/dieterich-lab/xai-in-nlp.git` or *SSH*: `git@github.com:dieterich-lab/xai-in-nlp.git`
+1. Clone this repository using `git clone …`, either through *HTTPS*: `https://github.com/dieterich-lab/PETGUI.git` or *SSH*: `git@github.com:dieterich-lab/PETGUI.git`
 2. Create and activate a Python3 virtual environment: `python3 -m venv venv` & `source venv/bin/activate`
 3. Install all madatory packages in requirements.txt: `pip install -r requirements.txt`
 
