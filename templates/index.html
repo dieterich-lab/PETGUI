@@ -43,7 +43,7 @@
                 {% endif %}
                 <div class="card-body">
                     <form method="POST" id="my-form" enctype="multipart/form-data">
-                        <label for="file"><span class="circle">1.</span> <h5>Please upload your <strong>German</strong> training data zip file with <span style="font-style: italic">.tar.gz</span> extension, containing <span style="font-style: italic">train.csv, test.csv and unlabeled.csv</span></h5></label>
+                        <label for="file"><span class="circle">1.</span> <label class="h6"> Please upload your <strong>German</strong> training data zip file with <span style="font-style: italic">.tar.gz</span> extension, containing <span style="font-style: italic">train.csv, test.csv and unlabeled.csv</span></label></label>
   <div style="display: flex; align-items: center;">
       <label for="file-uploader" class="btn btn--radius-2 btn--blue">Upload</label>
     <input type="file" accept=".gz" style="display: none;" id="file-uploader" name="file" required>
@@ -75,6 +75,19 @@ var dynamicInput_1 = [];
     }
 }
                         </script>
+                        <div class="form-row">
+                    <label class="h6">Delimiter of data rows in uploaded data:</label><div class="m-r-45"></div>
+                            <div class="p-t-15">
+                                <label class="radio-container m-r-55"><span></span>Tab: "\t"
+                                    <input type="radio" checked="checked" name="delimiter" value="\t" required>
+                                    <span class="checkmark"></span>
+                                </label>
+                                <label class="radio-container">Comma: ","
+                                    <input type="radio" name="delimiter" value="," required>
+                                    <span class="checkmark"></span>
+                                </label>
+                            </div>
+                        </div>
                         <span class="circle">2.</span><div class="form-row m-b-55">
                             <div class="name">Define column numbers:</div>
                             <div class="value">

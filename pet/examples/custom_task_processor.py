@@ -34,6 +34,9 @@ class MyTaskDataProcessor(DataProcessor):
     # Set this to the name of the task
     TASK_NAME = None
 
+    # Set delimiter
+    DELIMITER = None
+
     # Set this to the name of the file containing the train examples
     TRAIN_FILE_NAME = "train.csv"
 
@@ -102,7 +105,7 @@ class MyTaskDataProcessor(DataProcessor):
         """Creates examples for the training and dev sets."""
         examples = []
         with open(path) as f:
-            reader = csv.reader(f, delimiter=',') # include possible choices
+            reader = csv.reader(f, delimiter=MyTaskDataProcessor.DELIMITER) # include possible choices
             for idx, row in enumerate(reader):
                 label, body = row
                 guid = "%s-%s" % (set_type, idx)

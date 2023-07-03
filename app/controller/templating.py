@@ -60,12 +60,12 @@ def login_form(request: Request, error=None, logout: bool = False,
 @router.post("/basic", name="homepage", dependencies=[Depends(get_session_service)])
 async def get_form(request: Request, sample: str = Form(media_type="multipart/form-data"),
                    label: str = Form(media_type="multipart/form-data"),
+                   delimiter: str = Form(media_type="multipart/form-data"),
                    origin_0: str = Form(media_type="multipart/form-data"),
                    mapping_0: str = Form(media_type="multipart/form-data"),
                    origin_1: str = Form(media_type="multipart/form-data"),
                    mapping_1: str = Form(media_type="multipart/form-data"),
                    model_para: str = Form(media_type="multipart/form-data"),
-                   file: UploadFile = File(...),
                    template_0: str = Form(media_type="multipart/form-data"),
                    session: SessionService = Depends(get_session_service)):
     session_id, session_data = session.get_session_id(), session.get_session_data()
@@ -76,10 +76,12 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
         template_counter = 1
         origin_counter = 2
         mapping_counter = 2
-        os.environ[f"{hash(session_id)}_medbert"] = "True" if model_para == "GerMedBERT/medbert-512" else "False"
+
+        os.environ[f"{hash(session_id)}_medbert"] = "True" if model_para == "/prj/doctoral_letters/PETGUI/med_bert_local" else "False" #"GerMedBERT/medbert-512" else "False"
+
         para_dic = {"file": [direc for direc in os.listdir(f"{hash(session_id)}/data_uploaded")
                              if os.path.isdir(f"{hash(session_id)}/data_uploaded/{direc}")][0], "sample": sample,
-                    "label": label,
+                    "label": label, "delimiter": delimiter,
                     "template_0": template_0, "origin_0": origin_0,
                     "mapping_0": mapping_0, "origin_1": origin_1,
                     "mapping_1": mapping_1, "model_para": model_para}
@@ -134,7 +136,6 @@ def read_item(request: Request):
 @router.get("/logging", name="logging", dependencies=[Depends(get_session_service)])
 async def logging(request: Request, error: str = None, session: SessionService = Depends(get_session_service)):
     session_id = session.get_session_id()
-
     return templates.TemplateResponse("next.html", {"request": request, "error": error})
 
 

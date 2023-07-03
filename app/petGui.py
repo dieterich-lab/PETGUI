@@ -1,6 +1,6 @@
 import glob
 import pathlib
-
+import concurrent.futures
 from fastapi import FastAPI, Depends, UploadFile, File, Request, Response, Form
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse
@@ -96,7 +96,7 @@ async def run(request: Request, session: SessionService = Depends(get_session_se
         t = threading.Thread(target=check_job_status, args=(request, session, request.app.state.job_id, False))
         t.start()
     except Exception as e:
-        return RedirectResponse(url=f"/basic?message={str(e)}", status_code=303)
+        return templating.logging(request, str(e))
 
 
 
@@ -249,7 +249,7 @@ def check_job_status(request: Request, session: SessionService = Depends(get_ses
         elif status == "CA":
             return
         elif status == "F":
-            raise Exception
+            raise Exception("Job could not finish. Please make sure your parameters are correct.")
 
 
         time.sleep(5)
@@ -342,8 +342,8 @@ async def extract_file(request: Request, file: UploadFile = File(...), session: 
     # Read the train and test data into dataframes
     columns = ["label", "text"]
 
-    train_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/train.csv')), names=columns)
-    test_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/test.csv')), names=columns)
+    train_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/train.csv')), sep="\t", names=columns)
+    test_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/test.csv')), sep="\t", names=columns)
 
 
     # Plot the distribution of labels for train and test data separately

@@ -24,6 +24,12 @@ task_name = file_name.split(".")[0].lower()
 '''Configure Data Preprocessor'''
 # define task name
 custom_task_processor.MyTaskDataProcessor.TASK_NAME = task_name
+
+if "t" in data["delimiter"]:
+    custom_task_processor.MyTaskDataProcessor.DELIMITER = "\t"
+else:
+    custom_task_processor.MyTaskDataProcessor.DELIMITER = ","
+
 # define labels
 custom_task_processor.MyTaskDataProcessor.LABELS = recursive_json_read(data, "origin")
 
