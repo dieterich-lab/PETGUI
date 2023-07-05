@@ -300,6 +300,18 @@ def results(session: SessionService = Depends(get_session_service)):
     with open(f"{hash(session_id)}/results.json", "w") as res:
         json.dump(scores, res)
 
+def detect_delimiter(filename):
+    try:
+        df = pd.read_csv(filename, nrows=1)  # 读取文件的第一行数据
+        delimiter = df.columns[0]  # 获取第一列的分隔符
+        if delimiter == '\t':
+            return 'tab'
+        elif delimiter == ',':
+            return 'comma'
+        else:
+            return 'unknown'
+    except pd.errors.ParserError:
+        return 'unknown'
 
 @app.post("/extract-file")
 async def extract_file(request: Request, file: UploadFile = File(...), session: SessionService = Depends(get_session_service)):
@@ -342,8 +354,19 @@ async def extract_file(request: Request, file: UploadFile = File(...), session: 
     # Read the train and test data into dataframes
     columns = ["label", "text"]
 
-    train_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/train.csv')), sep="\t", names=columns)
-    test_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/test.csv')), sep="\t", names=columns)
+    filename = "".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/train.csv'))
+    delimiter = detect_delimiter(filename)
+    print(delimiter)
+    if delimiter == 'unknown':
+        train_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/train.csv')), sep="\t",
+                               names=columns)
+        test_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/test.csv')), sep="\t",
+                              names=columns)
+    else:
+        train_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/train.csv')),
+                               names=columns)
+        test_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/test.csv')),
+                              names=columns)
 
 
     # Plot the distribution of labels for train and test data separately
@@ -361,8 +384,24 @@ async def extract_file(request: Request, file: UploadFile = File(...), session: 
     train_label_counts = train_df["label"].value_counts()
     test_label_counts = test_df["label"].value_counts()
 
-    ax1.set_xticks(train_df["label"].unique())
-    ax2.set_xticks(test_df["label"].unique())
+    first_label = train_df.at[0,"label"]
+    print(first_label)
+    # print(type(first_label))
+    is_numeric_label = isinstance(first_label, int) or len(str(first_label)) == 1
+    #print(train_df["label"].unique())
+
+    print(is_numeric_label)
+
+    if not is_numeric_label:
+        shortened_labels = [label[:5] + "..." if len(label) > 5 else label for label in train_df["label"].unique()]
+        ax1.set_xticks(train_df["label"].unique())
+        ax1.set_xticklabels(shortened_labels, rotation=90)
+        ax2.set_xticks(test_df["label"].unique())
+        ax2.set_xticklabels(shortened_labels, rotation=90)
+    else:
+        ax1.set_xticks(train_df["label"].unique())
+        ax2.set_xticks(test_df["label"].unique())
+
 
     max_y = max(train_df["label"].value_counts().max(), test_df["label"].value_counts().max())
     ax1.set_ylim([0, max_y])
