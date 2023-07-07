@@ -31,6 +31,7 @@ function addEventListenersForIndex() {
         // Enable the show statistics button
         const showStatisticsButton = document.getElementById("show-statistics-button");
         showStatisticsButton.disabled = false;
+        fillLabels();
       }
     });
   });
@@ -48,6 +49,8 @@ function addEventListenersForIndex() {
     const msg = `File ${files[0].name} uploaded successfully!`;
     feedback.innerHTML = msg;
   });
+
+
 
   const showStatisticsButton = document.getElementById("show-statistics-button");
 showStatisticsButton.addEventListener("click", function() {
@@ -68,9 +71,56 @@ showStatisticsButton.addEventListener("click", function() {
     statsContainer.appendChild(img);
   }
 });
+
+
+}
+
+var counter = 1;
+var dynamicInput_1 = [];
+
+function addInput_new() {
+    var newdiv = document.createElement('div');
+    var currentCounter = counter;
+    newdiv.id = "template_" + currentCounter;
+    newdiv.innerHTML = "Template " + (currentCounter + 1) + " <br><div class=\"input-group\"><input class='input--style-5 form-control' type='text' placeholder='A test that it is changing' name='template_" + currentCounter + "' required> <br><button class='btn btn--radius-2 btn--blue' style='padding: 0 25px;' type='button' value='-' onClick='removeInput(\"template_" + currentCounter + "\");'>-</button></div>";
+    document.getElementById('template input').appendChild(newdiv);
+    dynamicInput_1.push("template_" + currentCounter);
+    counter++;
+}
+
+function removeInput(id) {
+    var elem = document.getElementById(id);
+    elem.parentNode.removeChild(elem);
+
+    if (id.startsWith("template_")) {
+        var index = dynamicInput_1.indexOf(id);
+        if (index > -1) {
+            dynamicInput_1.splice(index, 1);
+        }
+        counter--;
+    } else if (id.startsWith("mapping_")) {
+        var index = dynamicInput.indexOf(id);
+        if (index > -1) {
+            dynamicInput.splice(index, 1);
+        }
+        counter_map--;
+    }
 }
 
 
+
+var counter_map = 0;
+var dynamicInput = [];
+
+function addInput_map(label) {
+    var newdiv = document.createElement("div");
+    var currentCounter = counter_map;
+    newdiv.id = "mapping_" + currentCounter;
+    newdiv.innerHTML = "Mapping " + (currentCounter + 1)  + " <div class='row row-space'><div class='col-2'><div class='input-group'><input class='input--style-5 form-control' type='text' value="+ label +" name='origin_" + currentCounter + "' required></div></div><div class='col-2'><div class='input-group'><input class='input--style-5 form-control' type='text' name='mapping_" + currentCounter + "' placeholder='verbalizer" + (currentCounter + 1) +"' required><input class='btn btn--radius-2 btn--blue' style='padding: 0 25px' type='button' value='-' onClick='removeInput(\"mapping_" + currentCounter + "\");'></div></div></div>";
+    document.getElementById('formularmap').appendChild(newdiv);
+    dynamicInput.push("mapping_" + currentCounter);
+    counter_map++;
+}
 
 
     const feedbackDiv = document.getElementById('feedback_file');
@@ -124,6 +174,26 @@ document.getElementById("file_final").addEventListener("change", function(event)
             const button = document.getElementById(buttonId);
             button.textContent = text;
      }
+
+     function createArrayOfLabels(labels) {
+          var result = [];
+          labels.forEach(function (label) {
+            result.push(label);
+          return result;
+        });
+    }
+
+     function fillLabels() {
+        fetch('/report-labels')
+            .then(response => response.json())
+            .then(data => {
+            data.list.forEach(lab => {
+            addInput_map(lab);
+            });
+        });
+    }
+
+
 
     function checkPrediction() {
         fetch('final/start_prediction');

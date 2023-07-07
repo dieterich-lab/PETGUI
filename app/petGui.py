@@ -178,7 +178,6 @@ async def submit_job(session: SessionService = Depends(get_session_service), pre
         outs, errs = bash_cmd(session, mkdir_cmd)
         dir = hash(session_id)
         files = ["pet", "data.json", "train.sh", "data_uploaded", "predict.sh"]
-        files.append("medbert-512") if os.environ[f"{hash(session_id)}_medbert"] == "True" else None
         files = [str(dir) + "/" + f if f == "data.json" or f == "data_uploaded" else f for f in files]
         print(files)
         for f in files:
@@ -303,15 +302,14 @@ def results(session: SessionService = Depends(get_session_service)):
         json.dump(scores, res)
 
 def detect_delimiter(filename):
-    with open(filename, 'r', newline='') as file:
-        first_line = file.readline().strip()
-        if '\t' in first_line:
+    try:
+        df = pd.read_csv(filename, nrows=1)  # 读取文件的第一行数据
+        if '\t' in df.columns[0]:
             return '\t'
         else:
-            return 'unknown'
-
-
-
+            return ','
+    except pd.errors.ParserError:
+        raise Exception
 
 @app.post("/extract-file")
 async def extract_file(request: Request, file: UploadFile = File(...), session: SessionService = Depends(get_session_service)):
@@ -345,7 +343,7 @@ async def extract_file(request: Request, file: UploadFile = File(...), session: 
                     shutil.move(f'{hash(session_id)}/data_uploaded/{f}', extracted_folder)
                 except FileNotFoundError as e:
                     print(os.curdir, str(e))
-        if "unlabeled" in files:
+        if "unlabeled.csv" in files:
             os.environ[f"{hash(session_id)}_unlabeled"] = "True"
 
     print("Extracted folder:", extracted_folder)
@@ -356,18 +354,13 @@ async def extract_file(request: Request, file: UploadFile = File(...), session: 
 
     filename = "".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/train.csv'))
     delimiter = detect_delimiter(filename)
+    os.environ[f"{hash(session_id)}_delimiter"] = delimiter
     print(delimiter)
-    if delimiter == '\t':
-        train_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/train.csv')), sep="\t",
-                               names=columns)
-        test_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/test.csv')), sep="\t",
-                              names=columns)
-    else:
-        train_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/train.csv')),
-                               names=columns)
-        test_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/test.csv')),
-                              names=columns)
 
+    train_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/train.csv')), sep=delimiter,
+                           names=columns)
+    test_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/test.csv')), sep=delimiter,
+                          names=columns)
 
     # Plot the distribution of labels for train and test data separately
 
@@ -426,12 +419,25 @@ async def extract_file(request: Request, file: UploadFile = File(...), session: 
         ax2.set_ylim([0, max_y])
 
 
-
-
     # Save the chart to a file
     plt.savefig("static/chart.png", dpi=100)
 
     print("message", "File extracted successfully.")
+
+
+@app.get("/report-labels")
+def report(session: SessionService = Depends(get_session_service)):
+    session_id = session.get_session_id()
+    columns = ["label", "text"]
+
+    filename = "".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/train.csv'))
+    delimiter = detect_delimiter(filename)
+    train_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/train.csv')), sep=delimiter,
+                               names=columns)
+    labels = set(str(i) for i in train_df.label)
+    print(labels)
+
+    return {"list": labels}
 
 
 @app.post("/label-distribution")

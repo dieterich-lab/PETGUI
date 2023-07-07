@@ -25,7 +25,7 @@ class Script():
         self.pet_per_gpu_eval_batch_size=8
         self.pet_per_gpu_unlabeled_batch_size=4
         self.pet_gradient_accumulation_steps=4
-        self.pet_num_train_epochs=1
+        self.pet_num_train_epochs=2
         self.pet_max_steps=-1
         self.sc_repetitions=1
         self.sc_max_seq_length=256
