@@ -91,15 +91,15 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
             mapping_key = f"mapping_{str(mapping_counter)}"
             para_dic[mapping_key] = da[mapping_key]
             mapping_counter = mapping_counter + 1
-        with open(f'{hash(session_id)}/data.json', 'w') as f:
-            json.dump(para_dic, f)
-        if origin_counter < 2:
-            return templates.TemplateResponse('index.html', {'request': request,
-                                                             'error': "Please fill in all required parameters."})
+
         redirect_url = request.url_for('logging')
         print(para_dic)
         if f"{hash(session_id)}_unlabeled" in os.environ:
             para_dic["unlabeled"] = True
+
+        with open(f'{hash(session_id)}/data.json', 'w') as f:
+            json.dump(para_dic, f)
+
         return RedirectResponse(redirect_url, status_code=303)
     except Exception as e:
         error = str(e)
