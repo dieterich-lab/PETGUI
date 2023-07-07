@@ -60,11 +60,6 @@ def login_form(request: Request, error=None, logout: bool = False,
 @router.post("/basic", name="homepage", dependencies=[Depends(get_session_service)])
 async def get_form(request: Request, sample: str = Form(media_type="multipart/form-data"),
                    label: str = Form(media_type="multipart/form-data"),
-                   delimiter: str = Form(media_type="multipart/form-data"),
-                   origin_0: str = Form(media_type="multipart/form-data"),
-                   mapping_0: str = Form(media_type="multipart/form-data"),
-                   origin_1: str = Form(media_type="multipart/form-data"),
-                   mapping_1: str = Form(media_type="multipart/form-data"),
                    model_para: str = Form(media_type="multipart/form-data"),
                    template_0: str = Form(media_type="multipart/form-data"),
                    session: SessionService = Depends(get_session_service)):
@@ -74,17 +69,15 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
         da = await request.form()
         da = jsonable_encoder(da)
         template_counter = 1
-        origin_counter = 2
-        mapping_counter = 2
+        origin_counter = 0
+        mapping_counter = 0
 
         os.environ[f"{hash(session_id)}_medbert"] = "True" if model_para == "/prj/doctoral_letters/PETGUI/med_bert_local" else "False" #"GerMedBERT/medbert-512" else "False"
 
         para_dic = {"file": [direc for direc in os.listdir(f"{hash(session_id)}/data_uploaded")
                              if os.path.isdir(f"{hash(session_id)}/data_uploaded/{direc}")][0], "sample": sample,
-                    "label": label, "delimiter": delimiter,
-                    "template_0": template_0, "origin_0": origin_0,
-                    "mapping_0": mapping_0, "origin_1": origin_1,
-                    "mapping_1": mapping_1, "model_para": model_para}
+                    "label": label, "delimiter": os.environ[f"{hash(session_id)}_delimiter"],
+                    "template_0": template_0, "model_para": model_para}
 
         while f"template_{str(template_counter)}" in da:  # Template
             template_key = f"template_{str(template_counter)}"

@@ -176,7 +176,6 @@ async def submit_job(session: SessionService = Depends(get_session_service), pre
         outs, errs = bash_cmd(session, mkdir_cmd)
         dir = hash(session_id)
         files = ["pet", "data.json", "train.sh", "data_uploaded", "predict.sh"]
-        files.append("medbert-512") if os.environ[f"{hash(session_id)}_medbert"] == "True" else None
         files = [str(dir) + "/" + f if f == "data.json" or f == "data_uploaded" else f for f in files]
         print(files)
         for f in files:
@@ -303,15 +302,12 @@ def results(session: SessionService = Depends(get_session_service)):
 def detect_delimiter(filename):
     try:
         df = pd.read_csv(filename, nrows=1)  # 读取文件的第一行数据
-        delimiter = df.columns[0]  # 获取第一列的分隔符
-        if delimiter == '\t':
-            return 'tab'
-        elif delimiter == ',':
-            return 'comma'
+        if '\t' in df.columns[0]:
+            return '\t'
         else:
-            return 'unknown'
+            return ','
     except pd.errors.ParserError:
-        return 'unknown'
+        raise Exception
 
 @app.post("/extract-file")
 async def extract_file(request: Request, file: UploadFile = File(...), session: SessionService = Depends(get_session_service)):
@@ -356,16 +352,18 @@ async def extract_file(request: Request, file: UploadFile = File(...), session: 
 
     filename = "".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/train.csv'))
     delimiter = detect_delimiter(filename)
+    os.environ[f"{hash(session_id)}_delimiter"] = delimiter
     print(delimiter)
+
     if delimiter == 'unknown':
         train_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/train.csv')), sep="\t",
                                names=columns)
         test_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/test.csv')), sep="\t",
                               names=columns)
     else:
-        train_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/train.csv')),
+        train_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/train.csv')), sep=delimiter,
                                names=columns)
-        test_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/test.csv')),
+        test_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/test.csv')), sep=delimiter,
                               names=columns)
 
 
@@ -411,6 +409,21 @@ async def extract_file(request: Request, file: UploadFile = File(...), session: 
     plt.savefig("static/chart.png", dpi=100)
 
     print("message", "File extracted successfully.")
+
+
+@app.get("/report-labels")
+def report(session: SessionService = Depends(get_session_service)):
+    session_id = session.get_session_id()
+    columns = ["label", "text"]
+
+    filename = "".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/train.csv'))
+    delimiter = detect_delimiter(filename)
+    train_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/train.csv')), sep=delimiter,
+                               names=columns)
+    labels = set(str(i) for i in train_df.label)
+    print(labels)
+
+    return {"list": labels}
 
 
 @app.post("/label-distribution")

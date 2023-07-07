@@ -103,19 +103,7 @@ var dynamicInput_1 = [];
     }
 }
                         </script>
-                        <div class="form-row">
-                    <label class="h6">Delimiter of data rows in uploaded data:</label><div class="m-r-45"></div>
-                            <div class="p-t-15">
-                                <label class="radio-container m-r-55"><span></span>Tab: "\t"
-                                    <input type="radio" checked="checked" name="delimiter" value="\t" required>
-                                    <span class="checkmark"></span>
-                                </label>
-                                <label class="radio-container">Comma: ","
-                                    <input type="radio" name="delimiter" value="," required>
-                                    <span class="checkmark"></span>
-                                </label>
-                            </div>
-                        </div>
+
                         <span class="circle">2.</span><div class="form-row m-b-55">
                             <div class="name">Define column numbers:</div>
                             <div class="value">
@@ -147,35 +135,9 @@ var dynamicInput_1 = [];
 
 
                         <span class="circle">4.</span><div class="form-row m-b-55">
-                            <div class="name">Define verbalizer mappings:</div>
+                            <div class="name">Verbalizer mappings:</div>
                             <div class="value">
                                 <div class="row row-space" id = 'formularmap' >
-                                    <div class="col-2">
-                                        <div class="input-group" >
-                                            <input class="input--style-5 form-control" type="text" placeholder="origin 1" name="origin_0" required>
-                                        </div>
-                                    </div>
-                                    <div class="col-2">
-                                        <div class="input-group">
-                                            <input class="input--style-5 form-control" type="text" placeholder="mapping 1" name="mapping_0" required>
-
-                                        </div>
-                                    </div>
-                                </div>
-                            <div class="p-t-15">
-                                <div class="row row-space" id = 'formularmap' >
-                                    <div class="col-2">
-                                        <div class="input-group" >
-                                            <input class="input--style-5 form-control" type="text" placeholder="origin 2" name="origin_1" required>
-                                        </div>
-                                    </div>
-                                    <div class="col-2">
-                                        <div class="input-group">
-                                            <input class="input--style-5 form-control" type="text" placeholder="mapping 2" name="mapping_1" required>
-                                            <button class="btn btn--radius-2 btn--blue" style="padding: 0 25px;" type ="button" onClick="addInput_map();">+</button>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                         </div>
@@ -216,7 +178,6 @@ var dynamicInput_1 = [];
 
     <script>
       addEventListenersForIndex();
-
 
         function loadPage() {
         $.LoadingOverlay("show");
