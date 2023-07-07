@@ -16,6 +16,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import random
 from uuid import UUID, uuid4
+import csv
+import numpy as np
 
 import shutil
 
@@ -301,17 +303,15 @@ def results(session: SessionService = Depends(get_session_service)):
         json.dump(scores, res)
 
 def detect_delimiter(filename):
-    try:
-        df = pd.read_csv(filename, nrows=1)  # 读取文件的第一行数据
-        delimiter = df.columns[0]  # 获取第一列的分隔符
-        if delimiter == '\t':
-            return 'tab'
-        elif delimiter == ',':
-            return 'comma'
+    with open(filename, 'r', newline='') as file:
+        first_line = file.readline().strip()
+        if '\t' in first_line:
+            return '\t'
         else:
             return 'unknown'
-    except pd.errors.ParserError:
-        return 'unknown'
+
+
+
 
 @app.post("/extract-file")
 async def extract_file(request: Request, file: UploadFile = File(...), session: SessionService = Depends(get_session_service)):
@@ -357,7 +357,7 @@ async def extract_file(request: Request, file: UploadFile = File(...), session: 
     filename = "".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/train.csv'))
     delimiter = detect_delimiter(filename)
     print(delimiter)
-    if delimiter == 'unknown':
+    if delimiter == '\t':
         train_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/train.csv')), sep="\t",
                                names=columns)
         test_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/test.csv')), sep="\t",
@@ -370,15 +370,7 @@ async def extract_file(request: Request, file: UploadFile = File(...), session: 
 
 
     # Plot the distribution of labels for train and test data separately
-    fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(7, 5))
-    ax1.bar(train_df["label"].unique(), train_df["label"].value_counts(), width=0.5)
-    ax1.set_title("Train Label Distribution")
-    ax1.set_xlabel("Label")
-    ax1.set_ylabel("Count")
-    ax2.bar(test_df["label"].unique(), test_df["label"].value_counts(), width=0.5)
-    ax2.set_title("Test Label Distribution")
-    ax2.set_xlabel("Label")
-    ax2.set_ylabel("Count")
+
 
     # Add text information about the label distribution to the chart
     train_label_counts = train_df["label"].value_counts()
@@ -393,19 +385,48 @@ async def extract_file(request: Request, file: UploadFile = File(...), session: 
     print(is_numeric_label)
 
     if not is_numeric_label:
-        shortened_labels = [label[:5] + "..." if len(label) > 5 else label for label in train_df["label"].unique()]
-        ax1.set_xticks(train_df["label"].unique())
-        ax1.set_xticklabels(shortened_labels, rotation=90)
-        ax2.set_xticks(test_df["label"].unique())
-        ax2.set_xticklabels(shortened_labels, rotation=90)
+        fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1, figsize=(7, 12))  # Increase the figure height
+
+        # Sort labels and counts for train data
+        train_labels, train_counts = zip(
+            *sorted(zip(train_df["label"].unique(), train_df["label"].value_counts()), key=lambda x: x[1]))
+        ax1.barh(np.arange(len(train_labels)), train_counts, height=0.5)
+        ax1.set_title("Train Label Distribution")
+        ax1.set_xlabel("Count")
+        ax1.set_ylabel("Label")
+        ax1.set_yticks(np.arange(len(train_labels)))
+        ax1.set_yticklabels(train_labels, rotation=0)  # Rotate the y-axis tick labels if necessary
+
+        # Sort labels and counts for test data
+        test_labels, test_counts = zip(
+            *sorted(zip(test_df["label"].unique(), test_df["label"].value_counts()), key=lambda x: x[1]))
+        ax2.barh(np.arange(len(test_labels)), test_counts, height=0.5)
+        ax2.set_title("Test Label Distribution")
+        ax2.set_xlabel("Count")
+        ax2.set_ylabel("Label")
+        ax2.set_yticks(np.arange(len(test_labels)))
+        ax2.set_yticklabels(test_labels, rotation=0)
+        max_y = max(train_df["label"].value_counts().max(), test_df["label"].value_counts().max())
+        ax1.set_ylim(-0.5, len(train_labels) - 0.5)
+        ax2.set_ylim(-0.5, len(test_labels) - 0.5)
     else:
+        fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(7, 5))
+        ax1.bar(train_df["label"].unique(), train_df["label"].value_counts(), width=0.5)
+        ax1.set_title("Train Label Distribution")
+        ax1.set_xlabel("Label")
+        ax1.set_ylabel("Count")
+        ax2.bar(test_df["label"].unique(), test_df["label"].value_counts(), width=0.5)
+        ax2.set_title("Test Label Distribution")
+        ax2.set_xlabel("Label")
+        ax2.set_ylabel("Count")
         ax1.set_xticks(train_df["label"].unique())
         ax2.set_xticks(test_df["label"].unique())
+        max_y = max(train_df["label"].value_counts().max(), test_df["label"].value_counts().max())
+        ax1.set_ylim([0, max_y])
+        ax2.set_ylim([0, max_y])
 
 
-    max_y = max(train_df["label"].value_counts().max(), test_df["label"].value_counts().max())
-    ax1.set_ylim([0, max_y])
-    ax2.set_ylim([0, max_y])
+
 
     # Save the chart to a file
     plt.savefig("static/chart.png", dpi=100)
