@@ -116,7 +116,7 @@ function addInput_map(label) {
     var newdiv = document.createElement("div");
     var currentCounter = counter_map;
     newdiv.id = "mapping_" + currentCounter;
-    newdiv.innerHTML = "Mapping " + (currentCounter + 1)  + " <div class='row row-space'><div class='col-2'><div class='input-group'><input class='input--style-5 form-control' type='text' value="+ label +" name='origin_" + currentCounter + "' required></div></div><div class='col-2'><div class='input-group'><input class='input--style-5 form-control' type='text' name='mapping_" + currentCounter + "' placeholder='verbalizer" + (currentCounter + 1) +"' required><input class='btn btn--radius-2 btn--blue' style='padding: 0 25px' type='button' value='-' onClick='removeInput(\"mapping_" + currentCounter + "\");'></div></div></div>";
+    newdiv.innerHTML = "Mapping " + (currentCounter + 1)  + " <div class='row row-space'><div class='col-2'><div class='input-group'><input class='input--style-5 form-control' type='text' value="+ label +" name='origin_" + currentCounter + "' required></div></div><div class='col-2'><div class='input-group'><input class='input--style-5 form-control' type='text' name='mapping_" + currentCounter + "' placeholder='verbalizer " + (currentCounter + 1) +"' required></div></div></div>";
     document.getElementById('formularmap').appendChild(newdiv);
     dynamicInput.push("mapping_" + currentCounter);
     counter_map++;
