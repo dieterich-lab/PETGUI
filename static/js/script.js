@@ -322,12 +322,26 @@ document.getElementById("file_final").addEventListener("change", function(event)
 
 
 
-    function loadJSON() {
-      fetch('/download')
-        .then(response => response.json())
-        .then(data => showTable(data))
-        .catch(error => console.error(error));
-    }
+    // New function to send a POST request to the FastAPI server
+async function loadJSON() {
+  try {
+    // First, send a POST request to '/label-change' and wait for it to complete
+    await fetch('/label-change', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+    });
+
+    // After the POST request is complete, fetch and process the JSON file
+    const response = await fetch('/download');
+    const data = await response.json();
+    showTable(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
 
 
 
