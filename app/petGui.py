@@ -375,6 +375,14 @@ async def extract_file(request: Request, file: UploadFile = File(...), session: 
     is_numeric_label = isinstance(first_label, int) or len(str(first_label)) == 1
     #print(train_df["label"].unique())
 
+    unique_labels = train_df["label"].unique()
+
+    label_dict = {index:str(label) for index, label in enumerate(unique_labels)}
+
+    json_file_path = f'{hash(session_id)}/label_dict.json'
+    with open(json_file_path, "w") as json_file:
+        json.dump(label_dict, json_file)
+
     print(is_numeric_label)
 
     if not is_numeric_label:
@@ -446,6 +454,11 @@ async def label_distribution(session: SessionService = Depends(get_session_servi
     # Read the prediction data into a dataframe
     df = pd.read_csv(f'{hash(session_id)}/output/predictions.csv')
 
+    with open(f'{hash(session_id)}/label_dict.json', 'r') as file:
+        label_mapping = json.load(file)
+
+    df['label'] = df['label'].astype(str).map(label_mapping)
+
     # Create a bar chart of the label distribution
     label_counts = df['label'].value_counts()
     fig = plt.figure(figsize=(7, 7))
@@ -475,4 +488,26 @@ async def label_distribution(session: SessionService = Depends(get_session_servi
     plt.savefig("static/chart_prediction.png", dpi=100)
 
     return {"message": "Label distribution chart created successfully."}
+
+
+@app.post("/label-change")
+async def label_change (session: SessionService = Depends(get_session_service)):
+    session_id = session.get_session_id()
+
+    with open(f'{hash(session_id)}/label_dict.json', 'r') as file:
+        label_mapping = json.load(file)
+
+
+    with open(f'{hash(session_id)}/results.json', 'r') as file:
+        json_data = json.load(file)
+
+    for key in json_data:
+        for i in range(len(json_data[key]["pre-rec-f1-supp"])):
+            label_number = json_data[key]["pre-rec-f1-supp"][i].split(':')[1].split()[0]
+            if label_number in label_mapping:
+                json_data[key]["pre-rec-f1-supp"][i] = json_data[key]["pre-rec-f1-supp"][i].replace(
+                    "Label: {}".format(label_number),
+                    "Label: {}".format(label_mapping[label_number]))
+    with open(f'{hash(session_id)}/results.json', 'w') as file:
+        json.dump(json_data, file, ensure_ascii=False)
 
