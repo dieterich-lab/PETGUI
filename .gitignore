@@ -1,7 +1,7 @@
 venv/
 *__pycache__*
 DieterichLab_CA.pem
-/data/big
+/data
 /static/chart.png
 /static/chart_prediction.png
 chart.png
