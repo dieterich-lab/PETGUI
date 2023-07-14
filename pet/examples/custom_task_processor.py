@@ -84,8 +84,8 @@ class MyTaskDataProcessor(DataProcessor):
         :param data_dir: the directory in which the test data can be found
         :return: a list of test examples
         """
-        raise NotImplementedError()
-        #return self._create_examples(os.path.join(data_dir, MyTaskDataProcessor.TEST_FILE_NAME), "test")
+        #raise NotImplementedError()
+        return self._create_examples(os.path.join(data_dir, MyTaskDataProcessor.TEST_FILE_NAME), "test")
 
     def get_unlabeled_examples(self, data_dir) -> List[InputExample]:
         """
