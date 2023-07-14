@@ -205,6 +205,15 @@ async def create_upload_file(file: UploadFile = File(...), session: SessionServi
 @router.get("/download_prediction", name="download_prediction", dependencies=[Depends(get_session_service)])
 def download_predict(session: SessionService = Depends(get_session_service)):
     session_id = session.get_session_id()
+    with open(f'{hash(session_id)}/label_dict.json', 'r') as file:
+        label_mapping = json.load(file)
+    df = pd.read_csv(f"{hash(session_id)}/output/predictions.csv")
+
+    # Convert the labels to string and map to the new labels
+    df['label'] = df['label'].astype(str).map(label_mapping)
+
+    # Save the updated dataframe
+    df.to_csv(f"{hash(session_id)}/output/predictions.csv", index=False)
     return FileResponse(f"{hash(session_id)}/output/predictions.csv", filename="predictions.csv")
 
 
