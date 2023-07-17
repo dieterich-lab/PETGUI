@@ -93,7 +93,7 @@ In its current form, PETGUI is limited to training and testing a model on data i
 * **File format and naming convention:** The provided training data must be a <span style="font-style: italic">tar.gz</span> file
                                 containing _train.csv_, _test.csv_ and _unlabeled.csv_ respectively.
                                 For labeling data, a <span style="font-style: italic">.csv</span> file is expected with the first column throughout the data lines empty.
-* **Maximum capacity:** The maximum number of definable patterns as well as labels for one training pass is 5
+* **Verbalizer mapping:** The provided verbalizer has to map to a single input-id in the model vocalubalary.
 
 <a id="references"></a>  ​                     
 ### 🗃️ References
