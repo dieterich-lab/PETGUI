@@ -71,65 +71,7 @@ showStatisticsButton.addEventListener("click", function() {
     statsContainer.appendChild(img);
   }
 });
-
-
 }
-
-    var counter = 1;
-
-    function addInput_new() {
-        // Change the '+' button to '-' for the last input field
-        var inputFields = document.getElementsByClassName('input-group');
-        var lastInputField = inputFields[inputFields.length-1];
-        var lastButton = lastInputField.getElementsByTagName('button')[0];
-        lastButton.textContent = "-";
-        lastButton.className = "btn btn--radius-2 btn--blue remove-btn";
-        lastButton.setAttribute("onClick", "removeInput(this);");
-
-        var newdiv = document.createElement('div');
-        newdiv.className = "input-group";
-        newdiv.innerHTML = "<input class='input--style-5 form-control' type='text' placeholder='A test that it is changing' name='template_" + counter + "' required> <button class='btn btn--radius-2 btn--blue add-btn' style='padding: 0 25px;' type='button' onClick='addInput_new();'>+</button>";
-        document.getElementById('template input').appendChild(newdiv);
-        counter++;
-    }
-
-    function removeInput(button) {
-        //remove the clicked input field
-        var inputField = button.parentNode;
-        inputField.parentNode.removeChild(inputField);
-        counter--;
-
-        //update the button for the last input field
-        var inputFields = document.getElementsByClassName('input-group');
-        var lastInputField = inputFields[inputFields.length-1];
-        var lastButton = lastInputField.getElementsByTagName('button')[0];
-        lastButton.textContent = "+";
-        lastButton.className = "btn btn--radius-2 btn--blue add-btn";
-        lastButton.setAttribute("onClick", "addInput_new();");
-    }
-
-
-
-
-function removeInput_back(id) {
-    var elem = document.getElementById(id);
-    elem.parentNode.removeChild(elem);
-
-    if (id.startsWith("template_")) {
-        var index = dynamicInput_1.indexOf(id);
-        if (index > -1) {
-            dynamicInput_1.splice(index, 1);
-        }
-        counter--;
-    } else if (id.startsWith("mapping_")) {
-        var index = dynamicInput.indexOf(id);
-        if (index > -1) {
-            dynamicInput.splice(index, 1);
-        }
-        counter_map--;
-    }
-}
-
 
 
 var counter_map = 0;
@@ -146,6 +88,59 @@ function addInput_map(label) {
 }
 
 
+// var counter_map = 0;
+// var dynamicInput = [];
+//
+// function addInput_map(label) {
+//     var newdiv = document.createElement("div");
+//     var currentCounter = counter_map;
+//     newdiv.id = "mapping_" + currentCounter;
+//     newdiv.innerHTML = "Mapping " + (currentCounter + 1)  + " <div class='row row-space'><div class='col-2'><div class='input-group'><input class='input--style-5 form-control' type='text' value="+ label +" name='origin_" + currentCounter + "' required></div></div><div class='col-2'><div class='input-group'><input class='input--style-5 form-control' type='text' name='mapping_" + currentCounter + "' placeholder='verbalizer " + (currentCounter + 1) +"' required><div id='error_message_" + currentCounter + "' style='color: red;'></div></div></div></div>";
+//     document.getElementById('formularmap').appendChild(newdiv);
+//     dynamicInput.push("mapping_" + currentCounter);
+//     counter_map++;
+// }
+
+
+
+
+// // This function is called when the form is submitted
+// async function check_vocab_on_submit(event) {
+//     // Initialize a variable to check if any word is not in vocab
+//     var isInVocab = true;
+//
+//     for (let input of dynamicInput) {
+//         var word = document.getElementsByName(input)[0].value;  // get the value from input field
+//
+//         // create a new HTTP request
+//         var xhr = new XMLHttpRequest();
+//         xhr.open("POST", "/check_vocab", false);  // make it synchronous
+//         xhr.setRequestHeader("Content-Type", "application/json");
+//
+//         // convert data to JSON format and send it to the server
+//         var data = JSON.stringify({"word": word});
+//         xhr.send(data);
+//
+//         if (xhr.status === 200) {
+//             document.getElementById("error_message_" + input.split('_')[1]).innerHTML = "";  // clear error message
+//         } else if (xhr.status === 422) {
+//             var error_message = JSON.parse(xhr.responseText).detail;  // parse the error message
+//             document.getElementById("error_message_" + input.split('_')[1]).innerHTML = error_message;  // display the error message
+//             isInVocab = false;  // mark that a word is not in vocab
+//         }
+//     }
+//
+//     // If any word is not in vocab, prevent the form submission
+//     if (!isInVocab) {
+//         event.preventDefault();  // prevent the form from being submitted
+//     }
+// }
+
+// Add the event listener to the form
+document.getElementById('my-form').addEventListener('submit', check_vocab_on_submit);
+
+
+
     const feedbackDiv = document.getElementById('feedback_file');
 const observer = new MutationObserver(function(mutationsList) {
   for (let mutation of mutationsList) {
@@ -158,6 +153,7 @@ const observer = new MutationObserver(function(mutationsList) {
 });
 
 observer.observe(feedbackDiv, { childList: true });
+
 
 document.getElementById("file_final").addEventListener("change", function(event) {
     event.stopPropagation();
@@ -440,6 +436,58 @@ function showTable(jsonData) {
 button.addEventListener("click", function() {
   window.location.href = "/final";
 });
+
+
+
+var counter = 1;
+
+function addInput_new() {
+    var inputFields = document.querySelectorAll('#template-input .input-group');
+    if (inputFields.length > 0) {
+        var lastInputField = inputFields[inputFields.length-1];
+        var buttons = lastInputField.getElementsByClassName('add-remove-btn');
+        if (buttons.length > 0) {
+            var lastButton = buttons[0];
+            lastButton.textContent = "-";
+            lastButton.className = "btn btn--radius-2 btn--blue remove-btn add-remove-btn";
+            lastButton.setAttribute("onClick", "removeInput(this);");
+        }
+    }
+
+    var newdiv = document.createElement('div');
+    newdiv.className = "input-group";
+    newdiv.innerHTML = "<input class='input--style-5 form-control' type='text' placeholder='A test that it is changing' name='template_" + counter + "' required> <button class='btn btn--radius-2 btn--blue add-btn add-remove-btn' style='padding: 0 25px;' type='button' onClick='addInput_new();'>+</button>";
+    var container = document.getElementById('template-input');
+    container.appendChild(newdiv);
+    container.appendChild(document.createElement('br'));
+    counter++;
+}
+
+function removeInput(button) {
+    var inputField = button.parentNode;
+    var brElement = inputField.nextSibling;
+    inputField.parentNode.removeChild(inputField);
+    brElement.parentNode.removeChild(brElement);
+    counter--;
+
+    var inputFields = document.querySelectorAll('#template-input .input-group');
+    if (inputFields.length > 0) {
+        var lastInputField = inputFields[inputFields.length-1];
+        var buttons = lastInputField.getElementsByClassName('add-remove-btn');
+        if (buttons.length > 0) {
+            var lastButton = buttons[0];
+            if(lastButton.textContent === "-") {
+                lastButton.textContent = "+";
+                lastButton.className = "btn btn--radius-2 btn--blue add-btn add-remove-btn";
+                lastButton.setAttribute("onClick", "addInput_new();");
+            }
+        }
+    }
+}
+
+
+
+
 
 
 
