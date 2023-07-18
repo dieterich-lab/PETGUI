@@ -86,23 +86,9 @@ function handleUnload() {
 window.addEventListener('beforeunload', handleBeforeUnload);
 document.addEventListener('click', handleLinkClick);
 window.addEventListener('unload', handleUnload);
-
-
-var counter = 1;
-var dynamicInput_1 = [];
-
- function addInput_new(){
-    if (counter < 5) {
-        var newdiv = document.createElement('div');
-        newdiv.id = dynamicInput_1[counter];
-        newdiv.innerHTML = "Template " + (counter + 1) + " <br><div class=\"input-group\" ><input class='input--style-5 form-control' type='text' placeholder='Next template text' name = template_"+counter +" required> <br><button class='btn btn--radius-2 btn--blue' style='padding: 0 25px;'  onClick='removeInput("+dynamicInput_1[counter]+");'>-</button></div>";
-        document.getElementById('template input').appendChild(newdiv);
-        counter++;
-    } else {
-    return;
-    }
-}
                         </script>
+
+
 
                         <span class="circle">2.</span><div class="form-row m-b-55">
                             <div class="name">Define column numbers:</div>
@@ -122,13 +108,14 @@ var dynamicInput_1 = [];
                             </div>
                         </div><span class="circle">3.</span>
                      <div class="form-row" id="formulario">
-    <div class="name">Define templates:</div>
-    <div class="value" id="template input">
-        <div id="dynamicInput_0" class="input-group">
-            <input class="input--style-5 form-control" type="text" placeholder="Example: It was_." name="template_0" required>
-            <button class="btn btn--radius-2 btn--blue add-btn" style="padding: 0 25px;" type="button" onClick="addInput_new();">+</button>
-        </div>
+<div class="name">Define templates:</div>
+<div class="value" id="template-input">
+    <div id="dynamicInput_0" class="input-group">
+        <input class="input--style-5 form-control" type="text" placeholder="Example: It was_." name="template_0" required>
+        <button class="btn btn--radius-2 btn--blue add-btn add-remove-btn" style="padding: 0 25px;" type="button" onClick="addInput_new();">+</button>
     </div>
+    <br>
+</div>
 </div>
 
 
