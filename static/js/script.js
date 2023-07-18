@@ -75,20 +75,43 @@ showStatisticsButton.addEventListener("click", function() {
 
 }
 
-var counter = 1;
-var dynamicInput_1 = [];
+    var counter = 1;
 
-function addInput_new() {
-    var newdiv = document.createElement('div');
-    var currentCounter = counter;
-    newdiv.id = "template_" + currentCounter;
-    newdiv.innerHTML = "Template " + (currentCounter + 1) + " <br><div class=\"input-group\"><input class='input--style-5 form-control' type='text' placeholder='A test that it is changing' name='template_" + currentCounter + "' required> <br><button class='btn btn--radius-2 btn--blue' style='padding: 0 25px;' type='button' value='-' onClick='removeInput(\"template_" + currentCounter + "\");'>-</button></div>";
-    document.getElementById('template input').appendChild(newdiv);
-    dynamicInput_1.push("template_" + currentCounter);
-    counter++;
-}
+    function addInput_new() {
+        // Change the '+' button to '-' for the last input field
+        var inputFields = document.getElementsByClassName('input-group');
+        var lastInputField = inputFields[inputFields.length-1];
+        var lastButton = lastInputField.getElementsByTagName('button')[0];
+        lastButton.textContent = "-";
+        lastButton.className = "btn btn--radius-2 btn--blue remove-btn";
+        lastButton.setAttribute("onClick", "removeInput(this);");
 
-function removeInput(id) {
+        var newdiv = document.createElement('div');
+        newdiv.className = "input-group";
+        newdiv.innerHTML = "<input class='input--style-5 form-control' type='text' placeholder='A test that it is changing' name='template_" + counter + "' required> <button class='btn btn--radius-2 btn--blue add-btn' style='padding: 0 25px;' type='button' onClick='addInput_new();'>+</button>";
+        document.getElementById('template input').appendChild(newdiv);
+        counter++;
+    }
+
+    function removeInput(button) {
+        //remove the clicked input field
+        var inputField = button.parentNode;
+        inputField.parentNode.removeChild(inputField);
+        counter--;
+
+        //update the button for the last input field
+        var inputFields = document.getElementsByClassName('input-group');
+        var lastInputField = inputFields[inputFields.length-1];
+        var lastButton = lastInputField.getElementsByTagName('button')[0];
+        lastButton.textContent = "+";
+        lastButton.className = "btn btn--radius-2 btn--blue add-btn";
+        lastButton.setAttribute("onClick", "addInput_new();");
+    }
+
+
+
+
+function removeInput_back(id) {
     var elem = document.getElementById(id);
     elem.parentNode.removeChild(elem);
 
