@@ -187,8 +187,13 @@ document.getElementById("file_final").addEventListener("change", function(event)
         fetch('/report-labels')
             .then(response => response.json())
             .then(data => {
+            var result = [];
             data.list.forEach(lab => {
-            addInput_map(lab);
+            result.push(lab);
+            });
+            result.sort();
+            result.forEach(function(label) {
+                addInput_map(label);
             });
         });
     }
