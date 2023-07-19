@@ -72,7 +72,51 @@ showStatisticsButton.addEventListener("click", function() {
   }
 });
 }
+var counter = 1;
 
+function addInput_new() {
+    var inputFields = document.querySelectorAll('#template-input .input-group');
+    if (inputFields.length > 0) {
+        var lastInputField = inputFields[inputFields.length-1];
+        var buttons = lastInputField.getElementsByClassName('add-remove-btn');
+        if (buttons.length > 0) {
+            var lastButton = buttons[0];
+            lastButton.textContent = "-";
+            lastButton.className = "btn btn--radius-2 btn--blue remove-btn add-remove-btn";
+            lastButton.setAttribute("onClick", "removeInput(this);");
+        }
+    }
+
+    var newdiv = document.createElement('div');
+    newdiv.className = "input-group";
+    newdiv.innerHTML = "<input class='input--style-5 form-control' type='text' placeholder='A test that it is changing' name='template_" + counter + "' required> <button class='btn btn--radius-2 btn--blue add-btn add-remove-btn' style='padding: 0 25px;' type='button' onClick='addInput_new();'>+</button>";
+    var container = document.getElementById('template-input');
+    container.appendChild(newdiv);
+    container.appendChild(document.createElement('br'));
+    counter++;
+}
+
+function removeInput(button) {
+    var inputField = button.parentNode;
+    var brElement = inputField.nextSibling;
+    inputField.parentNode.removeChild(inputField);
+    brElement.parentNode.removeChild(brElement);
+    counter--;
+
+    var inputFields = document.querySelectorAll('#template-input .input-group');
+    if (inputFields.length > 0) {
+        var lastInputField = inputFields[inputFields.length-1];
+        var buttons = lastInputField.getElementsByClassName('add-remove-btn');
+        if (buttons.length > 0) {
+            var lastButton = buttons[0];
+            if(lastButton.textContent === "-") {
+                lastButton.textContent = "+";
+                lastButton.className = "btn btn--radius-2 btn--blue add-btn add-remove-btn";
+                lastButton.setAttribute("onClick", "addInput_new();");
+            }
+        }
+    }
+}
 
 var counter_map = 0;
 var dynamicInput = [];
@@ -137,7 +181,7 @@ function addInput_map(label) {
 // }
 
 // Add the event listener to the form
-document.getElementById('my-form').addEventListener('submit', check_vocab_on_submit);
+//document.getElementById('my-form').addEventListener('submit', check_vocab_on_submit);
 
 
 
@@ -434,51 +478,7 @@ button.addEventListener("click", function() {
 
 
 
-var counter = 1;
 
-function addInput_new() {
-    var inputFields = document.querySelectorAll('#template-input .input-group');
-    if (inputFields.length > 0) {
-        var lastInputField = inputFields[inputFields.length-1];
-        var buttons = lastInputField.getElementsByClassName('add-remove-btn');
-        if (buttons.length > 0) {
-            var lastButton = buttons[0];
-            lastButton.textContent = "-";
-            lastButton.className = "btn btn--radius-2 btn--blue remove-btn add-remove-btn";
-            lastButton.setAttribute("onClick", "removeInput(this);");
-        }
-    }
-
-    var newdiv = document.createElement('div');
-    newdiv.className = "input-group";
-    newdiv.innerHTML = "<input class='input--style-5 form-control' type='text' placeholder='A test that it is changing' name='template_" + counter + "' required> <button class='btn btn--radius-2 btn--blue add-btn add-remove-btn' style='padding: 0 25px;' type='button' onClick='addInput_new();'>+</button>";
-    var container = document.getElementById('template-input');
-    container.appendChild(newdiv);
-    container.appendChild(document.createElement('br'));
-    counter++;
-}
-
-function removeInput(button) {
-    var inputField = button.parentNode;
-    var brElement = inputField.nextSibling;
-    inputField.parentNode.removeChild(inputField);
-    brElement.parentNode.removeChild(brElement);
-    counter--;
-
-    var inputFields = document.querySelectorAll('#template-input .input-group');
-    if (inputFields.length > 0) {
-        var lastInputField = inputFields[inputFields.length-1];
-        var buttons = lastInputField.getElementsByClassName('add-remove-btn');
-        if (buttons.length > 0) {
-            var lastButton = buttons[0];
-            if(lastButton.textContent === "-") {
-                lastButton.textContent = "+";
-                lastButton.className = "btn btn--radius-2 btn--blue add-btn add-remove-btn";
-                lastButton.setAttribute("onClick", "addInput_new();");
-            }
-        }
-    }
-}
 
 
 
