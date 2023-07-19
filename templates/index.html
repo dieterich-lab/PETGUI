@@ -59,36 +59,6 @@
     </div>
     <div id="stats-container"></div>
   </div>
-                        <script>
-let isRedirecting = false;
-
-// Function to handle the beforeunload event
-function handleBeforeUnload(event) {
-  // Display the confirmation message only if not redirecting
-  if (!isRedirecting) {
-    event.preventDefault();
-    event.returnValue = ''; // For older browsers
-    return ''; // For modern browsers
-  }
-}
-
-// Function to set the redirection flag when a link is clicked
-function handleLinkClick() {
-  isRedirecting = true;
-}
-
-
-function handleUnload() {
-    Logout();
-}
-
-// Attach event listeners
-window.addEventListener('beforeunload', handleBeforeUnload);
-document.addEventListener('click', handleLinkClick);
-window.addEventListener('unload', handleUnload);
-                        </script>
-
-
 
                         <span class="circle">2.</span><div class="form-row m-b-55">
                             <div class="name">Define column numbers:</div>
