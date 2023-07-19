@@ -196,10 +196,10 @@ async def create_upload_file(file: UploadFile = File(...), session: SessionServi
     if os.path.exists(upload_folder):
         shutil.rmtree(upload_folder)
     os.makedirs(upload_folder)
-    file_path = os.path.join(upload_folder, "unlabeled.csv")
+    file_path = os.path.join(upload_folder, "unlabeled.txt")
     with open(file_path, "wb") as file_object:
         file_object.write(file.file.read())
-    return {"filename": "unlabeled.csv", "path": file_path}
+    return {"filename": "unlabeled.txt", "path": file_path}
 
 
 @router.get("/download_prediction", name="download_prediction", dependencies=[Depends(get_session_service)])

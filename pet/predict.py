@@ -5,7 +5,7 @@ import glob
 import os
 from run import custom_task_processor
 
-df = pd.read_csv("./data_uploaded/unlabeled/unlabeled.csv", sep=custom_task_processor.MyTaskDataProcessor.DELIMITER, header=None, names=['label', 'text'])
+df = pd.read_csv("./data_uploaded/unlabeled/unlabeled.txt", sep=custom_task_processor.MyTaskDataProcessor.DELIMITER, header=None, names=['label', 'text'])
 tokenizer = BertTokenizer.from_pretrained('output/final/p0-i0')
 model = BertForSequenceClassification.from_pretrained('./output/final/p0-i0')
 input_ids = []

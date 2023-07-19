@@ -44,7 +44,7 @@
     <div class="card-body" id="container"><span class="circle_1">1.</span>
         <label class="btn btn--radius-2 btn--blue">
               Upload unlabeled data as a csv file
-        <input type="file" accept=".csv" name="file_final" id="file_final" style="display:none;">
+        <input type="file" accept=".txt" name="file_final" id="file_final" style="display:none;">
         </label>
         <div id="feedback_file"></div>
     </div>
@@ -79,32 +79,6 @@
 
 <script>
 
-let isRedirecting = false;
-
-// Function to handle the beforeunload event
-function handleBeforeUnload(event) {
-  // Display the confirmation message only if not redirecting
-  if (!isRedirecting) {
-    event.preventDefault();
-    event.returnValue = ''; // For older browsers
-    return ''; // For modern browsers
-  }
-}
-
-// Function to set the redirection flag when a link is clicked
-function handleLinkClick() {
-  isRedirecting = true;
-}
-
-
-function handleUnload() {
-    Logout();
-}
-
-// Attach event listeners
-window.addEventListener('beforeunload', handleBeforeUnload);
-document.addEventListener('click', handleLinkClick);
-window.addEventListener('unload', handleUnload);
 
 function generateChart() {
     var xhr = new XMLHttpRequest();
