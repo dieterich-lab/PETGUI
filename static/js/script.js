@@ -411,6 +411,20 @@ async function loadJSON() {
 function showTable(jsonData) {
   const container = document.getElementById("table-container");
   const table = document.createElement("table");
+  table.style.width = "100%"; // 设置表格宽度
+
+  // Create colgroups
+  const colgroup = document.createElement('colgroup');
+  const col1 = document.createElement('col');
+  const col2 = document.createElement('col');
+  const col3 = document.createElement('col');
+  col1.style.width = '20%';
+  col2.style.width = '20%';
+  col3.style.width = '60%';
+  colgroup.appendChild(col1);
+  colgroup.appendChild(col2);
+  colgroup.appendChild(col3);
+  table.appendChild(colgroup);
 
   // create table header
   const header = table.createTHead();
@@ -424,16 +438,19 @@ function showTable(jsonData) {
 
   // create table body
   const body = table.createTBody();
-  for (let iteration in jsonData) {
+
+
+  if (jsonData.hasOwnProperty("Final")) {
     const row = body.insertRow();
     const iterationCell = row.insertCell();
-    iterationCell.innerHTML = iteration;
+    iterationCell.innerHTML = "Final";
     const accCell = row.insertCell();
-    accCell.innerHTML = jsonData[iteration]["acc"];
+    accCell.innerHTML = jsonData["Final"]["acc"];
     const labelCell = row.insertCell();
     const labelTable = document.createElement("table");
+    labelTable.style.width = "100%";
     const labelBody = labelTable.createTBody();
-    for (let labelData of jsonData[iteration]["pre-rec-f1-supp"]) {
+    for (let labelData of jsonData["Final"]["pre-rec-f1-supp"]) {
       const labelRow = labelBody.insertRow();
       const labelNameCell = labelRow.insertCell();
       const labelPerfCell = labelRow.insertCell();

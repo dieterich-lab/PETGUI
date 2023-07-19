@@ -505,9 +505,10 @@ async def label_change (session: SessionService = Depends(get_session_service)):
         for i in range(len(json_data[key]["pre-rec-f1-supp"])):
             label_number = json_data[key]["pre-rec-f1-supp"][i].split(':')[1].split()[0]
             if label_number in label_mapping:
+                label = label_mapping[label_number][:10]
                 json_data[key]["pre-rec-f1-supp"][i] = json_data[key]["pre-rec-f1-supp"][i].replace(
                     "Label: {}".format(label_number),
-                    "Label: {}".format(label_mapping[label_number]))
+                    "Label: {}".format(label))
     with open(f'{hash(session_id)}/results.json', 'w') as file:
         json.dump(json_data, file, ensure_ascii=False)
 
