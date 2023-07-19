@@ -81,7 +81,7 @@ def get_steps(session: SessionService = Depends(get_session_service)):
     with open(f"./{hash(session_id)}/data.json") as f:
         data = json.load(f)
     count_tmp = len([tmp for tmp in data.keys() if "template_" in tmp])
-    count_steps = 18 + (count_tmp-1) * 5
+    count_steps = (count_tmp) * 20 + 19
     return {"steps": count_steps}
 
 
@@ -214,8 +214,11 @@ def check_job_status(request: Request, session: SessionService = Depends(get_ses
     while request.app.state.event:
         cmd = ["sshpass", '-e', 'ssh', f'{user}@{cluster_name}', f"squeue -j {job_id} -h -t all | awk '{{print $5}}'"]
         outs, errs = bash_cmd(session, cmd)
-        status = outs.decode("utf-8").strip().split()[-1]
-        print(status, outs, errs)
+        try:
+            status = outs.decode("utf-8").strip().split()[-1]
+            print(status, outs, errs)
+        except IndexError:
+            pass
         if status == "R":
             pass
         elif status == "CD":
@@ -251,7 +254,6 @@ def check_job_status(request: Request, session: SessionService = Depends(get_ses
             return
         elif status == "F":
             raise Exception("Job could not finish. Please make sure your parameters are correct.")
-
 
         time.sleep(5)
 

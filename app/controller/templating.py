@@ -10,7 +10,7 @@ import threading
 from threading import Event
 import app.petGui
 from ..dto.session import cookie
-
+import pandas as pd
 from os.path import isdir, isfile
 import pathlib
 import shutil
