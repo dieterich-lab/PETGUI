@@ -20,19 +20,19 @@ class Script():
         self.decoding_strategy='default'
         self.no_distillation=False
         self.pet_repetitions=3 #2 #3 #1
-        self.pet_max_seq_length=256
-        self.pet_per_gpu_train_batch_size=4 #2
-        self.pet_per_gpu_eval_batch_size=8
-        self.pet_per_gpu_unlabeled_batch_size=4
+        self.pet_max_seq_length=128#256
+        self.pet_per_gpu_train_batch_size=8#12#4 #2
+        self.pet_per_gpu_eval_batch_size=16#32#8
+        self.pet_per_gpu_unlabeled_batch_size=16#32#4
         self.pet_gradient_accumulation_steps=1 #2 #1 #4
         self.pet_num_train_epochs=2 #3 #2
         self.pet_max_steps=-1
         # Also used for final PET classifier
         self.sc_repetitions=1
-        self.sc_max_seq_length=256
-        self.sc_per_gpu_train_batch_size=4
-        self.sc_per_gpu_eval_batch_size=8
-        self.sc_per_gpu_unlabeled_batch_size=4 #2
+        self.sc_max_seq_length=128#256
+        self.sc_per_gpu_train_batch_size=8#12#4
+        self.sc_per_gpu_eval_batch_size=16#32#8
+        self.sc_per_gpu_unlabeled_batch_size=16#32#4 #2
         self.sc_gradient_accumulation_steps=1 #2 #1 #4
         self.sc_num_train_epochs=3 #2 #3 #1
         self.sc_max_steps=-1

@@ -81,7 +81,7 @@ def get_steps(session: SessionService = Depends(get_session_service)):
     with open(f"./{hash(session_id)}/data.json") as f:
         data = json.load(f)
     count_tmp = len([tmp for tmp in data.keys() if "template_" in tmp])
-    count_steps = (count_tmp) * 20 + 19
+    count_steps = (count_tmp) * 16 + 14
     return {"steps": count_steps}
 
 
