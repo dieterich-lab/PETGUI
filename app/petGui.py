@@ -461,8 +461,11 @@ async def label_distribution(session: SessionService = Depends(get_session_servi
 
     df['label'] = df['label'].astype(str).map(label_mapping)
 
+    # Shorten the label to the first 10 characters
+    df['short_label'] = df['label'].apply(lambda x: x[:10])
+
     # Create a bar chart of the label distribution
-    label_counts = df['label'].value_counts()
+    label_counts = df['short_label'].value_counts()
     fig = plt.figure(figsize=(7, 7))
     ax = fig.add_subplot(211)
     #label_counts.plot(kind='bar', width=0.3, ax=ax)
@@ -490,13 +493,12 @@ async def label_distribution(session: SessionService = Depends(get_session_servi
     # Create a table to display the randomly selected examples
     table_data = [['Label', 'Text']]
     for _, row in random_examples.iterrows():
-        table_data.append([row['label'], row['text']])
+        table_data.append([row['short_label'], row['text']])
 
-    table = ax.table(cellText=table_data, loc='bottom', cellLoc='left', bbox=[0, -0.8, 1, 0.5])
+    table = ax.table(cellText=table_data, loc='bottom', cellLoc='left', bbox=[0, -1.2, 1, 0.5])
 
     table.auto_set_column_width(col=list(range(2)))
     # Create a string with the label and text for each example
-
 
     # Save the chart to a file
     plt.savefig("static/chart_prediction.png", dpi=100)
@@ -519,9 +521,10 @@ async def label_change (session: SessionService = Depends(get_session_service)):
         for i in range(len(json_data[key]["pre-rec-f1-supp"])):
             label_number = json_data[key]["pre-rec-f1-supp"][i].split(':')[1].split()[0]
             if label_number in label_mapping:
+                label = label_mapping[label_number][:10]
                 json_data[key]["pre-rec-f1-supp"][i] = json_data[key]["pre-rec-f1-supp"][i].replace(
                     "Label: {}".format(label_number),
-                    "Label: {}".format(label_mapping[label_number]))
+                    "Label: {}".format(label))
     with open(f'{hash(session_id)}/results.json', 'w') as file:
         json.dump(json_data, file, ensure_ascii=False)
 
