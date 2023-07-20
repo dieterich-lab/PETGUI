@@ -81,7 +81,7 @@ def get_steps(session: SessionService = Depends(get_session_service)):
     with open(f"./{hash(session_id)}/data.json") as f:
         data = json.load(f)
     count_tmp = len([tmp for tmp in data.keys() if "template_" in tmp])
-    count_steps = 28 + (count_tmp-1) * 5
+    count_steps = 28 + (count_tmp-1) * 15
     return {"steps": count_steps}
 
 
@@ -345,7 +345,7 @@ async def extract_file(request: Request, file: UploadFile = File(...), session: 
                     shutil.move(f'{hash(session_id)}/data_uploaded/{f}', extracted_folder)
                 except FileNotFoundError as e:
                     print(os.curdir, str(e))
-        if "unlabeled.txt" in files:
+        if "unlabeled.csv" in files:
             os.environ[f"{hash(session_id)}_unlabeled"] = "True"
 
     print("Extracted folder:", extracted_folder)
@@ -470,6 +470,7 @@ async def label_distribution(session: SessionService = Depends(get_session_servi
     # Get the labels and their corresponding counts
     labels = label_counts.index
     counts = label_counts.values
+
 
     # Set the height of bars with zero counts to zero, making them invisible
     invisible_heights = [0 if count == 0 else count for count in counts]

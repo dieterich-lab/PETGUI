@@ -89,7 +89,7 @@ function addInput_new() {
 
     var newdiv = document.createElement('div');
     newdiv.className = "input-group";
-    newdiv.innerHTML = "<input class='input--style-5 form-control' type='text' placeholder='A test that it is changing' name='template_" + counter + "' required> <button class='btn btn--radius-2 btn--blue add-btn add-remove-btn' style='padding: 0 25px;' type='button' onClick='addInput_new();'>+</button>";
+    newdiv.innerHTML = "<input class='input--style-5 form-control' type='text' placeholder='New template' name=template_"+ counter +" required> <button class='btn btn--radius-2 btn--blue add-btn add-remove-btn' style='padding: 0 25px;' type='button' onClick='addInput_new();'>+</button>";
     var container = document.getElementById('template-input');
     container.appendChild(newdiv);
     container.appendChild(document.createElement('br'));
