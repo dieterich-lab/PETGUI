@@ -24,7 +24,7 @@ import shutil
 from app.controller import templating
 from app.controller import session
 from .services.session import SessionService
-
+from app.controller.session import User
 
 
 
@@ -41,30 +41,12 @@ if local:
     ssh = "/opt/homebrew/bin/sshpass"
 
 
-
-class User:
-    session: SessionService
-    job_id: str = None
-    job_status: str
-    event: threading.Event = None
-
-
-app.state = User()
-
-
 def get_session_service(request: Request):
     return request.app.state.session
 
 @app.get("/", name="start")
 def main():
     return RedirectResponse(url="/start")
-
-@app.get("/get_cookie")
-def get(request: Request, session: SessionService = Depends(get_session_service)):
-    cookies = request.cookies
-    session = get_session_service(request)
-    print(cookies, session)
-    return {"sess": session, "cook": cookies}
 
 
 @app.get("/whoami", name="whoami")
@@ -468,18 +450,19 @@ async def label_distribution(session: SessionService = Depends(get_session_servi
     label_counts = df['short_label'].value_counts()
     fig = plt.figure(figsize=(7, 7))
     ax = fig.add_subplot(211)
-    #label_counts.plot(kind='bar', width=0.3, ax=ax)
+    label_counts.plot(kind='bar', width=0.3, ax=ax)
 
     # Get the labels and their corresponding counts
-    labels = label_counts.index
-    counts = label_counts.values
+
+    #labels = label_counts.index
+    #counts = label_counts.values
 
 
     # Set the height of bars with zero counts to zero, making them invisible
-    invisible_heights = [0 if count == 0 else count for count in counts]
+    #invisible_heights = [0 if count == 0 else count for count in counts]
 
     # Use the bar function to plot the bars
-    ax.bar(labels, invisible_heights, width=0.3)
+    #ax.bar(labels, invisible_heights, width=0.3)
 
     ax.set_title('Label Counts')
     ax.set_xlabel('Label')

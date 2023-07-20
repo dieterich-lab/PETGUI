@@ -7,7 +7,7 @@ from app.dto.session import SessionData
 from ..services.session import SessionService
 import app.services.ldap as ldap
 from app.controller import templating
-
+import threading
 
 session_router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -17,6 +17,11 @@ ssh = "sshpass"
 if local:
     ssh = "/opt/homebrew/bin/sshpass"
 
+class User:
+    session: SessionService
+    job_id: str = None
+    job_status: str
+    event: threading.Event = None
 
 @session_router.post("/login")
 async def login(request: Request, username: str = Form(...), password: str = Form(...)):
@@ -25,6 +30,7 @@ async def login(request: Request, username: str = Form(...), password: str = For
         ldap.bind(dn, password)
         response = RedirectResponse(url=request.url_for("homepage"), status_code=303)
         session = SessionService()
+        request.app.state = User()
         request.app.state.session = await session.create_session(username, response)
         session_uuid = session.get_session_id()
         os.environ[f"{hash(session_uuid)}"] = password
