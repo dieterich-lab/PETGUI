@@ -198,7 +198,7 @@ const animateProgress = () => {
         btn.style.display = "inline";
         }
 
-            function abortJob() {
+    function abortJob() {
         return fetch("/abort_job")
         .then(response => {window.location.href = '/basic?message=Training aborted successfully!';}
         );

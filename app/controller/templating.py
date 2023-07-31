@@ -257,3 +257,4 @@ async def clean(request: Request, session: SessionService = Depends(get_session_
         print(outs, errs)
         await app.petGui.run(request, session)
         request.app.state.job_id = None
+    return {"Status": "Cleaned"}

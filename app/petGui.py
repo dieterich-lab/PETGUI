@@ -99,6 +99,7 @@ async def run(request: Request, session: SessionService = Depends(get_session_se
                    f'scancel {job_id}']
         outs, errs = bash_cmd(session, ssh_cmd, shell=True)
         print(outs, errs)
+        request.app.state.job_id = None
     except Exception as e:
         print(str(e))
         pass
