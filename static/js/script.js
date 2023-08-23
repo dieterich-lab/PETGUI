@@ -55,6 +55,7 @@ function addEventListenersForIndex() {
   const showStatisticsButton = document.getElementById("show-statistics-button");
 showStatisticsButton.addEventListener("click", function() {
   const chartImage = document.getElementById("myChart");
+  chartImage.src = "/static/chart.png";
   const statsContainer = document.getElementById("stats-container");
 
   // If the chart is currently visible, hide it and change the button name

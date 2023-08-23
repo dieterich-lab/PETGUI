@@ -63,7 +63,7 @@ def get_steps(session: SessionService = Depends(get_session_service)):
     with open(f"./{hash(session_id)}/data.json") as f:
         data = json.load(f)
     count_tmp = len([tmp for tmp in data.keys() if "template_" in tmp])
-    count_steps = 28 + (count_tmp-1) * 15
+    count_steps = 18 + (count_tmp-1) * 5
     return {"steps": count_steps}
 
 
@@ -99,7 +99,6 @@ async def run(request: Request, session: SessionService = Depends(get_session_se
                    f'scancel {job_id}']
         outs, errs = bash_cmd(session, ssh_cmd, shell=True)
         print(outs, errs)
-        request.app.state.job_id = None
     except Exception as e:
         print(str(e))
         pass
