@@ -86,6 +86,7 @@ function addInput_new() {
             addButton.setAttribute("onClick", "removeSpecificInput(this);");
         }
 
+
         var trashButton = lastInputField.querySelector('.trash-btn');
         if (trashButton) {
             trashButton.parentNode.removeChild(trashButton);
@@ -102,16 +103,14 @@ function addInput_new() {
 }
 
 function removeInput(button) {
-    var inputField = button.parentNode;
-    var brElement = inputField.nextSibling;
-    inputField.parentNode.removeChild(inputField);
-    brElement.parentNode.removeChild(brElement);
-    counter--;
-
-    adjustLastInput();
+    removeField(button);
 }
 
 function removeSpecificInput(button) {
+    removeField(button);
+}
+
+function removeField(button) {
     var inputField = button.parentNode;
     var brElement = inputField.nextSibling;
     inputField.parentNode.removeChild(inputField);
@@ -125,28 +124,27 @@ function adjustLastInput() {
     var inputFields = document.querySelectorAll('#template-input .input-group');
     if (inputFields.length > 0) {
         var lastInputField = inputFields[inputFields.length-1];
-        var removeButton = lastInputField.querySelector('.remove-btn');
-        if (removeButton) {
-            removeButton.textContent = "+";
-            removeButton.className = "btn btn--radius-2 btn--blue add-btn add-remove-btn";
-            removeButton.setAttribute("onClick", "addInput_new();");
+        var addButton = lastInputField.querySelector('.add-btn');
+        if (addButton) {
+            addButton.textContent = "+";
+            addButton.className = "btn btn--radius-2 btn--blue add-btn add-remove-btn";
+            addButton.setAttribute("onClick", "addInput_new();");
         }
 
-        var existingTrashButtons = lastInputField.querySelectorAll('.trash-btn');
-        if (existingTrashButtons.length > 1) {
-            for (var i = 0; i < existingTrashButtons.length - 1; i++) {
-                existingTrashButtons[i].parentNode.removeChild(existingTrashButtons[i]);
-            }
-        }
 
-        if (inputFields.length === 1) {
-            var trashButton = lastInputField.querySelector('.trash-btn');
-            if (trashButton) {
-                trashButton.parentNode.removeChild(trashButton);
-            }
+        var trashButton = lastInputField.querySelector('.trash-btn');
+        if (!trashButton && inputFields.length > 1) {
+            var trashBtnElement = document.createElement('button');
+            trashBtnElement.className = 'btn btn--radius-2 btn--grey trash-btn add-remove-btn';
+            trashBtnElement.style = 'padding: 0 15px; font-size: 0.9rem;';
+            trashBtnElement.type = 'button';
+            trashBtnElement.innerHTML = '🗑️';
+            trashBtnElement.setAttribute('onClick', 'removeInput(this);');
+            lastInputField.appendChild(trashBtnElement);
         }
     }
 }
+
 
 
 
