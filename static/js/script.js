@@ -72,24 +72,30 @@ showStatisticsButton.addEventListener("click", function() {
   }
 });
 }
+
+
 var counter = 1;
 
 function addInput_new() {
     var inputFields = document.querySelectorAll('#template-input .input-group');
     if (inputFields.length > 0) {
         var lastInputField = inputFields[inputFields.length-1];
-        var buttons = lastInputField.getElementsByClassName('add-remove-btn');
-        if (buttons.length > 0) {
-            var lastButton = buttons[0];
-            lastButton.textContent = "-";
-            lastButton.className = "btn btn--radius-2 btn--blue remove-btn add-remove-btn";
-            lastButton.setAttribute("onClick", "removeInput(this);");
+        var addButton = lastInputField.querySelector('.add-btn');
+        if (addButton) {
+            addButton.textContent = "-";
+            addButton.setAttribute("onClick", "removeSpecificInput(this);");
+        }
+
+
+        var trashButton = lastInputField.querySelector('.trash-btn');
+        if (trashButton) {
+            trashButton.parentNode.removeChild(trashButton);
         }
     }
 
     var newdiv = document.createElement('div');
     newdiv.className = "input-group";
-    newdiv.innerHTML = "<input class='input--style-5 form-control' type='text' placeholder='New template' name=template_"+ counter +" required> <button class='btn btn--radius-2 btn--blue add-btn add-remove-btn' style='padding: 0 25px;' type='button' onClick='addInput_new();'>+</button>";
+    newdiv.innerHTML = "<input class='input--style-5 form-control' type='text' placeholder='New template' name=template_"+ counter +" required> <button class='btn btn--radius-2 btn--blue add-btn add-remove-btn' style='padding: 0 25px;' type='button' onClick='addInput_new();'>+</button> <button class='btn btn--radius-2 btn--grey trash-btn add-remove-btn' style='padding: 0 15px; font-size: 0.9rem;' type='button' onClick='removeInput(this);'>🗑️</button>";
     var container = document.getElementById('template-input');
     container.appendChild(newdiv);
     container.appendChild(document.createElement('br'));
@@ -97,26 +103,55 @@ function addInput_new() {
 }
 
 function removeInput(button) {
+    removeField(button);
+}
+
+function removeSpecificInput(button) {
+    removeField(button);
+}
+
+function removeField(button) {
     var inputField = button.parentNode;
     var brElement = inputField.nextSibling;
     inputField.parentNode.removeChild(inputField);
     brElement.parentNode.removeChild(brElement);
     counter--;
 
+    adjustLastInput();
+}
+
+function adjustLastInput() {
     var inputFields = document.querySelectorAll('#template-input .input-group');
     if (inputFields.length > 0) {
         var lastInputField = inputFields[inputFields.length-1];
-        var buttons = lastInputField.getElementsByClassName('add-remove-btn');
-        if (buttons.length > 0) {
-            var lastButton = buttons[0];
-            if(lastButton.textContent === "-") {
-                lastButton.textContent = "+";
-                lastButton.className = "btn btn--radius-2 btn--blue add-btn add-remove-btn";
-                lastButton.setAttribute("onClick", "addInput_new();");
-            }
+        var addButton = lastInputField.querySelector('.add-btn');
+        if (addButton) {
+            addButton.textContent = "+";
+            addButton.className = "btn btn--radius-2 btn--blue add-btn add-remove-btn";
+            addButton.setAttribute("onClick", "addInput_new();");
+        }
+
+
+        var trashButton = lastInputField.querySelector('.trash-btn');
+        if (!trashButton && inputFields.length > 1) {
+            var trashBtnElement = document.createElement('button');
+            trashBtnElement.className = 'btn btn--radius-2 btn--grey trash-btn add-remove-btn';
+            trashBtnElement.style = 'padding: 0 15px; font-size: 0.9rem;';
+            trashBtnElement.type = 'button';
+            trashBtnElement.innerHTML = '🗑️';
+            trashBtnElement.setAttribute('onClick', 'removeInput(this);');
+            lastInputField.appendChild(trashBtnElement);
         }
     }
 }
+
+
+
+
+
+
+
+
 
 var counter_map = 0;
 var dynamicInput = [];

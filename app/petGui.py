@@ -472,7 +472,7 @@ async def label_distribution(session: SessionService = Depends(get_session_servi
 
     # Format the text column to show only the first 25 tokens
     random_examples['text'] = random_examples['text'].apply(
-        lambda x: ' '.join(x.split()[:10]) + ('...' if len(x.split()) > 10 else ''))
+        lambda x: ' '.join(x.split()[:7]) + ('...' if len(x.split()) > 7 else ''))
 
     # Create a table to display the randomly selected examples
     table_data = [['Label', 'Text']]
