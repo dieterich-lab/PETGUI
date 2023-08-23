@@ -8,8 +8,8 @@ from subprocess import PIPE
 from uuid import UUID, uuid4
 import threading
 from threading import Event
-import app.petGui
-from ..dto.session import cookie
+import petgui
+from ..dto.session import SessionVerifier
 import pandas as pd
 from os.path import isdir, isfile
 import pathlib
@@ -26,16 +26,14 @@ if local:
     ssh = "/opt/homebrew/bin/sshpass"
 
 
+def get_cookies(request: Request):
+    return request.cookies
+
 def get_session_service(request: Request):
-    try:
-        return request.app.state.session
-    except:
-        return False
-
-
+    return request.app.state.session
 @router.get("/start", response_class=HTMLResponse)
-def start(request: Request, session: SessionService = Depends(get_session_service)):
-    if session:
+def start(request: Request, cookie: str = Depends(get_cookies)):
+    if cookie:
         return templates.TemplateResponse("start.html", {"request": request, "session": True})
     else:
         return templates.TemplateResponse("start.html", {"request": request, "session": False})
@@ -43,12 +41,13 @@ def start(request: Request, session: SessionService = Depends(get_session_servic
 
 @router.get("/login")
 def login_form(request: Request, error=None, logout: bool = False,
-               session: SessionService = Depends(get_session_service)):
+               cookie: str = Depends(get_cookies)):
     if logout:
         return templates.TemplateResponse('login.html', {'request': request, 'error': error,
                                                          'logout_msg': "Logged out successfully!"})
-    elif session:
+    elif cookie:
         try:
+            session = get_session_service(request)
             session.get_session_id()
             return RedirectResponse(request.url_for("homepage"), status_code=303)
         except:
@@ -61,8 +60,7 @@ def login_form(request: Request, error=None, logout: bool = False,
 async def get_form(request: Request, sample: str = Form(media_type="multipart/form-data"),
                    label: str = Form(media_type="multipart/form-data"),
                    model_para: str = Form(media_type="multipart/form-data"),
-                   template_0: str = Form(media_type="multipart/form-data"),
-                   session: SessionService = Depends(get_session_service)):
+                   template_0: str = Form(media_type="multipart/form-data"), session: SessionService = Depends(get_session_service)):
     session_id, session_data = session.get_session_id(), session.get_session_data()
     try:
         await read_log(session, initial=True)
@@ -107,7 +105,7 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
         return templates.TemplateResponse("index.html", {"request": request, "error": "Invalid folder structure: Please make sure your uploaded folder matches the specified format."})
 
 
-@router.get("/basic", response_class=HTMLResponse, name='homepage')
+@router.get("/basic", response_class=HTMLResponse, name='homepage', dependencies=[Depends(get_session_service)])
 def get_form(request: Request, message: str = None):
     try:
         pathlib.Path("static/chart.png").unlink()
@@ -120,19 +118,18 @@ def get_form(request: Request, message: str = None):
         return templates.TemplateResponse("index.html", {"request": request})
 
 
-@router.get("/progress", response_class=HTMLResponse, name="progress")
+@router.get("/progress", response_class=HTMLResponse, name="progress",  dependencies=[Depends(get_session_service)])
 def read_item(request: Request):
     max_num = 100
     return templates.TemplateResponse("progress.html", {"request": request, "max_num": max_num})
 
 
-@router.get("/logging", name="logging", dependencies=[Depends(get_session_service)])
-async def logging(request: Request, error: str = None, session: SessionService = Depends(get_session_service)):
-    session_id = session.get_session_id()
+@router.get("/logging", name="logging",  dependencies=[Depends(get_session_service)])
+async def logging(request: Request, error: str = None):
     return templates.TemplateResponse("next.html", {"request": request, "error": error})
 
 
-@router.get("/log", name="log", dependencies=[Depends(get_session_service)])
+@router.get("/log", name="log",  dependencies=[Depends(get_session_service)])
 async def read_log(session: SessionService = Depends(get_session_service), initial: bool = False):
     session_id, session_data = session.get_session_id(), session.get_session_data()
     last_pos_file = session_data.last_pos_file
@@ -167,7 +164,7 @@ async def read_log(session: SessionService = Depends(get_session_service), initi
         return {"log": info_lines}
 
 
-@router.get("/download", name="download", dependencies=[Depends(get_session_service)])
+@router.get("/download", name="download",  dependencies=[Depends(get_session_service)])
 def download(session: SessionService = Depends(get_session_service)):
     """
     Returns:
@@ -177,7 +174,7 @@ def download(session: SessionService = Depends(get_session_service)):
     return FileResponse(f"{hash(session_id)}/results.json", filename="results.json")
 
 
-@router.get("/final", response_class=HTMLResponse, name='final', dependencies=[Depends(get_session_service)])
+@router.get("/final", response_class=HTMLResponse, name='final')
 def get_final_template(request: Request, message: str = None):
     if message:
         return templates.TemplateResponse("final_page.html",
@@ -186,7 +183,7 @@ def get_final_template(request: Request, message: str = None):
         return templates.TemplateResponse("final_page.html", {"request": request})
 
 
-@router.post("/uploadfile/", dependencies=[Depends(get_session_service)])
+@router.post("/uploadfile/",  dependencies=[Depends(get_session_service)])
 async def create_upload_file(file: UploadFile = File(...), session: SessionService = Depends(get_session_service)):
     """
     Upload function for the final page
@@ -202,7 +199,7 @@ async def create_upload_file(file: UploadFile = File(...), session: SessionServi
     return {"filename": "unlabeled.txt", "path": file_path}
 
 
-@router.get("/download_prediction", name="download_prediction", dependencies=[Depends(get_session_service)])
+@router.get("/download_prediction", name="download_prediction",  dependencies=[Depends(get_session_service)])
 def download_predict(session: SessionService = Depends(get_session_service)):
     session_id = session.get_session_id()
     with open(f'{hash(session_id)}/label_dict.json', 'r') as file:
@@ -217,17 +214,8 @@ def download_predict(session: SessionService = Depends(get_session_service)):
     return FileResponse(f"{hash(session_id)}/output/predictions.csv", filename="predictions.csv")
 
 
-@router.get("/logout")
-async def logout(request: Request, response: Response, session: SessionService = Depends(get_session_service)):
-    if request.app.state.event:
-        request.app.state.event.set()   # Stop job threads
-        request.app.state.event = None
-    await clean(request, session, logout=True)
-    cookie.delete_from_response(response)
-    request.app.state.session = None
 
-
-@router.get("/clean", name="clean", dependencies=[Depends(get_session_service)])
+@router.get("/clean", name="clean",  dependencies=[Depends(get_session_service)])
 async def clean(request: Request, session: SessionService = Depends(get_session_service), logout: bool = False, ssh=ssh):
     """
     Iterates over created paths during PET and unlinks them.
@@ -255,6 +243,6 @@ async def clean(request: Request, session: SessionService = Depends(get_session_
                                 stderr=PIPE)
         outs, errs = proc.communicate()
         print(outs, errs)
-        await app.petGui.run(request, session)
+        await petgui.run(request, session)
         request.app.state.job_id = None
     return {"Status": "Cleaned"}

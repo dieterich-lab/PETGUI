@@ -1,5 +1,5 @@
-from app.services.session import SessionService
-from app.dto.session import cookie, backend
+from petgui.services.session import SessionService
+from petgui.dto.session import cookie, backend
 
 
 class SessionServiceMock(SessionService):

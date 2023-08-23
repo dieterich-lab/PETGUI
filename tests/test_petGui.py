@@ -7,11 +7,11 @@ from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
 from tests.session_service import SessionServiceMock
-from app.petGui import app, get_session_service, User
+from petgui.petGui import app, get_session_service, User
 import pytest
 from fastapi.responses import FileResponse, RedirectResponse
-from app.dto.session import SessionData, cookie, verifier
-from app.services.session import SessionService
+from petgui.dto.session import SessionData, cookie, verifier
+from petgui.services.session import SessionService
 import io
 import os
 from os.path import exists
@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import tarfile
 
-from app.controller.templating import router
+from petgui.controller.templating import router
 
 
 

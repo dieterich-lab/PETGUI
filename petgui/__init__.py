@@ -1,7 +1,9 @@
 import glob
 import pathlib
 import concurrent.futures
-from fastapi import FastAPI, Depends, UploadFile, File, Request, Response, Form
+
+import requests
+from fastapi import FastAPI, Depends, UploadFile, File, Request, Response, Cookie
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -18,13 +20,13 @@ import random
 from uuid import UUID, uuid4
 import csv
 import numpy as np
-
+from typing import Annotated
 import shutil
 
-from app.controller import templating
-from app.controller import session
-from .services.session import SessionService
-from app.controller.session import User
+from petgui.controller import templating
+from petgui.controller import session
+from .services.session import SessionService, SessionVerifier
+from petgui.controller.session import User
 
 
 
@@ -41,24 +43,26 @@ if local:
     ssh = "/opt/homebrew/bin/sshpass"
 
 
-def get_session_service(request: Request):
-    return request.app.state.session
-
 @app.get("/", name="start")
 def main():
     return RedirectResponse(url="/start")
 
+def get_cookies(request: Request):
+    return request.cookies
 
-@app.get("/whoami", name="whoami")
-def whoami(session: SessionService = Depends(get_session_service)):
+def get_session_service(request: Request):
+    return request.app.state.session
+
+@app.get("/whoami", name="whoami",  dependencies=[Depends(get_session_service)])
+def whoami(request: Request, cookie: str = Depends(get_cookies)):
     try:
-        return session
+        print(cookie)
     except AttributeError as e:
         print(str(e))
+    return RedirectResponse(url=request.url_for("homepage"), status_code=303)
 
-
-@app.get("/steps", name="steps")
-def get_steps(session: SessionService = Depends(get_session_service)):
+@app.get("/steps", name="steps",  dependencies=[Depends(get_session_service)])
+def get_steps(request: Request, session: SessionService = Depends(get_session_service)):
     session_id = session.get_session_id()
     with open(f"./{hash(session_id)}/data.json") as f:
         data = json.load(f)
@@ -67,7 +71,7 @@ def get_steps(session: SessionService = Depends(get_session_service)):
     return {"steps": count_steps}
 
 
-@app.get("/logging/start_train")
+@app.get("/logging/start_train",  dependencies=[Depends(get_session_service)])
 async def run(request: Request, session: SessionService = Depends(get_session_service)):
     """
     Kicks off PET by calling train method.
@@ -84,7 +88,7 @@ async def run(request: Request, session: SessionService = Depends(get_session_se
 
 
 
-@app.get("/abort_job")
+@app.get("/abort_job",  dependencies=[Depends(get_session_service)])
 async def run(request: Request, session: SessionService = Depends(get_session_service), final: bool = False):
     """
     Aborts current job.
@@ -110,7 +114,7 @@ async def run(request: Request, session: SessionService = Depends(get_session_se
 
 
 
-@app.get("/final/start_prediction")
+@app.get("/final/start_prediction",  dependencies=[Depends(get_session_service)])
 async def label_prediction(request: Request, session: SessionService = Depends(get_session_service), check: bool = False):
     '''Start Predicttion'''
     if check:
@@ -296,7 +300,7 @@ def detect_delimiter(filename):
     except pd.errors.ParserError:
         raise Exception
 
-@app.post("/extract-file")
+@app.post("/extract-file",  dependencies=[Depends(get_session_service)])
 async def extract_file(request: Request, file: UploadFile = File(...), session: SessionService = Depends(get_session_service)):
     session_id = session.get_session_id()
     upload_folder = f"{hash(session_id)}/data_uploaded/"
@@ -418,7 +422,7 @@ async def extract_file(request: Request, file: UploadFile = File(...), session: 
     print("message", "File extracted successfully.")
 
 
-@app.get("/report-labels")
+@app.get("/report-labels",  dependencies=[Depends(get_session_service)])
 def report(session: SessionService = Depends(get_session_service)):
     session_id = session.get_session_id()
     columns = ["label", "text"]
@@ -433,7 +437,7 @@ def report(session: SessionService = Depends(get_session_service)):
     return {"list": labels}
 
 
-@app.post("/label-distribution")
+@app.post("/label-distribution",  dependencies=[Depends(get_session_service)])
 async def label_distribution(session: SessionService = Depends(get_session_service)):
     session_id = session.get_session_id()
     # Read the prediction data into a dataframe
@@ -490,7 +494,7 @@ async def label_distribution(session: SessionService = Depends(get_session_servi
     return {"message": "Label distribution chart created successfully."}
 
 
-@app.post("/label-change")
+@app.post("/label-change",  dependencies=[Depends(get_session_service)])
 async def label_change (session: SessionService = Depends(get_session_service)):
     session_id = session.get_session_id()
 

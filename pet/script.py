@@ -19,7 +19,7 @@ class Script():
         self.reduction='wmean'
         self.decoding_strategy='default'
         self.no_distillation=False
-        self.pet_repetitions=3 #2 #3 #1
+        self.pet_repetitions=1 #3 #2 #3 #1
         self.pet_max_seq_length=128#256
         self.pet_per_gpu_train_batch_size=2#12#4 #2
         self.pet_per_gpu_eval_batch_size=8#32#8
