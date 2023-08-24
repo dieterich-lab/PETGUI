@@ -77,8 +77,8 @@ async def run(request: Request, session: SessionService = Depends(get_session_se
     try:
         request.app.state.job_id = await submit_job(session, False)
         request.app.state.event = threading.Event()
-        t = threading.Thread(target=check_job_status, args=(request, session, request.app.state.job_id, False))
-        t.start()
+        request.app.state.thread = threading.Thread(target=check_job_status, args=(request, session, request.app.state.job_id, False))
+        request.app.state.thread.start()
     except Exception as e:
         return templating.logging(request, str(e))
 
@@ -94,6 +94,8 @@ async def run(request: Request, session: SessionService = Depends(get_session_se
         user = session.session_data.username
         cluster_name = session.session_data.cluster_name
         job_id = request.app.state.job_id
+        request.app.state.event.set()
+        request.app.state.thread.join()
         print(f"Aborting job with id: {job_id}")
         ssh_cmd = ["sshpass", '-e', 'ssh', f'{user}@{cluster_name}',
                    f'scancel {job_id}']
@@ -123,8 +125,8 @@ async def label_prediction(request: Request, session: SessionService = Depends(g
             print("Prediction starting..")
             request.app.state.job_id = await submit_job(session, True)
             request.app.state.event = threading.Event()
-            t = threading.Thread(target = check_job_status, args = (request, session, request.app.state.job_id, True))
-            t.start()
+            request.app.state.thread = threading.Thread(target = check_job_status, args = (request, session, request.app.state.job_id, True))
+            request.app.state.thread.start()
         except Exception as e:
             error = "Something went wrong, please reload the page and try again"
             return templating.get_final_template(request, error)
@@ -202,14 +204,15 @@ def check_job_status(request: Request, session: SessionService = Depends(get_ses
         except IndexError:
             pass
         if status == "R":
+            request.app.state.job_status = "R"
             pass
         elif status == "CD":
+            request.app.state.job_status = "CD"
             if predict:
                 scp_cmd = ["sshpass", '-e', 'ssh', f'{user}@{cluster_name}',
                            f'cat {remote_loc_pet}predictions.csv', f'> {hash(session_id)}/output/predictions.csv']
                 outs, errs = bash_cmd(session, scp_cmd, shell=True)
                 print(outs, errs)
-                request.app.state.job_status = "CD"
                 return {"Prediction": "finished"}
             else:
                 with open(f'{hash(session_id)}/logging.txt', 'a') as file:
@@ -233,8 +236,10 @@ def check_job_status(request: Request, session: SessionService = Depends(get_ses
                 results(session)
                 return {"Training": "finished"}
         elif status == "CA":
+            request.app.state.job_status = "CA"
             return
         elif status == "F":
+            request.app.state.job_status = "F"
             raise Exception("Job could not finish. Please make sure your parameters are correct.")
 
         time.sleep(5)
