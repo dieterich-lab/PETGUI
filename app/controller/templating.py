@@ -255,7 +255,7 @@ async def clean(request: Request, session: SessionService = Depends(get_session_
                                 stderr=PIPE)
         outs, errs = proc.communicate()
         print(outs, errs)
-        if request.app.state.job_status is not None:
-            await app.petGui.run(request, session, True)
+        if request.app.state.job_status:
+            await app.petGui.abort(request, session, True)
         request.app.state.job_id = None
     return {"Status": "Cleaned"}
