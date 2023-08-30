@@ -85,7 +85,7 @@ async def run(request: Request, session: SessionService = Depends(get_session_se
 
 
 @app.get("/abort_job")
-async def run(request: Request, session: SessionService = Depends(get_session_service), final: bool = False):
+async def abort(request: Request, session: SessionService = Depends(get_session_service), final: bool = False):
     """
     Aborts current job.
     """
@@ -94,8 +94,6 @@ async def run(request: Request, session: SessionService = Depends(get_session_se
         user = session.session_data.username
         cluster_name = session.session_data.cluster_name
         job_id = request.app.state.job_id
-        request.app.state.event.set()
-        request.app.state.thread.join()
         print(f"Aborting job with id: {job_id}")
         ssh_cmd = ["sshpass", '-e', 'ssh', f'{user}@{cluster_name}',
                    f'scancel {job_id}']
@@ -107,7 +105,7 @@ async def run(request: Request, session: SessionService = Depends(get_session_se
     if final:
         return
     else:
-        return RedirectResponse(request.url_for("clean"), status_code=303)
+        return await templating.clean(request, session, logout=False)
 
 
 
