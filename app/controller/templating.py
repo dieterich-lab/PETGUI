@@ -58,10 +58,10 @@ def login_form(request: Request, error=None, logout: bool = False,
 
 
 @router.post("/basic", name="homepage", dependencies=[Depends(get_session_service)])
-async def get_form(request: Request, sample: str = Form(media_type="multipart/form-data"),
-                   label: str = Form(media_type="multipart/form-data"),
-                   model_para: str = Form(media_type="multipart/form-data"),
-                   template_0: str = Form(media_type="multipart/form-data"),
+async def get_form(request: Request, sample: str = Form(...),
+                   label: str = Form(...),
+                   model_para: str = Form(...),
+                   template_0: str = Form(...),
                    session: SessionService = Depends(get_session_service)):
     session_id, session_data = session.get_session_id(), session.get_session_data()
     try:
@@ -91,15 +91,13 @@ async def get_form(request: Request, sample: str = Form(media_type="multipart/fo
             mapping_key = f"mapping_{str(mapping_counter)}"
             para_dic[mapping_key] = da[mapping_key]
             mapping_counter = mapping_counter + 1
-
-        redirect_url = request.url_for('logging')
         print(para_dic)
         if f"{hash(session_id)}_unlabeled" in os.environ:
             para_dic["unlabeled"] = True
 
         with open(f'{hash(session_id)}/data.json', 'w') as f:
             json.dump(para_dic, f)
-
+        redirect_url = request.url_for('logging')
         return RedirectResponse(redirect_url, status_code=303)
     except Exception as e:
         error = str(e)

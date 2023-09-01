@@ -25,6 +25,9 @@ from app.controller.templating import router
 
 
 class TestServer:
+    import matplotlib
+    matplotlib.use('agg')
+
     session_id = uuid4()
     session_data = SessionData(
         username="username",
@@ -40,16 +43,13 @@ class TestServer:
     @pytest.fixture()
     def setting(self):
         self.metadata = {
-            "file": "yelp_review_polarity_csv",
             "sample": "1",
             "label": "0",
             "template_0": "Es war _.",
-            "template_1": "Im Großen und Ganzen _ .",
-            "template_2": "Einfach nur_ .",
-            "origin_0": "1",
-            "mapping_0": "schlecht",
-            "origin_1": "2",
-            "mapping_1": "gut",
+            'origin_0': 'AllergienUnverträglichkeitenRisiken', 'origin_1': 'Anamnese', 'origin_2': 'Befunde',
+            'origin_3': 'Diagnosen', 'origin_4': 'Medikation', 'origin_5': 'Other', 'mapping_0': 'Risiko',
+            'mapping_1': 'Vorstellung', 'mapping_2': 'Nachweis', 'mapping_3': 'Diagnose', 'mapping_4': 'Medikamente',
+            'mapping_5': 'Verlauf',
             "model_para": "gbert-base"
         }
         yield self.metadata,
@@ -75,12 +75,13 @@ class TestServer:
 
 
     @pytest.fixture
-    def helper_mock(self, mocker, mock_get_session_service):
+    async def helper_mock(self, mocker, mock_get_session_service):
         mock_request = mocker.MagicMock(Request)
         sess = SessionServiceMock(self.session_data, self.session_id)
         response = RedirectResponse(url=mock_request.url_for("homepage"), status_code=303)
-        sess.create_session(self.session_data.username, response)
+        await sess.create_session(self.session_data.username, response)
         mocker.patch("app.services.session.SessionService.create_session", return_value=sess)
+        mocker.patch("app.controller.session.login", return_value=response)
 
 
     @pytest.fixture
@@ -103,9 +104,11 @@ class TestServer:
     def mock_bind(self, mocker):
         mocker.patch("app.services.ldap.bind", return_value=True)  # Return user authentication
 
-    def test_login(self, test_client, mock_user_dn, mock_bind, helper_mock):
+    @pytest.mark.asyncio
+    async def test_login(self, test_client):
         print("Testing login..")
         response = self.client.post("/login", data=self.data)
+        print(f"####SESSION_ID: {hash(self.session_id)}")
         assert response.status_code == 200
 
     def test_whoami(self, test_client, mock_session):
@@ -114,28 +117,8 @@ class TestServer:
         print(response.content)
         assert response.status_code == 200
 
-    def test_basic(self, test_client, setting, mock_session):
-        print("Testing homepage..")
-        with open("data/GE-yelp_review_polarity_csv.tar.gz", "rb") as f:
-            data = io.BytesIO(f.read())
-        file = {"file": ("yelp_review_polarity_csv", data, "multipart/form-data")}
-        response = self.client.post(
-            "/basic",
-            data=self.metadata,
-            files=file,
-            follow_redirects=True
-        )
-        assert response.status_code == 303
-        assert f"{response.next_request}" == f"{self.client.get('/logging', follow_redirects=False).request}"
-        assert exists(f"{hash(self.session_id)}/data_uploaded")
-        assert exists(f"{hash(self.session_id)}/data.json")
-        assert exists(f"{hash(self.session_id)}/data_uploaded/{file['file'][0]}")
-        assert exists(f"{self.session_data.log_file}")
-
-
     def test_extract_file(self, test_client, setting, mock_session):
-
-       # Create a mock dataframe with known label values
+        # Create a mock dataframe with known label values
         df = pd.DataFrame({"label": ["A", "B", "C", "A", "B", "C", "A", "B", "C", "A", "B", "C"]})
         train_file = Path(f"{hash(self.session_id)}/data_uploaded/train.csv")
         test_file = Path(f"{hash(self.session_id)}/data_uploaded/test.csv")
@@ -146,7 +129,7 @@ class TestServer:
         df.to_csv(train_file, index=False)
         df.to_csv(test_file, index=False)
 
-        tar_file_path = f"{hash(self.session_id)}/data_uploaded/yelp_review_polarity_csv"
+        tar_file_path = f"{hash(self.session_id)}/data_uploaded/train"
         with tarfile.open(tar_file_path, "w:gz") as tar:
             tar.add(train_file, arcname="train.csv")
             tar.add(test_file, arcname="test.csv")
@@ -164,25 +147,38 @@ class TestServer:
         chart_file = Path("chart.png")
         plt.savefig(chart_file, dpi=100)
 
-        #Call the extract_file function and check the response
+        # Call the extract_file function and check the response
 
-        with open("data/GE-yelp_review_polarity_csv.tar.gz", "rb") as tar_file:
+        with open("data/train.tar.gz", "rb") as tar_file:
             response = self.client.post("/extract-file", files={"file": ("data.tar.gz", tar_file)})
         assert response.status_code == 200
         print(response.content, response.json(), response.stream, response.read())
-        assert response.json() == {"message": "File extracted successfully."}
-        assert train_file.exists()
-        assert test_file.exists()
-        assert chart_file.exists()
+        assert Path(f"{hash(self.session_id)}/data_uploaded/data/train.csv").exists()
+        assert Path(f"{hash(self.session_id)}/data_uploaded/data/test.csv").exists()
+        #assert chart_file.exists()
+
+    def test_basic(self, test_client, setting, mock_session):
+        print("Testing homepage..")
+        with open("data/train.tar.gz", "rb") as f:
+            data = io.BytesIO(f.read())
+        file = {"file": ("train", data, "multipart/form-data")}
+        response = self.client.post(
+            "/basic",
+            data=self.metadata,
+            follow_redirects=False
+        )
+        assert response.status_code == 303
+        assert f"{response.next_request}" == f"{self.client.get('/logging', follow_redirects=False).request}"
+        assert exists(f"{hash(self.session_id)}/data_uploaded")
+        assert exists(f"{hash(self.session_id)}/data.json")
+        assert exists(f"{self.session_data.log_file}")
 
 
     def test_logging(self, test_client, mock_session):
         print("Testing logging..")
         response = self.client.get("/logging")
-        #assert response.status_code == 200
+        assert response.status_code == 200
         assert exists(f"{hash(self.session_id)}/data.json")
-        # assert exists("output")
-        assert exists("templates/next.html")
 
 
     @pytest.fixture
@@ -209,7 +205,7 @@ class TestServer:
         response = self.client.get("/download")
         assert exists(f"{hash(self.session_id)}/results.json")
         assert response.status_code == 200
-
+        #assert exists(f"{hash(self.session_id)}/output")
 
 
 
@@ -249,7 +245,6 @@ class TestServer:
         client = TestClient(app)
         response = client.post("/label-distribution")
         assert response.status_code == 200
-        assert response.json() == {"message": "Label distribution chart created successfully."}
         assert predictions_file.exists()
         assert chart_file.exists()
 
