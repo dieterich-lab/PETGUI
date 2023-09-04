@@ -73,12 +73,12 @@ async def run(request: Request, session: SessionService = Depends(get_session_se
     Kicks off PET by calling train method.
     """
     '''Start PET'''
-    print("Training starting..")
     try:
         request.app.state.job_id = await submit_job(session, False)
         request.app.state.event = threading.Event()
         request.app.state.thread = threading.Thread(target=check_job_status, args=(request, session, request.app.state.job_id, False))
         request.app.state.thread.start()
+        return {"Training": "started"}
     except Exception as e:
         return templating.logging(request, str(e))
 
@@ -108,7 +108,6 @@ async def abort(request: Request, session: SessionService = Depends(get_session_
         return await templating.clean(request, session, logout=False)
 
 
-
 @app.get("/final/start_prediction")
 async def label_prediction(request: Request, session: SessionService = Depends(get_session_service), check: bool = False):
     '''Start Predicttion'''
@@ -120,11 +119,11 @@ async def label_prediction(request: Request, session: SessionService = Depends(g
             pass
     else:
         try:
-            print("Prediction starting..")
             request.app.state.job_id = await submit_job(session, True)
             request.app.state.event = threading.Event()
             request.app.state.thread = threading.Thread(target = check_job_status, args = (request, session, request.app.state.job_id, True))
             request.app.state.thread.start()
+            return {"Prediction": "started"}
         except Exception as e:
             error = "Something went wrong, please reload the page and try again"
             return templating.get_final_template(request, error)
@@ -250,8 +249,6 @@ def check_job_status(request: Request, session: SessionService = Depends(get_ses
         # Update the log file on the local machine
         with open(f"{log_file}", 'w') as f:
             f.write(log_contents)
-
-
 
 def results(session: SessionService = Depends(get_session_service)):
     """
@@ -417,7 +414,7 @@ async def extract_file(request: Request, file: UploadFile = File(...), session: 
     # Save the chart to a file
     plt.savefig("static/chart.png", dpi=100)
 
-    print("message", "File extracted successfully.")
+    return{"message": "File extracted successfully."}
 
 
 @app.get("/report-labels")
@@ -431,7 +428,6 @@ def report(session: SessionService = Depends(get_session_service)):
                                names=columns)
     labels = set(str(i) for i in train_df.label)
     print(labels)
-
     return {"list": labels}
 
 
@@ -440,11 +436,6 @@ async def label_distribution(session: SessionService = Depends(get_session_servi
     session_id = session.get_session_id()
     # Read the prediction data into a dataframe
     df = pd.read_csv(f'{hash(session_id)}/output/predictions.csv')
-
-    with open(f'{hash(session_id)}/label_dict.json', 'r') as file:
-        label_mapping = json.load(file)
-
-    df['label'] = df['label'].astype(str).map(label_mapping)
 
     # Shorten the label to the first 10 characters
     df['short_label'] = df['label'].apply(lambda x: x[:10])
@@ -490,27 +481,4 @@ async def label_distribution(session: SessionService = Depends(get_session_servi
     plt.savefig("static/chart_prediction.png", dpi=100)
 
     return {"message": "Label distribution chart created successfully."}
-
-
-@app.post("/label-change")
-async def label_change (session: SessionService = Depends(get_session_service)):
-    session_id = session.get_session_id()
-
-    with open(f'{hash(session_id)}/label_dict.json', 'r') as file:
-        label_mapping = json.load(file)
-
-
-    with open(f'{hash(session_id)}/results.json', 'r') as file:
-        json_data = json.load(file)
-
-    for key in json_data:
-        for i in range(len(json_data[key]["pre-rec-f1-supp"])):
-            label_number = json_data[key]["pre-rec-f1-supp"][i].split(':')[1].split()[0]
-            if label_number in label_mapping:
-                label = label_mapping[label_number][:10]
-                json_data[key]["pre-rec-f1-supp"][i] = json_data[key]["pre-rec-f1-supp"][i].replace(
-                    "Label: {}".format(label_number),
-                    "Label: {}".format(label))
-    with open(f'{hash(session_id)}/results.json', 'w') as file:
-        json.dump(json_data, file, ensure_ascii=False)
 

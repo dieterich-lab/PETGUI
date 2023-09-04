@@ -1,6 +1,6 @@
 '''LDAP'''
 from ldap3 import Server, Connection, ALL, Tls, AUTO_BIND_TLS_BEFORE_BIND, core
-from ssl import PROTOCOL_TLSv1_2
+from ssl import PROTOCOL_TLS_CLIENT
 
 LDAP_SERVER = 'ldap://ldap2.dieterichlab.org'
 CA_FILE = 'DieterichLab_CA.pem'
@@ -9,7 +9,7 @@ LDAP_SEARCH_FILTER = '({name_attribute}={name})'
 
 
 try:
-    tls = Tls(ca_certs_file=CA_FILE, version=PROTOCOL_TLSv1_2)
+    tls = Tls(ca_certs_file=CA_FILE, version=PROTOCOL_TLS_CLIENT)
     server = Server(LDAP_SERVER, get_info=ALL, tls=tls)
     conn = Connection(server, auto_bind=AUTO_BIND_TLS_BEFORE_BIND, raise_exceptions=True)
 except Exception as e:

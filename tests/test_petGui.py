@@ -11,17 +11,13 @@ from app.petGui import app, get_session_service, User
 import pytest
 from fastapi.responses import FileResponse, RedirectResponse
 from app.dto.session import SessionData, cookie, verifier
-from app.services.session import SessionService
 import io
 import os
 from os.path import exists
 import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
-import tarfile
-
 from app.controller.templating import router
-
 
 
 class TestServer:
@@ -45,7 +41,7 @@ class TestServer:
         self.metadata = {
             "sample": "1",
             "label": "0",
-            "template_0": "Es war _.",
+            "template_0": "Dieser Text berichtet über _.",
             'origin_0': 'AllergienUnverträglichkeitenRisiken', 'origin_1': 'Anamnese', 'origin_2': 'Befunde',
             'origin_3': 'Diagnosen', 'origin_4': 'Medikation', 'origin_5': 'Other', 'mapping_0': 'Risiko',
             'mapping_1': 'Vorstellung', 'mapping_2': 'Nachweis', 'mapping_3': 'Diagnose', 'mapping_4': 'Medikamente',
@@ -55,9 +51,30 @@ class TestServer:
         yield self.metadata,
 
     @pytest.fixture
-    def mock_get_session_service(self, mocker):
-        yield SessionServiceMock(self.session_data, self.session_id)
+    def test_client(self):
+        self.app.include_router(router)  # Not a necessity
+        self.client = TestClient(app)
+        self.request = Request
+        yield self.client
 
+    def test_home(self, test_client):
+        print("Testing app start..")
+        response = self.client.get("/")
+        assert response.status_code == 200
+
+    def test_start(self, test_client):
+        print("Testing start..")
+        response = self.client.get("/start")
+        assert response.status_code == 200
+
+    def test_login(self, test_client):
+        print("Testing login..")
+        response = self.client.get("/login")
+        assert response.status_code == 200
+
+    @pytest.fixture
+    def mock_get_session_service(self):
+        yield SessionServiceMock(self.session_data, self.session_id)
 
     @pytest.fixture
     def mock_session(self, mock_get_session_service):
@@ -73,91 +90,66 @@ class TestServer:
         app.state.session = self.mock_get_session_service
         yield app.state.session
 
+    @pytest.fixture
+    def helper_mock(self, mocker):
+        mocker.patch("app.services.session.SessionService.create_session", return_value=self.mock_session)
 
     @pytest.fixture
-    async def helper_mock(self, mocker, mock_get_session_service):
-        mock_request = mocker.MagicMock(Request)
-        sess = SessionServiceMock(self.session_data, self.session_id)
+    def mock_create_session(self, mocker, helper_mock):
+        mock_request = mocker.MagicMock(self.request)
         response = RedirectResponse(url=mock_request.url_for("homepage"), status_code=303)
-        await sess.create_session(self.session_data.username, response)
-        mocker.patch("app.services.session.SessionService.create_session", return_value=sess)
-        mocker.patch("app.controller.session.login", return_value=response)
+        os.environ[f"{hash(self.session_id)}"] = self.data["password"]
+        mocker.patch("app.controller.session.login", return_value=response)  # Return response with attached cookie
 
-
-    @pytest.fixture
-    def test_client(self):
-        self.app.include_router(router)        # Not a necessity
-        self.client = TestClient(app)
-        self.request = Request
-        yield self.client
-
-    def test_home(self, test_client):
-        print("Testing app start..")
-        response = self.client.get("/")
-        assert response.status_code == 200
 
     @pytest.fixture
     def mock_user_dn(self, mocker):
-        mocker.patch("app.services.ldap.get_dn_of_user", return_value="user")  # Return user dn
+        mocker.patch("app.services.ldap.get_dn_of_user", return_value=self.session_data.username)  # Return user dn
 
     @pytest.fixture
     def mock_bind(self, mocker):
         mocker.patch("app.services.ldap.bind", return_value=True)  # Return user authentication
 
     @pytest.mark.asyncio
-    async def test_login(self, test_client):
+    async def test_login(self, test_client, mock_user_dn, mock_bind, mock_create_session):
         print("Testing login..")
         response = self.client.post("/login", data=self.data)
-        print(f"####SESSION_ID: {hash(self.session_id)}")
         assert response.status_code == 200
 
     def test_whoami(self, test_client, mock_session):
         print("Testing whoami..")
         response = self.client.get("/whoami")
-        print(response.content)
+        assert self.session_data.username in response.content.decode("utf-8")
+        assert response.status_code == 200
+
+    def test_basic(self, test_client, mock_session):
+        print("Testing basic..")
+        response = self.client.get("/basic")
+        assert response.status_code == 200
+
+    def test_logging(self, test_client, mock_session):
+        print("Testing logging..")
+        response = self.client.get("/logging", params={"error": None})
         assert response.status_code == 200
 
     def test_extract_file(self, test_client, setting, mock_session):
-        # Create a mock dataframe with known label values
-        df = pd.DataFrame({"label": ["A", "B", "C", "A", "B", "C", "A", "B", "C", "A", "B", "C"]})
-        train_file = Path(f"{hash(self.session_id)}/data_uploaded/train.csv")
-        test_file = Path(f"{hash(self.session_id)}/data_uploaded/test.csv")
-
-        directory_path = f"{hash(self.session_id)}/data_uploaded"
-
-        os.makedirs(directory_path, exist_ok=True)
-        df.to_csv(train_file, index=False)
-        df.to_csv(test_file, index=False)
-
-        tar_file_path = f"{hash(self.session_id)}/data_uploaded/train"
-        with tarfile.open(tar_file_path, "w:gz") as tar:
-            tar.add(train_file, arcname="train.csv")
-            tar.add(test_file, arcname="test.csv")
-
-        # Mock the matplotlib plot and save it to a temporary file
-        fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(7, 5))
-        ax1.bar(["A", "B", "C"], [4, 4, 4], width=0.5)
-        ax1.set_title("Train Label Distribution")
-        ax1.set_xlabel("Label")
-        ax1.set_ylabel("Count")
-        ax2.bar(["A", "B", "C"], [4, 4, 4], width=0.5)
-        ax2.set_title("Test Label Distribution")
-        ax2.set_xlabel("Label")
-        ax2.set_ylabel("Count")
-        chart_file = Path("chart.png")
-        plt.savefig(chart_file, dpi=100)
-
-        # Call the extract_file function and check the response
-
+        print("Testing extract file")
         with open("data/train.tar.gz", "rb") as tar_file:
             response = self.client.post("/extract-file", files={"file": ("data.tar.gz", tar_file)})
+        assert exists(f"{hash(self.session_id)}/data_uploaded/data/train.csv")
+        assert exists(f"{hash(self.session_id)}/data_uploaded/data/test.csv")
+        assert exists(f"{hash(self.session_id)}/label_dict.json")
+        assert exists("static/chart.png")
         assert response.status_code == 200
-        print(response.content, response.json(), response.stream, response.read())
-        assert Path(f"{hash(self.session_id)}/data_uploaded/data/train.csv").exists()
-        assert Path(f"{hash(self.session_id)}/data_uploaded/data/test.csv").exists()
-        #assert chart_file.exists()
+        assert response.json() == {"message": "File extracted successfully."}
 
-    def test_basic(self, test_client, setting, mock_session):
+    def test_report_labels(self, test_client, mock_session):
+        print("Testing report labels")
+        response = self.client.get(url="/report-labels")
+        assert "list" in response.json()
+        assert response.status_code == 200
+
+    def test_homepage(self, test_client, setting, mock_session):
         print("Testing homepage..")
         with open("data/train.tar.gz", "rb") as f:
             data = io.BytesIO(f.read())
@@ -173,17 +165,9 @@ class TestServer:
         assert exists(f"{hash(self.session_id)}/data.json")
         assert exists(f"{self.session_data.log_file}")
 
-
-    def test_logging(self, test_client, mock_session):
-        print("Testing logging..")
-        response = self.client.get("/logging")
-        assert response.status_code == 200
-        assert exists(f"{hash(self.session_id)}/data.json")
-
-
     @pytest.fixture
     def mock_submit_job(self, mocker):
-        mocker.patch("app.petGui.submit_job", return_value=1234)  # Return job-id
+        mocker.patch("app.petGui.submit_job", return_value="1234")  # Return job-id
 
     @pytest.fixture
     def mock_check_job(self, mocker):
@@ -192,26 +176,68 @@ class TestServer:
     def test_logging_train(self, test_client, mock_session, mock_submit_job, mock_check_job):
         print("Testing training..")
         response = self.client.get("/logging/start_train")
+        assert response.json() == {"Training": "started"}
+        assert response.status_code == 200
+
+    def test_get_steps(self, test_client, mock_session):
+        print("Testing get steps..")
+        response = self.client.get("/steps")
+        assert response.json() == {"steps": 18}
+        assert response.status_code == 200
+
+    def test_read_log(self, test_client, mock_session):
+        print("Testing read log..")
+        response = self.client.get("/log")
+        assert exists(self.session_data.last_pos_file)
+        assert response.json() == {"log": []}
         assert response.status_code == 200
 
     @pytest.fixture
     def mock_results(self, mock_session):
+
         with open(f"{hash(self.session_id)}/results.json", "w") as f:
-            json.dump({"results": "good"}, f)
+            json.dump({
+        "train_set_before_training": 0.18333333333333332,
+        "global_step": 114,
+        "average_loss": 0.6888206180250436,
+        "train_set_after_training": 0.7166666666666667,
+        "test_set_after_training":
+            {"acc": 0.6944444444444444,
+             "pre-rec-f1-supp": [
+                 [0.8181818181818182, 0.7241379310344828, 1.0, 0.5384615384615384, 0.9615384615384616, 0.5],
+                 [0.9, 0.7, 0.26666666666666666, 0.9333333333333333, 0.8333333333333334, 0.5333333333333333],
+                 [0.8571428571428572, 0.711864406779661, 0.4210526315789474, 0.6829268292682926, 0.8928571428571429, 0.5161290322580646],
+                 [30, 30, 30, 30, 30, 30]]}}, f)
         yield FileResponse(f"{hash(self.session_id)}")
 
-    def test_results(self, test_client, mock_session, mock_results):
+    def test_download(self, test_client, mock_session, mock_results):
         print("Testing results..")
         response = self.client.get("/download")
         assert exists(f"{hash(self.session_id)}/results.json")
         assert response.status_code == 200
         #assert exists(f"{hash(self.session_id)}/output")
 
+    def test_final(self, test_client, mock_session):
+        print("Testing final..")
+        response = self.client.get("/final")
+        assert response.status_code == 200
 
+    def test_upload_file(self, test_client, mock_session):
+        print("Testing upload file..")
+        data = open(f"{hash(self.session_id)}/data_uploaded/data/unlabeled.csv", "rb")
+        file = {"file": ("predict", data, "multipart/form-data")}
+        response = self.client.post("/uploadfile/", files=file)
+        assert response.json() == {"filename": "unlabeled.txt", "path": f"{hash(self.session_id)}/data_uploaded/unlabeled/unlabeled.txt"}
+        assert response.status_code == 200
 
-    def test_label_distribution(self,mocker, test_client, setting, mock_session):
-        # Mock the get_session_service dependency
-        # Create a mock dataframe with known label values
+    def test_prediction(self, test_client, mock_session, mock_submit_job, mock_check_job):
+        print("Testing prediction..")
+        response = self.client.get("/final/start_prediction", params={"check": False})
+        assert response.json() == {"Prediction": "started"}
+        assert response.status_code == 200
+
+    def test_download_prediction(self, test_client, mock_session, mock_results):
+        print("Testing download predict..")
         data = {
             'label': [0, 1, 0, 1, 1],
             'text': [
@@ -220,34 +246,42 @@ class TestServer:
                 "Been going to Dr. Goldberg for over 10 years.",
                 "I am having a good time here.",
                 "I am having a bad time here.",
-
             ]
         }
         directory_path = f"{hash(self.session_id)}/output"
         os.makedirs(directory_path, exist_ok=True)
         predictions_file = Path(f"{hash(self.session_id)}/output/predictions.csv")
         df = pd.DataFrame(data)
-        df.to_csv(predictions_file)
-
-        # Mock the matplotlib plot and save it to a temporary file
-        fig, ax = plt.subplots()
-        ax.bar(["A", "B", "C","D","E"], [4, 4, 4,4,4])
-        ax.set_title("Label Counts")
-        ax.set_xlabel("Label")
-        ax.set_ylabel("Number of Examples")
-        table_data = [["Label", "Text"], ["A", "mock text..."], ["B", "mock text..."], ["C", "mock text..."],["D", "mock text..."],["E", "mock text..."]]
-        table = ax.table(cellText=table_data, loc="bottom", cellLoc="left", bbox=[0, -0.8, 1, 0.5])
-        table.auto_set_column_width(col=list(range(2)))
-        chart_file = Path("chart_prediction.png")
-        plt.savefig(chart_file, dpi=100)
-
-        # Call the label_distribution function and check the response
-        client = TestClient(app)
-        response = client.post("/label-distribution")
+        df.to_csv(predictions_file, index=False)
+        response = self.client.get("/download_prediction")
         assert response.status_code == 200
-        assert predictions_file.exists()
-        assert chart_file.exists()
 
-    
+    def test_label_distribution(self, test_client, setting, mock_session):
+        print("Testing label distribution")
+        # Call the label_distribution function and check the response
+        response = self.client.post("/label-distribution")
+        assert response.status_code == 200
+        assert exists("static/chart_prediction.png")
+        assert response.json() == {"message": "Label distribution chart created successfully."}
+
+    @pytest.fixture
+    def mock_bash_cmd(self, mocker):
+        mocker.patch('app.petGui.bash_cmd', return_value=(b"", b""))
+
+    def test_abort_job(self, test_client, mock_session, mock_bash_cmd):
+        print("Testing abort job..")
+        response = self.client.get("/abort_job", params={"final": False})
+        assert response.status_code == 200
+
+    def test_clean(self, test_client, mock_session):
+        print("Testing clean..")
+        response = self.client.get("/clean", params={"logout": False, "ssh": "sshpass"})
+        assert response.status_code == 200
+        assert response.json() == {"Status": "Cleaned"}
+
+    def test_logout(self, test_client, mock_session):
+        print("Testing logout..")
+        response = self.client.get("/logout")
+        assert response.json() == {"Logout": "successful"}
 
 

@@ -118,12 +118,6 @@ def get_form(request: Request, message: str = None):
         return templates.TemplateResponse("index.html", {"request": request})
 
 
-@router.get("/progress", response_class=HTMLResponse, name="progress")
-def read_item(request: Request):
-    max_num = 100
-    return templates.TemplateResponse("progress.html", {"request": request, "max_num": max_num})
-
-
 @router.get("/logging", name="logging", dependencies=[Depends(get_session_service)])
 async def logging(request: Request, error: str = None, session: SessionService = Depends(get_session_service)):
     session_id = session.get_session_id()
@@ -223,6 +217,7 @@ async def logout(request: Request, response: Response, session: SessionService =
     await clean(request, session, logout=True)
     cookie.delete_from_response(response)
     request.app.state.session = None
+    return {"Logout": "successful"}
 
 
 @router.get("/clean", name="clean", dependencies=[Depends(get_session_service)])
@@ -238,8 +233,8 @@ async def clean(request: Request, session: SessionService = Depends(get_session_
     cluster_name = session_data.cluster_name
     log_file = session_data.log_file
 
-    paths = ["logging.txt", "last_pos.txt", "output", "results.json", "data.json", "data_uploaded", "static/chart.png"]
-    paths = [f"{hash(session_id)}/" + path for path in paths]
+    paths = ["logging.txt", "last_pos.txt", "output", "results.json", "data.json", "data_uploaded", "static/chart.png", "static/chart_prediction.png"]
+    paths = [f"{hash(session_id)}/" + path if "png" not in path else path for path in paths ]
     for path in paths if not logout else [f"{hash(session_id)}"]:
         file_path = pathlib.Path(path)
         if isfile(path):
