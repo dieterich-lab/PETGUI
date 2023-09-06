@@ -110,8 +110,7 @@ class TestServer:
     def mock_bind(self, mocker):
         mocker.patch("app.services.ldap.bind", return_value=True)  # Return user authentication
 
-    @pytest.mark.asyncio
-    async def test_login(self, test_client, mock_user_dn, mock_bind, mock_create_session):
+    def test_login_form(self, test_client, mock_user_dn, mock_bind, mock_create_session):
         print("Testing login..")
         response = self.client.post("/login", data=self.data)
         assert response.status_code == 200
