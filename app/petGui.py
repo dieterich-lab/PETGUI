@@ -46,7 +46,7 @@ def get_session_service(request: Request):
 
 @app.get("/", name="start")
 def main():
-    return RedirectResponse(url="/start")
+    return RedirectResponse(url="/start", status_code=303)
 
 
 @app.get("/whoami", name="whoami")

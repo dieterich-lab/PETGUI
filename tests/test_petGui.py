@@ -5,6 +5,9 @@ from unittest.mock import MagicMock, patch
 from uuid import uuid4
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium import webdriver
+from webdriver_manager.chrome import ChromeDriverManager
 
 from tests.session_service import SessionServiceMock
 from app.petGui import app, get_session_service, User
@@ -18,10 +21,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
 from app.controller.templating import router
+import matplotlib
 
 
 class TestServer:
-    import matplotlib
+
     matplotlib.use('agg')
 
     session_id = uuid4()
@@ -35,6 +39,16 @@ class TestServer:
     )
     data = {"username": "user", "password": "pass"}
     app = FastAPI()
+
+    @pytest.fixture
+    def browser(self):
+        # Initialize the Chrome WebDriver
+        service = ChromeService(executable_path=ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service)
+        driver.implicitly_wait(20)
+        yield driver
+        # Clean up after the tests
+        driver.quit()
 
     @pytest.fixture()
     def setting(self):
@@ -51,10 +65,11 @@ class TestServer:
         yield self.metadata,
 
     @pytest.fixture
-    def test_client(self):
+    def test_client(self, mocker):
         self.app.include_router(router)  # Not a necessity
-        self.client = TestClient(app)
+        self.client = TestClient(app, base_url="https://petgui.dieterichlab.org")
         self.request = Request
+        self.mock_request = mocker.MagicMock(self.request)
         yield self.client
 
     def test_home(self, test_client):
@@ -72,27 +87,33 @@ class TestServer:
         response = self.client.get("/login")
         assert response.status_code == 200
 
+    def test_login_button(self, test_client, browser):
+        print("Testing login button..")
+        browser.get("https://petgui.dieterichlab.org/")
+        button = browser.find_element("id", "login")
+        button.click()
+        time.sleep(3)
+        cur = browser.current_url
+        assert cur == "https://petgui.dieterichlab.org/login"
+
     @pytest.fixture
     def mock_get_session_service(self):
-        yield SessionServiceMock(self.session_data, self.session_id)
-
-    @pytest.fixture
-    def mock_session(self, mock_get_session_service):
-        self.mock_verifier = self.session_data        # Not a necessity
-        self.mock_cookie = "long-fake-uuid"       # Not a necessity
-        self.mock_get_session_service = mock_get_session_service
-
-        app.dependency_overrides[cookie] = lambda: self.mock_cookie       # Not a necessity
-        app.dependency_overrides[get_session_service] = lambda: self.mock_get_session_service
-        app.dependency_overrides[verifier] = lambda: self.mock_verifier       # Not a necessity
-
+        session = SessionServiceMock(self.session_data, self.session_id)
+        response = RedirectResponse(url=self.mock_request.url_for("homepage"), status_code=303)
+        session.create_session(user=self.session_data.username, response=response)
         app.state = User()      # Not a necessity
-        app.state.session = self.mock_get_session_service
+        app.state.session = session
         yield app.state.session
 
     @pytest.fixture
+    def mock_session(self, mock_get_session_service):
+        self.mock_get_session_service = mock_get_session_service
+        app.dependency_overrides[get_session_service] = lambda: self.mock_get_session_service
+        yield self.mock_get_session_service
+
+    @pytest.fixture
     def helper_mock(self, mocker):
-        mocker.patch("app.services.session.SessionService.create_session", return_value=self.mock_session)
+        mocker.patch("app.services.session.SessionService.create_session", return_value=self.mock_get_session_service)
 
     @pytest.fixture
     def mock_create_session(self, mocker, helper_mock):
@@ -156,6 +177,7 @@ class TestServer:
         response = self.client.post(
             "/basic",
             data=self.metadata,
+            files=file,
             follow_redirects=False
         )
         assert response.status_code == 303
@@ -267,9 +289,13 @@ class TestServer:
     def mock_bash_cmd(self, mocker):
         mocker.patch('app.petGui.bash_cmd', return_value=(b"", b""))
 
-    def test_abort_job(self, test_client, mock_session, mock_bash_cmd):
+    def test_abort_job(self, test_client, mock_session, mock_bash_cmd, browser):
         print("Testing abort job..")
+        #browser.add_cookie()
+        #browser.get("https://petgui.dieterichlab.org/logging")
         response = self.client.get("/abort_job", params={"final": False})
+        assert response.json() == {"Status": "Cleaned"}
+        #assert '/basic?message=Training aborted successfully!' in response.next_request
         assert response.status_code == 200
 
     def test_clean(self, test_client, mock_session):

@@ -8,9 +8,8 @@ class SessionServiceMock(SessionService):
         self.session_id = session_id
         self.session_data = session_data
 
-    async def create_session(self, user, response):
+    def create_session(self, user, response):
         self.create_cookie(response=response)
-        await self.create_backend()
         return self
 
     async def create_backend(self):
