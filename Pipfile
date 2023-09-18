@@ -26,7 +26,6 @@ pytest = "*"
 python-dateutil = "*"
 python-multipart = "*"
 regex = "*"
-scikit-learn = "*"
 six = "*"
 sniffio = "*"
 starlette = "*"
@@ -35,6 +34,7 @@ transformers = "*"
 typing-extensions = "*"
 urllib3 = "*"
 uvicorn = "*"
+exceptiongroup = "*"
 
 [dev-packages]
 
