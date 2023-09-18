@@ -22,7 +22,6 @@ packaging = "*"
 pandas = "*"
 pydantic = "*"
 pyparsing = "*"
-pytest = "*"
 python-dateutil = "*"
 python-multipart = "*"
 regex = "*"
@@ -35,8 +34,14 @@ typing-extensions = "*"
 urllib3 = "*"
 uvicorn = "*"
 exceptiongroup = "*"
+webdriver-manager = "*"
+pytest-mock = "*"
 
 [dev-packages]
+pytest = "*"
+httpx = "*"
+selenium = "*"
+webdriver_manager = "*"
 
 [requires]
 python_version = "3.11"
