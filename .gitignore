@@ -1,8 +1,4 @@
 venv/
 *__pycache__*
-/static/chart.png
-/static/chart_prediction.png
-chart.png
-chart_prediction.png
 .idea
 /612300
