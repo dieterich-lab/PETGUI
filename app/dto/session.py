@@ -1,3 +1,5 @@
+import threading
+from typing import Any
 from fastapi import HTTPException, Depends
 from pydantic import BaseModel
 from fastapi_sessions.backends.implementations import InMemoryBackend
@@ -13,6 +15,9 @@ class SessionData(BaseModel):
     cluster_name: str
     last_pos_file: str
     log_file: str
+    job_id: str = None
+    event: Any = None
+    job_status: str = None
 
 
 cookie_params = CookieParameters()
@@ -25,7 +30,6 @@ cookie = SessionCookie(
     secret_key="DONOTUSE",
     cookie_params=cookie_params,
 )
-backend = InMemoryBackend[UUID, SessionData]()
 
 
 class BasicVerifier(SessionVerifier[UUID, SessionData]):
@@ -62,11 +66,15 @@ class BasicVerifier(SessionVerifier[UUID, SessionData]):
         """If the session exists, it is valid"""
         return True
 
+backend = InMemoryBackend[UUID, SessionData]()
+
 verifier = BasicVerifier(
     identifier="general_verifier",
     auto_error=True,
     backend=backend,
     auth_http_exception=HTTPException(status_code=403, detail="invalid session"),
 )
+
+
 
 

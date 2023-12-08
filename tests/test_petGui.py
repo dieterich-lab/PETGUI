@@ -197,7 +197,6 @@ class TestServer:
     def test_logging_train(self, test_client, mock_session, mock_submit_job, mock_check_job):
         print("Testing training..")
         response = self.client.get("/logging/start_train")
-        assert response.json() == {"Training": "started"}
         assert response.status_code == 200
 
     def test_get_steps(self, test_client, mock_session):

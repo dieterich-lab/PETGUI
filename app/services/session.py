@@ -1,36 +1,27 @@
-from ..dto.session import SessionData, SessionCookie, SessionVerifier, CookieParameters, cookie, verifier, backend
-from fastapi import Depends
+from ..dto.session import SessionData, SessionCookie, BasicVerifier, CookieParameters, verifier, backend, cookie
+from fastapi import Depends, HTTPException
 from uuid import uuid4, UUID
 
-class SessionService:
-    def __init__(self, session_data: SessionData = None, session_id: UUID = None):
-        self.session_data = None
-        self.session_id = None
 
-    async def create_session(self, user, response):
-        self.session_id = uuid4()
-        remote_loc = f"/home/{user}/{hash(self.session_id)}/"
-        remote_loc_pet = f"/home/{user}/{hash(self.session_id)}/pet/"
-        cluster_name = "cluster.dieterichlab.org"
-        log_file = f"{hash(self.session_id)}/logging.txt"
-        last_pos_file = f"{hash(self.session_id)}/last_pos.txt"
-        self.session_data = SessionData(username=user, remote_loc=remote_loc, remote_loc_pet=remote_loc_pet,
-                                        cluster_name=cluster_name, log_file=log_file, last_pos_file=last_pos_file)
-        self.create_cookie(response=response)
-        await self.create_backend()
-        return self
+async def create_session(user, response):
+    session_uuid = uuid4()
+    remote_loc = f"/home/{user}/{hash(session_uuid)}/"
+    remote_loc_pet = f"/home/{user}/{hash(session_uuid)}/pet/"
+    cluster_name = "cluster.dieterichlab.org"
+    log_file = f"{hash(session_uuid)}/logging.txt"
+    last_pos_file = f"{hash(session_uuid)}/last_pos.txt"
+    session_data = SessionData(username=user, remote_loc=remote_loc, remote_loc_pet=remote_loc_pet,
+                                    cluster_name=cluster_name, log_file=log_file, last_pos_file=last_pos_file)
+    cookie.attach_to_response(response, session_uuid)
+    await backend.create(session_uuid, session_data)
+    return session_uuid
 
-    async def create_backend(self):
-        return await backend.create(self.session_id, self.session_data)
 
-    def create_cookie(self, response=None):
-        return cookie.attach_to_response(response, self.session_id)
+async def get_session(session_uuid):
+    session = await backend.read(session_uuid)
+    return session
 
-    def get_session(self):
-        return self.session_id, self.session_data
 
-    def get_session_id(self):
-        return self.session_id
+async def end_session(response):
+    cookie.delete_from_response(response)
 
-    def get_session_data(self):
-        return self.session_data

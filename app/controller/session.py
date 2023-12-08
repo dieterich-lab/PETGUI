@@ -4,7 +4,7 @@ from fastapi.responses import RedirectResponse, HTMLResponse
 import os
 from uuid import uuid4
 from app.dto.session import SessionData
-from ..services.session import SessionService
+from ..services.session import create_session
 import app.services.ldap as ldap
 from app.controller import templating
 import threading
@@ -17,25 +17,19 @@ ssh = "sshpass"
 if local:
     ssh = "/opt/homebrew/bin/sshpass"
 
-class User:
-    session: SessionService
-    job_id: str = None
-    job_status: str
-    event: threading.Event = None
 
 @session_router.post("/login")
-async def login(request: Request, username: str = Form(...), password: str = Form(...)):
+async def login(request: Request, response: Response, username: str = Form(...), password: str = Form(...)):
     try:
         dn = ldap.get_dn_of_user(username)
         ldap.bind(dn, password)
-        response = RedirectResponse(url=request.url_for("homepage"), status_code=303)
-        session = SessionService()
-        request.app.state = User()
-        request.app.state.session = await session.create_session(username, response)
-        session_uuid = session.get_session_id()
+
+        session_uuid = await create_session(username, response)
         os.environ[f"{hash(session_uuid)}"] = password
         os.makedirs(f"./{hash(session_uuid)}", exist_ok=True)  # If run with new conf.
-        return response
+
+        return RedirectResponse(url=request.url_for("homepage"), status_code=303, headers=response.headers)
+
     except Exception as e:
         print(str(e))
         error = 'Invalid username or password'
