@@ -1,3 +1,6 @@
+import threading
+import uuid
+
 from fastapi import Request, Depends, APIRouter, Form, File, UploadFile, Response, HTTPException, FastAPI
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse, HTMLResponse
@@ -5,17 +8,15 @@ from starlette.responses import FileResponse
 from fastapi.encoders import jsonable_encoder
 import json, os, tarfile, subprocess
 from subprocess import PIPE
-from uuid import UUID, uuid4
-import threading
-from threading import Event
+from uuid import UUID
 import app.petGui
 import pandas as pd
 from os.path import isdir, isfile
 import pathlib
 import shutil
 
-from ..dto.session import backend, cookie, verifier, SessionData
-from ..services.session import end_session
+from ..dto.session import backend, cookie, SessionData, verifier
+from ..services.session import set_job_id, set_event, end_session
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -25,17 +26,17 @@ ssh = "sshpass"
 if local:
     ssh = "/opt/homebrew/bin/sshpass"
 
-
-async def get_session(session_id: UUID = cookie):
-    data = await backend.read(session_id=session_id)
-    if data:
-        return data
-    else:
-        return False#verifier.auth_http_exception
+@router.get("/get_session")
+async def get_session(request: Request):
+    try:
+        session = await backend.read(uuid.UUID(request.cookies["session"]))
+    except KeyError:
+        return None
+    return session
 
 
 @router.get("/start", response_class=HTMLResponse)
-def start(request: Request, session: SessionData = Depends(get_session)):
+async def start(request: Request, session = Depends(get_session)):
     if session:
         return templates.TemplateResponse("start.html", {"request": request, "session": True})
     else:
@@ -43,7 +44,7 @@ def start(request: Request, session: SessionData = Depends(get_session)):
 
 
 @router.get("/login")
-def login_form(request: Request, error=None, logout: bool = False, session: SessionData = Depends(get_session)):
+async def login_form(request: Request, error=None, logout: bool = False, session=Depends(get_session)):
     if logout:
         return templates.TemplateResponse('login.html', {'request': request, 'error': error,
                                                          'logout_msg': "Logged out successfully!"})
@@ -59,21 +60,33 @@ async def get_form(request: Request, sample: str = Form(...),
                    label: str = Form(...),
                    model_para: str = Form(...),
                    template_0: str = Form(...),
-                   session_id: UUID = Depends(cookie)):
-    session = await backend.read(session_id)
+                   session=Depends(get_session)):
+    print(session)
+    id = hash(session.id)
+    last_pos_file = session.last_pos_file
+    log_file = session.log_file
     try:
-        await read_log(session, initial=True)
+        # Initialize last_pos to the value stored in last_pos.txt, or 0 if the file does not exist
+        if os.path.exists(last_pos_file):
+            with open(last_pos_file, "r") as file:
+                os.environ[f"{id}_log"] = file.read()
+        else:
+            os.environ[f"{id}_log"] = str(0)
+            f = os.open(log_file, os.O_CREAT)
+            print(f)
+            os.environ[f"{id}_inp"] = "False"
+            print(os.environ[f"{id}_inp"])
         da = await request.form()
         da = jsonable_encoder(da)
         template_counter = 1
         origin_counter = 0
         mapping_counter = 0
 
-        os.environ[f"{hash(session_id)}_medbert"] = "True" if model_para == "/prj/doctoral_letters/PETGUI/med_bert_local" else "False" #"GerMedBERT/medbert-512" else "False"
+        os.environ[f"{id}_medbert"] = "True" if model_para == "/prj/doctoral_letters/PETGUI/med_bert_local" else "False" #"GerMedBERT/medbert-512" else "False"
 
-        para_dic = {"file": [direc for direc in os.listdir(f"{hash(session_id)}/data_uploaded")
-                             if os.path.isdir(f"{hash(session_id)}/data_uploaded/{direc}")][0], "sample": sample,
-                    "label": label, "delimiter": os.environ[f"{hash(session_id)}_delimiter"],
+        para_dic = {"file": [direc for direc in os.listdir(f"{id}/data_uploaded")
+                             if os.path.isdir(f"{id}/data_uploaded/{direc}")][0], "sample": sample,
+                    "label": label, "delimiter": os.environ[f"{id}_delimiter"],
                     "template_0": template_0, "model_para": model_para}
 
         while f"template_{str(template_counter)}" in da:  # Template
@@ -89,10 +102,10 @@ async def get_form(request: Request, sample: str = Form(...),
             para_dic[mapping_key] = da[mapping_key]
             mapping_counter = mapping_counter + 1
         print(para_dic)
-        if f"{hash(session_id)}_unlabeled" in os.environ:
+        if f"{id}_unlabeled" in os.environ:
             para_dic["unlabeled"] = True
 
-        with open(f'{hash(session_id)}/data.json', 'w') as f:
+        with open(f'{id}/data.json', 'w') as f:
             json.dump(para_dic, f)
         redirect_url = request.url_for('logging')
         return RedirectResponse(redirect_url, status_code=303)
@@ -116,69 +129,59 @@ def get_form(request: Request, message: str = None):
 
 
 @router.get("/logging", name="logging")
-async def logging(request: Request, error: str = None, session_id: UUID = Depends(cookie)):
+async def logging(request: Request, error: str = None):
     return templates.TemplateResponse("next.html", {"request": request, "error": error})
 
 
 @router.get("/log", name="log")
-async def read_log(session_id: UUID = Depends(cookie), initial: bool = False):
-    session = await backend.read(session_id)
+async def read_log(session = Depends(get_session)):
+    id = hash(session.id)
     last_pos_file = session.last_pos_file
     log_file = session.log_file
-    if initial:
-        # Initialize last_pos to the value stored in last_pos.txt, or 0 if the file does not exist
-        if os.path.exists(last_pos_file):
-            with open(last_pos_file, "r") as file:
-                os.environ[f"{hash(session_id)}_log"] = file.read()
-        else:
-            os.environ[f"{hash(session_id)}_log"] = str(0)
-            f = os.open(log_file, os.O_CREAT)
-            os.environ[f"{hash(session_id)}_inp"] = "False"
-            print(os.environ[f"{hash(session_id)}_inp"])
-    else:
-        with open(log_file, "r") as file:
-            file.seek(int(os.environ[f"{hash(session_id)}_log"]))
-            lines = file.readlines()
-            os.environ[f"{hash(session_id)}_log"] = str(file.tell())
-        with open(last_pos_file, "w") as file:
-            file.write(os.environ[f"{hash(session_id)}_log"])
-        info_lines = [line.strip() for line in lines if any(
-            word in line for word in
-            ["Creating", "Returning", "Saving", "Starting evaluation", "'acc'", "RESULT ", "Training Complete"])
-                      or "input_ids" in line and os.environ[f"{hash(session_id)}_inp"] == "False"]
+    with open(log_file, "r") as file:
+        file.seek(int(os.environ[f"{id}_log"]))
+        lines = file.readlines()
+        os.environ[f"{id}_log"] = str(file.tell())
+    with open(last_pos_file, "w") as file:
+        file.write(os.environ[f"{id}_log"])
+    info_lines = [line.strip() for line in lines if any(
+        word in line for word in
+        ["Creating", "Returning", "Saving", "Starting evaluation", "'acc'", "RESULT ", "Training Complete"])
+                  or "input_ids" in line and os.environ[f"{id}_inp"] == "False"]
 
-        info_lines = [line for line in info_lines if
-                      line not in list(filter(lambda x: "input_ids" in x, info_lines))[1:]]
-        if any(["input_ids" in line for line in info_lines]):
-            os.environ[f"{hash(session_id)}_inp"] = "True"
-            print(os.environ[f"{hash(session_id)}_inp"])
-        return {"log": info_lines}
+    info_lines = [line for line in info_lines if
+                  line not in list(filter(lambda x: "input_ids" in x, info_lines))[1:]]
+    if any(["input_ids" in line for line in info_lines]):
+        os.environ[f"{id}_inp"] = "True"
+        print(os.environ[f"{id}_inp"])
+    return {"log": info_lines}
 
 
 @router.get("/download", name="download")
-def download(session_id: UUID = Depends(cookie)):
+def download(session=Depends(get_session)):
+    id = hash(session.id)
     """
     Returns:
          final dict, e.g.: dict={p0-i0: {acc: 0.5, ...}, ...}
     """
-    return FileResponse(f"{hash(session_id)}/results.json", filename="results.json")
+    return FileResponse(f"{id}/results.json", filename="results.json")
 
 
 @router.get("/final", response_class=HTMLResponse, name='final')
-def get_final_template(request: Request, message: str = None):
+def get_final_template(request: Request, message: str = None, session=Depends(get_session)):
     if message:
         return templates.TemplateResponse("final_page.html",
                                           {"request": request, "message": message})
     else:
         return templates.TemplateResponse("final_page.html", {"request": request})
 
-
 @router.post("/uploadfile/")
-async def create_upload_file(file: UploadFile = File(...), session_id: UUID = Depends(cookie)):
+async def create_upload_file(session=Depends(get_session), file: UploadFile = File(...)):
     """
     Upload function for the final page
     """
-    upload_folder = f"{hash(session_id)}/data_uploaded/unlabeled"
+    id = hash(session.id)
+    upload_folder = f"{id}/data_uploaded/unlabeled"
     if os.path.exists(upload_folder):
         shutil.rmtree(upload_folder)
     os.makedirs(upload_folder)
@@ -189,60 +192,64 @@ async def create_upload_file(file: UploadFile = File(...), session_id: UUID = De
 
 
 @router.get("/download_prediction", name="download_prediction")
-def download_predict(session_id: UUID = Depends(cookie)):
-    with open(f'{hash(session_id)}/label_dict.json', 'r') as file:
+def download_predict(session=Depends(get_session)):
+    id = hash(session.id)
+    with open(f'{id}/label_dict.json', 'r') as file:
         label_mapping = json.load(file)
-    df = pd.read_csv(f"{hash(session_id)}/output/predictions.csv")
+    df = pd.read_csv(f"{id}/output/predictions.csv")
 
     # Convert the labels to string and map to the new labels
     df['label'] = df['label'].astype(str).map(label_mapping)
 
     # Save the updated dataframe
-    df.to_csv(f"{hash(session_id)}/output/predictions.csv", index=False)
-    return FileResponse(f"{hash(session_id)}/output/predictions.csv", filename="predictions.csv")
+    df.to_csv(f"{id}/output/predictions.csv", index=False)
+    return FileResponse(f"{id}/output/predictions.csv", filename="predictions.csv")
 
 
 @router.get("/logout")
-async def logout(request: Request, response: Response, session_id: UUID = Depends(cookie)):
-    session = await backend.read(session_id)
-    if session.event:
-        session.event.set()     # Stop job threads
-        session.event = None
-    await clean(request, session_id, logout=True)
-    await end_session(response)
+async def logout(response: Response, session=Depends(get_session)):
+    event = session.event
+    if not event:
+        await set_event(session.id, session, True)   # Stop job threads
+    await clean(session, logout=True)
+    await end_session(cookie, response)
+    response.delete_cookie(key="session")
     return {"Logout": "successful"}
 
 
 @router.get("/clean", name="clean")
-async def clean(request: Request, session_id: UUID = Depends(cookie), logout: bool = False, ssh=ssh):
+async def clean(session: SessionData = Depends(get_session), logout: bool = False, ssh=ssh):
     """
     Iterates over created paths during PET and unlinks them.
     Returns:
         redirection to homepage
     """
-    session = await backend.read(session_id)
     user = session.username
+    id = hash(session.id)
     remote_loc = session.remote_loc
     cluster_name = session.cluster_name
     log_file = session.log_file
+    job_status = session.job_status
+    job_id = session.job_id
 
-    paths = ["logging.txt", "last_pos.txt", "output", "results.json", "data.json", "data_uploaded", "static/chart.png", "static/chart_prediction.png"]
-    paths = [f"{hash(session_id)}/" + path if "png" not in path else path for path in paths ]
-    for path in paths if not logout else [f"{hash(session_id)}"]:
+    paths = ["logging.txt", "last_pos.txt", "output", "results.json", "data.json", "data_uploaded", "static/chart.png",
+             "static/chart_prediction.png", "label_dict.json"]
+    paths = [f"{id}/" + path if "png" not in path else path for path in paths]
+    for path in paths if not logout else [f"{id}"]:
         file_path = pathlib.Path(path)
         if isfile(path):
             file_path.unlink()
         elif isdir(path):
             shutil.rmtree(path)
-    if session.job_id:
+    if job_id:
         rm_cmd = [ssh, '-e', 'ssh',
                   f'{user}@{cluster_name}', f'rm -r {remote_loc} /home/{user}/{log_file.split("/")[-1]}']
-        proc = subprocess.Popen(rm_cmd, env={"SSHPASS": os.environ[f"{hash(session_id)}"]}, shell=False, stdout=PIPE,
+        proc = subprocess.Popen(rm_cmd, env={"SSHPASS": os.environ[f"{id}"]}, shell=False, stdout=PIPE,
                                 stderr=PIPE)
         outs, errs = proc.communicate()
         print(outs, errs)
-        if session.job_status:
-            await app.petGui.abort(request, session_id, True)
-        session.job_id = None
+        if job_status:
+            await app.petGui.abort(session, True)
+        await set_job_id(session.id, session, "")
     return {"Status": "Cleaned"}
 

@@ -305,6 +305,7 @@ document.getElementById("file_final").addEventListener("change", function(event)
         const predictInt = setInterval(check, 10000);
     }
 
+
     function check() {
         fetch('/final/start_prediction?check=True')
             .then(response => response.json())
@@ -318,8 +319,13 @@ document.getElementById("file_final").addEventListener("change", function(event)
                 removeButtonAttribute("mycontain_download", "disabled");
                 changeButtonColor("show_chart", "blue");
                 removeButtonAttribute("show_chart", "disabled");
+                return;
                 }
             });
+    }
+
+    function prevent() {
+
     }
 
 

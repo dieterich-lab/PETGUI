@@ -1,7 +1,7 @@
 import threading
 from typing import Any
 from fastapi import HTTPException, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from fastapi_sessions.backends.implementations import InMemoryBackend
 from fastapi_sessions.session_verifier import SessionVerifier
 from fastapi_sessions.frontends.implementations import SessionCookie, CookieParameters
@@ -9,15 +9,17 @@ from uuid import UUID, uuid4
 
 
 class SessionData(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     username: str
+    id: UUID
     remote_loc: str
     remote_loc_pet: str
     cluster_name: str
     last_pos_file: str
     log_file: str
-    job_id: str = None
+    job_id: Any = None
     event: Any = None
-    job_status: str = None
+    job_status: Any = None
 
 
 cookie_params = CookieParameters()

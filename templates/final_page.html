@@ -74,7 +74,6 @@
 
 <script>
 
-
 function generateChart() {
     var xhr = new XMLHttpRequest();
     xhr.open("POST", "/label-distribution");
@@ -99,6 +98,8 @@ function generateChart() {
         .then(response => {window.location.href = '/final?message=Predicting aborted successfully!';}
         );
     }
+
+    valid_session();
 
 
     </script>

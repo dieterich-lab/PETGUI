@@ -7,7 +7,6 @@ from app.dto.session import SessionData
 from ..services.session import create_session
 import app.services.ldap as ldap
 from app.controller import templating
-import threading
 
 session_router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -22,12 +21,13 @@ if local:
 async def login(request: Request, response: Response, username: str = Form(...), password: str = Form(...)):
     try:
         dn = ldap.get_dn_of_user(username)
-        ldap.bind(dn, password)
 
+        ldap.bind(dn, password)
         session_uuid = await create_session(username, response)
+        response.delete_cookie(key="cookie")
+        response.set_cookie(key="session", value=session_uuid)
         os.environ[f"{hash(session_uuid)}"] = password
         os.makedirs(f"./{hash(session_uuid)}", exist_ok=True)  # If run with new conf.
-
         return RedirectResponse(url=request.url_for("homepage"), status_code=303, headers=response.headers)
 
     except Exception as e:

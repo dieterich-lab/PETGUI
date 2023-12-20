@@ -175,8 +175,11 @@ text-align: start;
 
   #table-container {
     text-align: center;
-    margin: auto;
-    font-size: 30px; }
+    font-size: 30px;
+    margin-top: 10%;
+    margin-bottom: 10%;
+    padding-right: -10%;
+    padding-left: -10%; }
       table {
   border-collapse: collapse;
   margin: auto;
