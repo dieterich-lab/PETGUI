@@ -6,8 +6,8 @@ pipeline {
                 sh '''
                     python3 -m venv venv
                     . ./venv/bin/activate
-                    pip3 install --user pipenv
-		            pipenv install .
+                    pip3 install pipenv
+		            pipenv install
                 '''
             }
 
