@@ -6,8 +6,7 @@ pipeline {
                 sh '''
                     python3 -m venv venv
                     . ./venv/bin/activate
-                    pip3 install pipenv
-		            pipenv install
+		            pipenv shell
                 '''
             }
 
@@ -16,7 +15,7 @@ pipeline {
             steps {
                 sh '''true
                    . ./venv/bin/activate
-                   pipenv shell
+                   pipenv install
                    export PYTHONPATH=$(pwd)
                    pytest --junitxml results.xml tests
                 '''
