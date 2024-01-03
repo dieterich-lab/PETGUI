@@ -1,0 +1,8 @@
+README.md
+pyproject.toml
+PETGUI.egg-info/PKG-INFO
+PETGUI.egg-info/SOURCES.txt
+PETGUI.egg-info/dependency_links.txt
+PETGUI.egg-info/requires.txt
+PETGUI.egg-info/top_level.txt
+tests/test_petGui.py
