@@ -4,7 +4,7 @@ pipeline {
         stage('Prepare venv') {
             steps {
                 sh '''
-                    python3 -m venv ven
+                    python3 -m venv venv
                     . ./venv/bin/activate
                     pip3 install pipenv
 		            pipenv install
