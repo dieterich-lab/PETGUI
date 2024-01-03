@@ -4,6 +4,8 @@ pipeline {
         stage('Prepare venv') {
             steps {
                 sh '''
+                    python3 -m venv ven
+                    . ./venv/bin/activate
                     pip3 install pipenv
 		            pipenv install
                 '''
@@ -23,6 +25,7 @@ pipeline {
     post {
         always {
             junit 'results.xml'
+
         }
     }
 }

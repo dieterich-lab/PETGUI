@@ -1,15 +1,11 @@
-import threading
-import uuid
-
 from fastapi import Request, Depends, APIRouter, Form, File, UploadFile, Response, HTTPException, FastAPI
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse, HTMLResponse
 from starlette.responses import FileResponse
 from fastapi.encoders import jsonable_encoder
-import json, os, tarfile, subprocess
+import json, os, subprocess
 from subprocess import PIPE
 from uuid import UUID
-
 import pandas as pd
 from os.path import isdir, isfile
 import pathlib
