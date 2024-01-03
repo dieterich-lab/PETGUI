@@ -4,5 +4,4 @@ venv/
 *.egg-info
 Pipfile
 Pipfile.lock
-pyproject.toml
 
