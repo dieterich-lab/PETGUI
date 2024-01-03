@@ -4,6 +4,6 @@ venv/
 *.egg-info
 Jenkinsfile
 Pipfile
-pipfile.lock
+Pipfile.lock
 pyproject.toml
 
