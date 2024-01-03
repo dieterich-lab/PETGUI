@@ -10,7 +10,7 @@ with open("data.json", "r") as f:
     data = json.load(f)
 
 file_name = data["file"]
-model = data["model_para"]
+model = data["m_para"]
 if model == "gbert-base":
     model_type = "bert"
     model_name_or_path = "deepset/gbert-base"

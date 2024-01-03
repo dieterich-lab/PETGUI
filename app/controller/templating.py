@@ -9,12 +9,11 @@ from fastapi.encoders import jsonable_encoder
 import json, os, tarfile, subprocess
 from subprocess import PIPE
 from uuid import UUID
-import app.petGui
+
 import pandas as pd
 from os.path import isdir, isfile
 import pathlib
 import shutil
-
 from ..dto.session import backend, cookie, SessionData, verifier
 from ..services.session import set_job_id, set_event, end_session
 
@@ -26,14 +25,12 @@ ssh = "sshpass"
 if local:
     ssh = "/opt/homebrew/bin/sshpass"
 
-@router.get("/get_session")
 async def get_session(request: Request):
     try:
-        session = await backend.read(uuid.UUID(request.cookies["session"]))
+        session = await backend.read(UUID(request.cookies["session"]))
     except KeyError:
         return None
     return session
-
 
 @router.get("/start", response_class=HTMLResponse)
 async def start(request: Request, session = Depends(get_session)):
@@ -58,7 +55,7 @@ async def login_form(request: Request, error=None, logout: bool = False, session
 @router.post("/basic", name="homepage")
 async def get_form(request: Request, sample: str = Form(...),
                    label: str = Form(...),
-                   model_para: str = Form(...),
+                   m_para: str = Form(...),
                    template_0: str = Form(...),
                    session=Depends(get_session)):
     print(session)
@@ -82,12 +79,12 @@ async def get_form(request: Request, sample: str = Form(...),
         origin_counter = 0
         mapping_counter = 0
 
-        os.environ[f"{id}_medbert"] = "True" if model_para == "/prj/doctoral_letters/PETGUI/med_bert_local" else "False" #"GerMedBERT/medbert-512" else "False"
+        os.environ[f"{id}_medbert"] = "True" if m_para == "/prj/doctoral_letters/PETGUI/med_bert_local" else "False" #"GerMedBERT/medbert-512" else "False"
 
         para_dic = {"file": [direc for direc in os.listdir(f"{id}/data_uploaded")
                              if os.path.isdir(f"{id}/data_uploaded/{direc}")][0], "sample": sample,
                     "label": label, "delimiter": os.environ[f"{id}_delimiter"],
-                    "template_0": template_0, "model_para": model_para}
+                    "template_0": template_0, "m_para": m_para}
 
         while f"template_{str(template_counter)}" in da:  # Template
             template_key = f"template_{str(template_counter)}"
@@ -249,7 +246,36 @@ async def clean(session: SessionData = Depends(get_session), logout: bool = Fals
         outs, errs = proc.communicate()
         print(outs, errs)
         if job_status:
-            await app.petGui.abort(session, True)
+            await abort(session, True)
         await set_job_id(session.id, session, "")
     return {"Status": "Cleaned"}
 
+
+async def abort(session=Depends(get_session), final: bool = False):
+    id = hash(session.id)
+    """
+    Aborts current job.
+    """
+    try:
+        user = session.username
+        cluster_name = session.cluster_name
+        job_id = session.job_id
+        print(f"Aborting job with id: {job_id}")
+        ssh_cmd = ["sshpass", '-e', 'ssh', f'{user}@{cluster_name}',
+                   f'scancel {job_id}']
+        outs, errs = bash_cmd(id, ssh_cmd, shell=True)
+        print(outs, errs)
+    except Exception as e:
+        print(str(e))
+        pass
+    if final:
+        return
+    else:
+        return await clean(session, False)
+
+
+def bash_cmd(id: int, cmd=None, shell: bool = False):
+    proc = subprocess.Popen(" ".join(cmd) if shell else cmd, env={"SSHPASS": os.environ[f"{id}"]}, shell=shell,
+                            stdout=subprocess.PIPE, stderr=PIPE)
+    outs, errs = proc.communicate()
+    return outs, errs

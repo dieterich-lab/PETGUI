@@ -3,6 +3,7 @@ import glob
 import pathlib
 import concurrent.futures
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import FastAPI, Depends, UploadFile, File, Request, Response, Form, HTTPException
 from fastapi.templating import Jinja2Templates
@@ -17,13 +18,8 @@ import subprocess
 from subprocess import PIPE
 import pandas as pd
 import matplotlib.pyplot as plt
-import random
-from uuid import UUID, uuid4
-import csv
 import numpy as np
-
 import shutil
-
 from app.controller import templating
 from app.controller import session
 from .dto.session import BasicVerifier, cookie, verifier, SessionData, backend
@@ -48,6 +44,7 @@ async def get_session(request: Request):
 '''Include routers'''
 app.include_router(templating.router, dependencies=[Depends(get_session)])
 app.include_router(session.session_router, dependencies=[Depends(get_session)])
+app = app
 
 
 @app.get("/", name="start")
@@ -137,7 +134,7 @@ async def label_prediction(request: Request, session=Depends(get_session),
             # Check if event is set
             t = threading.Thread(target=check_job, args=(session, session.job_id, True))
             t.start()
-            print("Prediction started")
+            return {"Prediction": "started"}
         except Exception as e:
             print(str(e))
             return templating.logging(request, str(e))

@@ -10,6 +10,7 @@ from uuid import UUID, uuid4
 
 class SessionData(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config["protected_namespaces"] = ()
     username: str
     id: UUID
     remote_loc: str

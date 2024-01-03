@@ -1,26 +1,22 @@
 import json
 import time
-from unittest import mock
-from unittest.mock import MagicMock, patch
 from uuid import uuid4
-from fastapi import FastAPI, Request
+from fastapi import Request, Response
 from fastapi.testclient import TestClient
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
-
-from tests.session_service import SessionServiceMock
-from app.petGui import app, get_session_service, User
+from app.controller import templating
+from app.petGui import app, get_session
 import pytest
 from fastapi.responses import FileResponse, RedirectResponse
-from app.dto.session import SessionData, cookie, verifier
+from app.dto.session import SessionData
 import io
 import os
 from os.path import exists
 import pandas as pd
-import matplotlib.pyplot as plt
 from pathlib import Path
-from app.controller.templating import router
+from .in_memory_backend_mock import InMemoryBackendMock
 import matplotlib
 
 
@@ -31,14 +27,15 @@ class TestServer:
     session_id = uuid4()
     session_data = SessionData(
         username="username",
+        id=session_id,
         remote_loc="remote_location",
         remote_loc_pet="remote_location_pet",
         cluster_name="cluster_name",
         last_pos_file=f"{hash(session_id)}/last_pos_file.txt",
-        log_file=f"{hash(session_id)}/log_file.txt"
+        log_file=f"{hash(session_id)}/log_file.txt",
+        job_id=None, event=None, job_status=None
     )
     data = {"username": "user", "password": "pass"}
-    app = FastAPI()
 
     @pytest.fixture
     def browser(self):
@@ -60,15 +57,16 @@ class TestServer:
             'origin_3': 'Diagnosen', 'origin_4': 'Medikation', 'origin_5': 'Other', 'mapping_0': 'Risiko',
             'mapping_1': 'Vorstellung', 'mapping_2': 'Nachweis', 'mapping_3': 'Diagnose', 'mapping_4': 'Medikamente',
             'mapping_5': 'Verlauf',
-            "model_para": "gbert-base"
+            "m_para": "gbert-base"
         }
         yield self.metadata,
 
     @pytest.fixture
     def test_client(self, mocker):
-        self.app.include_router(router)  # Not a necessity
         self.client = TestClient(app, base_url="https://petgui.dieterichlab.org")
         self.request = Request
+        self.response = Response
+        self.mock_response = mocker.MagicMock(self.response)
         self.mock_request = mocker.MagicMock(self.request)
         yield self.client
 
@@ -98,30 +96,24 @@ class TestServer:
 
     @pytest.fixture
     def mock_get_session_service(self):
-        session = SessionServiceMock(self.session_data, self.session_id)
-        response = RedirectResponse(url=self.mock_request.url_for("homepage"), status_code=303)
-        session.create_session(user=self.session_data.username, response=response)
-        app.state = User()      # Not a necessity
-        app.state.session = session
-        yield app.state.session
+        yield self.session_data
 
     @pytest.fixture
-    def mock_session(self, mock_get_session_service):
+    def mock_session(self, mock_get_session_service, test_client):
         self.mock_get_session_service = mock_get_session_service
-        app.dependency_overrides[get_session_service] = lambda: self.mock_get_session_service
+
+        app.dependency_overrides[get_session] = lambda: self.mock_get_session_service
+        app.dependency_overrides[templating.get_session] = lambda: self.mock_get_session_service
         yield self.mock_get_session_service
+
 
     @pytest.fixture
     def helper_mock(self, mocker):
-        mocker.patch("app.services.session.SessionService.create_session", return_value=self.mock_get_session_service)
+        mocker.patch("app.services.session.create_session", return_value=self.mock_get_session_service)
 
     @pytest.fixture
-    def mock_create_session(self, mocker, helper_mock):
-        mock_request = mocker.MagicMock(self.request)
-        response = RedirectResponse(url=mock_request.url_for("homepage"), status_code=303)
+    def mock_create_session(self):
         os.environ[f"{hash(self.session_id)}"] = self.data["password"]
-        mocker.patch("app.controller.session.login", return_value=response)  # Return response with attached cookie
-
 
     @pytest.fixture
     def mock_user_dn(self, mocker):
@@ -131,7 +123,12 @@ class TestServer:
     def mock_bind(self, mocker):
         mocker.patch("app.services.ldap.bind", return_value=True)  # Return user authentication
 
-    def test_login_form(self, test_client, mock_user_dn, mock_bind, mock_create_session):
+    @pytest.fixture
+    def mock_login(self, mocker): # Not a necessity
+        response = RedirectResponse(url=self.mock_request.url_for("homepage"), status_code=303)
+        mocker.patch("app.controller.session.login", return_value=response)
+
+    def test_login_form(self, test_client, mock_user_dn, mock_bind, mock_create_session, mock_login, mock_backend_create):
         print("Testing login..")
         response = self.client.post("/login", data=self.data)
         assert response.status_code == 200
@@ -194,7 +191,7 @@ class TestServer:
     def mock_check_job(self, mocker):
         mocker.patch("app.petGui.check_job_status", return_value="CD")  # Return job-status
 
-    def test_logging_train(self, test_client, mock_session, mock_submit_job, mock_check_job):
+    def test_logging_train(self, test_client, mock_session, mock_submit_job, mock_check_job, mock_backend_update):
         print("Testing training..")
         response = self.client.get("/logging/start_train")
         assert response.status_code == 200
@@ -250,7 +247,7 @@ class TestServer:
         assert response.json() == {"filename": "unlabeled.txt", "path": f"{hash(self.session_id)}/data_uploaded/unlabeled/unlabeled.txt"}
         assert response.status_code == 200
 
-    def test_prediction(self, test_client, mock_session, mock_submit_job, mock_check_job):
+    def test_prediction(self, test_client, mock_session, mock_submit_job, mock_check_job, mock_backend_update):
         print("Testing prediction..")
         response = self.client.get("/final/start_prediction", params={"check": False})
         assert response.json() == {"Prediction": "started"}
@@ -287,23 +284,33 @@ class TestServer:
     @pytest.fixture
     def mock_bash_cmd(self, mocker):
         mocker.patch('app.petGui.bash_cmd', return_value=(b"", b""))
+        mocker.patch('app.controller.templating.bash_cmd', return_value=(b"", b""))
 
-    def test_abort_job(self, test_client, mock_session, mock_bash_cmd, browser):
+
+    @pytest.fixture
+    def mock_backend_create(self, mocker):
+        mocker.patch("fastapi_sessions.backends.implementations.in_memory_backend.InMemoryBackend.create",
+                     return_value=InMemoryBackendMock.create)
+
+
+    @pytest.fixture
+    def mock_backend_update(self, mocker):
+        mocker.patch("fastapi_sessions.backends.implementations.in_memory_backend.InMemoryBackend.update",
+                     return_value=InMemoryBackendMock.update)
+
+    def test_abort_job(self, test_client, mock_session, mock_bash_cmd, mock_backend_update):
         print("Testing abort job..")
-        #browser.add_cookie()
-        #browser.get("https://petgui.dieterichlab.org/logging")
         response = self.client.get("/abort_job", params={"final": False})
         assert response.json() == {"Status": "Cleaned"}
-        #assert '/basic?message=Training aborted successfully!' in response.next_request
         assert response.status_code == 200
 
-    def test_clean(self, test_client, mock_session):
+    def test_clean(self, test_client, mock_session, mock_bash_cmd, mock_backend_update):
         print("Testing clean..")
         response = self.client.get("/clean", params={"logout": False, "ssh": "sshpass"})
         assert response.status_code == 200
         assert response.json() == {"Status": "Cleaned"}
 
-    def test_logout(self, test_client, mock_session):
+    def test_logout(self, test_client, mock_session, mock_bash_cmd, mock_backend_update):
         print("Testing logout..")
         response = self.client.get("/logout")
         assert response.json() == {"Logout": "successful"}
