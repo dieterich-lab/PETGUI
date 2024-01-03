@@ -38,16 +38,14 @@ dependencies= [
 "uvicorn",
 "exceptiongroup",
 "webdriver-manager",
-"pytest-mock"]
-
-[project.urls]
-Repository = "https://github.com/dieterich-lab/PETGUI"
-
-[project.optional-dependencies]
-dev = ["pytest",
+"pytest-mock",
+"pytest",
 "httpx",
 "selenium",
 "webdriver_manager"]
+
+[project.urls]
+Repository = "https://github.com/dieterich-lab/PETGUI"
 
 [tool.setuptools]
 py-modules = []
