@@ -15,6 +15,7 @@ pipeline {
         stage('Testing') {
             steps {
                 sh '''true
+                   . ./venv/bin/activate
                    pipenv shell
                    export PYTHONPATH=$(pwd)
                    pytest --junitxml results.xml tests
