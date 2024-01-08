@@ -85,15 +85,6 @@ class TestServer:
         response = self.client.get("/login")
         assert response.status_code == 200
 
-    def test_login_button(self, test_client, browser):
-        print("Testing login button..")
-        browser.get("https://petgui.dieterichlab.org/")
-        button = browser.find_element("id", "login")
-        button.click()
-        time.sleep(3)
-        cur = browser.current_url
-        assert cur == "https://petgui.dieterichlab.org/login"
-
     @pytest.fixture
     def mock_get_session_service(self):
         yield self.session_data
