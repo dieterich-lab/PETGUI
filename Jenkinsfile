@@ -6,7 +6,6 @@ pipeline {
                 sh '''
                     python3 -m venv venv
                     . ./venv/bin/activate
-                    sudo apt-get install sshpass
 		            pipenv install
                 '''
             }

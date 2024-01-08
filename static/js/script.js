@@ -22,7 +22,7 @@ function Login() {
 
 function addEventListenersForIndex() {
   document.getElementById("file-uploader").addEventListener("change", function() {
-    var formData = new FormData(document.getElementById("my-form"));
+    let formData = new FormData(document.getElementById("my-form"));
     fetch("/extract-file", {
       method: "POST",
       body: formData
@@ -75,29 +75,29 @@ showStatisticsButton.addEventListener("click", function() {
 }
 
 
-var counter = 1;
+let counter = 1;
 
 function addInput_new() {
-    var inputFields = document.querySelectorAll('#template-input .input-group');
+    let inputFields = document.querySelectorAll('#template-input .input-group');
     if (inputFields.length > 0) {
-        var lastInputField = inputFields[inputFields.length-1];
-        var addButton = lastInputField.querySelector('.add-btn');
+        let lastInputField = inputFields[inputFields.length-1];
+        let addButton = lastInputField.querySelector('.add-btn');
         if (addButton) {
             addButton.textContent = "-";
             addButton.setAttribute("onClick", "removeSpecificInput(this);");
         }
 
 
-        var trashButton = lastInputField.querySelector('.trash-btn');
+        let trashButton = lastInputField.querySelector('.trash-btn');
         if (trashButton) {
             trashButton.parentNode.removeChild(trashButton);
         }
     }
 
-    var newdiv = document.createElement('div');
+    let newdiv = document.createElement('div');
     newdiv.className = "input-group";
     newdiv.innerHTML = "<input class='input--style-5 form-control' type='text' placeholder='New template' name=template_"+ counter +" required> <button class='btn btn--radius-2 btn--blue add-btn add-remove-btn' style='padding: 0 25px;' type='button' onClick='addInput_new();'>+</button> <button class='btn btn--radius-2 btn--grey trash-btn add-remove-btn' style='padding: 0 15px; font-size: 0.9rem;' type='button' onClick='removeInput(this);'>🗑️</button>";
-    var container = document.getElementById('template-input');
+    let container = document.getElementById('template-input');
     container.appendChild(newdiv);
     container.appendChild(document.createElement('br'));
     counter++;
@@ -112,8 +112,8 @@ function removeSpecificInput(button) {
 }
 
 function removeField(button) {
-    var inputField = button.parentNode;
-    var brElement = inputField.nextSibling;
+    let inputField = button.parentNode;
+    let brElement = inputField.nextSibling;
     inputField.parentNode.removeChild(inputField);
     brElement.parentNode.removeChild(brElement);
     counter--;
@@ -122,10 +122,10 @@ function removeField(button) {
 }
 
 function adjustLastInput() {
-    var inputFields = document.querySelectorAll('#template-input .input-group');
+    let inputFields = document.querySelectorAll('#template-input .input-group');
     if (inputFields.length > 0) {
-        var lastInputField = inputFields[inputFields.length-1];
-        var addButton = lastInputField.querySelector('.add-btn');
+        let lastInputField = inputFields[inputFields.length-1];
+        let addButton = lastInputField.querySelector('.add-btn');
         if (addButton) {
             addButton.textContent = "+";
             addButton.className = "btn btn--radius-2 btn--blue add-btn add-remove-btn";
@@ -133,9 +133,9 @@ function adjustLastInput() {
         }
 
 
-        var trashButton = lastInputField.querySelector('.trash-btn');
+        let trashButton = lastInputField.querySelector('.trash-btn');
         if (!trashButton && inputFields.length > 1) {
-            var trashBtnElement = document.createElement('button');
+            let trashBtnElement = document.createElement('button');
             trashBtnElement.className = 'btn btn--radius-2 btn--grey trash-btn add-remove-btn';
             trashBtnElement.style = 'padding: 0 15px; font-size: 0.9rem;';
             trashBtnElement.type = 'button';
@@ -154,12 +154,12 @@ function adjustLastInput() {
 
 
 
-var counter_map = 0;
-var dynamicInput = [];
+let counter_map = 0;
+let dynamicInput = [];
 
 function addInput_map(label) {
-    var newdiv = document.createElement("div");
-    var currentCounter = counter_map;
+    let newdiv = document.createElement("div");
+    let currentCounter = counter_map;
     newdiv.id = "mapping_" + currentCounter;
     newdiv.innerHTML = "Mapping " + (currentCounter + 1)  + " <div class='row row-space'><div class='col-2'><div class='input-group'><input class='input--style-5 form-control' type='text' value="+ label +" name='origin_" + currentCounter + "' required></div></div><div class='col-2'><div class='input-group'><input class='input--style-5 form-control' type='text' name='mapping_" + currentCounter + "' placeholder='verbalizer " + (currentCounter + 1) +"' required></div></div></div>";
     document.getElementById('formularmap').appendChild(newdiv);
@@ -168,12 +168,12 @@ function addInput_map(label) {
 }
 
 
-// var counter_map = 0;
-// var dynamicInput = [];
+// let counter_map = 0;
+// let dynamicInput = [];
 //
 // function addInput_map(label) {
-//     var newdiv = document.createElement("div");
-//     var currentCounter = counter_map;
+//     let newdiv = document.createElement("div");
+//     let currentCounter = counter_map;
 //     newdiv.id = "mapping_" + currentCounter;
 //     newdiv.innerHTML = "Mapping " + (currentCounter + 1)  + " <div class='row row-space'><div class='col-2'><div class='input-group'><input class='input--style-5 form-control' type='text' value="+ label +" name='origin_" + currentCounter + "' required></div></div><div class='col-2'><div class='input-group'><input class='input--style-5 form-control' type='text' name='mapping_" + currentCounter + "' placeholder='verbalizer " + (currentCounter + 1) +"' required><div id='error_message_" + currentCounter + "' style='color: red;'></div></div></div></div>";
 //     document.getElementById('formularmap').appendChild(newdiv);
@@ -187,24 +187,24 @@ function addInput_map(label) {
 // // This function is called when the form is submitted
 // async function check_vocab_on_submit(event) {
 //     // Initialize a variable to check if any word is not in vocab
-//     var isInVocab = true;
+//     let isInVocab = true;
 //
 //     for (let input of dynamicInput) {
-//         var word = document.getElementsByName(input)[0].value;  // get the value from input field
+//         let word = document.getElementsByName(input)[0].value;  // get the value from input field
 //
 //         // create a new HTTP request
-//         var xhr = new XMLHttpRequest();
+//         let xhr = new XMLHttpRequest();
 //         xhr.open("POST", "/check_vocab", false);  // make it synchronous
 //         xhr.setRequestHeader("Content-Type", "application/json");
 //
 //         // convert data to JSON format and send it to the server
-//         var data = JSON.stringify({"word": word});
+//         let data = JSON.stringify({"word": word});
 //         xhr.send(data);
 //
 //         if (xhr.status === 200) {
 //             document.getElementById("error_message_" + input.split('_')[1]).innerHTML = "";  // clear error message
 //         } else if (xhr.status === 422) {
-//             var error_message = JSON.parse(xhr.responseText).detail;  // parse the error message
+//             let error_message = JSON.parse(xhr.responseText).detail;  // parse the error message
 //             document.getElementById("error_message_" + input.split('_')[1]).innerHTML = error_message;  // display the error message
 //             isInVocab = false;  // mark that a word is not in vocab
 //         }
@@ -237,10 +237,10 @@ observer.observe(feedbackDiv, { childList: true });
 
 document.getElementById("file_final").addEventListener("change", function(event) {
     event.stopPropagation();
-    var file = this.files[0];
-    var formData = new FormData();
+    let file = this.files[0];
+    let formData = new FormData();
     formData.append("file", file);
-    var xhr = new XMLHttpRequest();
+    let xhr = new XMLHttpRequest();
     xhr.open("POST", "/uploadfile/");
         xhr.onreadystatechange = function() {
             if (xhr.readyState === 4 && xhr.status === 200) {
@@ -275,7 +275,7 @@ document.getElementById("file_final").addEventListener("change", function(event)
      }
 
      function createArrayOfLabels(labels) {
-          var result = [];
+          let result = [];
           labels.forEach(function (label) {
             result.push(label);
           return result;
@@ -286,7 +286,7 @@ document.getElementById("file_final").addEventListener("change", function(event)
         fetch('/report-labels')
             .then(response => response.json())
             .then(data => {
-            var result = [];
+            let result = [];
             data.list.forEach(lab => {
             result.push(lab);
             });
@@ -297,37 +297,39 @@ document.getElementById("file_final").addEventListener("change", function(event)
         });
     }
 
-
+    let predictInt = null;
 
     function checkPrediction() {
         fetch('final/start_prediction');
         changeButtonText("mycontainer", "Prediction Started..");
-        const predictInt = setInterval(check, 10000);
+        if ( predictInt !== null ) {
+            clearInterval(predictInt);
+        }
+        predictInt = setInterval(check, 10000);
     }
-
 
     function check() {
         fetch('/final/start_prediction?check=True')
             .then(response => response.json())
             .then(data => {
+                console.log(`XXX ${data}`);
                 if (data.status == "CD") {
-                hideLoading();
-                hideText();
-                changeButtonColor("mycontainer", "green");
-                changeButtonColor("mycontain_download", "blue");
-                changeButtonText("mycontainer", "Prediction Finished");
-                removeButtonAttribute("mycontain_download", "disabled");
-                changeButtonColor("show_chart", "blue");
-                removeButtonAttribute("show_chart", "disabled");
-                return;
+                    hideLoading();
+                    hideText();
+                    changeButtonColor("mycontainer", "green");
+                    changeButtonColor("mycontain_download", "blue");
+                    changeButtonText("mycontainer", "Prediction Finished");
+                    removeButtonAttribute("mycontain_download", "disabled");
+                    //changeButtonColor("show_chart", "blue");
+                    //removeButtonAttribute("show_chart", "disabled");
+                    clearInterval(predictInt);
+                    predictInt = null;
                 }
+            })
+            .catch(err => {
+                console.log(`Failed to get data: ${err}`);
             });
     }
-
-    function prevent() {
-
-    }
-
 
   const downloadButton = document.getElementById('mycontain_download');
   downloadButton.addEventListener('click', () => {

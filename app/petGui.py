@@ -1,11 +1,8 @@
 import asyncio
 import glob
 import pathlib
-import concurrent.futures
-from typing import Annotated
 from uuid import UUID
-
-from fastapi import FastAPI, Depends, UploadFile, File, Request, Response, Form, HTTPException
+from fastapi import FastAPI, Depends, UploadFile, File, Request
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -20,19 +17,20 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import shutil
-from app.controller import templating
-from app.controller import session
-from .dto.session import BasicVerifier, cookie, verifier, SessionData, backend
+from app.controller import templating as templating_controller
+from app.controller import session as session_controller
+from .dto.session import backend
 from .services.session import set_event, set_job_status
 
 '''START APP'''
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
-local = False # If running app locally
+local = False  # If running app locally
 ssh = "sshpass"
 if local:
     ssh = "/opt/homebrew/bin/sshpass"
+
 
 async def get_session(request: Request):
     try:
@@ -42,18 +40,18 @@ async def get_session(request: Request):
     return session
 
 '''Include routers'''
-app.include_router(templating.router, dependencies=[Depends(get_session)])
-app.include_router(session.session_router, dependencies=[Depends(get_session)])
+app.include_router(templating_controller.router, dependencies=[Depends(get_session)])
+app.include_router(session_controller.session_router, dependencies=[Depends(get_session)])
 app = app
 
 
 @app.get("/", name="start")
-def main(request: Request):
+def main():
     return RedirectResponse(url="/start", status_code=303)
 
 
 @app.get("/whoami", name="whoami")
-async def whoami(session = Depends(get_session)):
+async def whoami(session=Depends(get_session)):
     return session
 
 
@@ -82,7 +80,7 @@ async def run(request: Request, session=Depends(get_session)):
         print("Training started")
     except Exception as e:
         print(str(e))
-        return templating.logging(request, str(e))
+        return templating_controller.logging(request, str(e))
 
 
 def check_job(session, job_id, predict):
@@ -113,7 +111,7 @@ async def abort(session=Depends(get_session), final: bool = False):
     if final:
         return
     else:
-        return await templating.clean(session, False)
+        return await templating_controller.clean(session, False)
 
 
 @app.get("/final/start_prediction")
@@ -122,8 +120,7 @@ async def label_prediction(request: Request, session=Depends(get_session),
     '''Start Prediction'''
     if check:
         try:
-            if session.job_status == "CD":
-                return {"status": "CD"}
+            return {"status": session.job_status}
         except:
             pass
     else:
@@ -137,7 +134,7 @@ async def label_prediction(request: Request, session=Depends(get_session),
             return {"Prediction": "started"}
         except Exception as e:
             print(str(e))
-            return templating.logging(request, str(e))
+            return templating_controller.logging(request, str(e))
 
 @app.get("submit_job")
 async def submit_job(session=Depends(get_session), predict: bool = False):
@@ -200,6 +197,7 @@ def bash_cmd(id: int, cmd=None, shell: bool = False):
 
 @app.get("check_job_status", name="check_job_status")
 async def check_job_status(session=Depends(get_session), job_id: str = None, predict: bool = False):
+    global status
     user = session.username
     remote_loc_pet = session.remote_loc_pet
     cluster_name = session.cluster_name
@@ -480,13 +478,11 @@ async def label_distribution(session=Depends(get_session)):
     label_counts = df['short_label'].value_counts()
     fig = plt.figure(figsize=(7, 7))
     ax = fig.add_subplot(211)
-    #label_counts.plot(kind='bar', width=0.3, ax=ax)
 
     # Get the labels and their corresponding counts
 
     labels = label_counts.index
     counts = label_counts.values
-
 
     # Set the height of bars with zero counts to zero, making them invisible
     invisible_heights = [0 if count == 0 else count for count in counts]
@@ -517,4 +513,3 @@ async def label_distribution(session=Depends(get_session)):
     plt.savefig("static/chart_prediction.png", dpi=100)
 
     return {"message": "Label distribution chart created successfully."}
-
