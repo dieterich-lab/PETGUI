@@ -12,7 +12,6 @@ We introduce **PETGUI**: A user-friendly interface for training and testing a la
 - [➕ Features](#features)
 - [➖ Limitations](#limitations)
 - [🗃️ References](#references)
-- [❎ TODOs](#todos)
 
 <a id="pet"></a>
 ### *Pattern Exploiting Training*
@@ -84,7 +83,7 @@ This GUI offers a step-by-step approach to training and deploying a language mod
 * <strong>Label</strong> data using the trained model
 * View statistics on <b>model performance</b> during training
 * Download the produced file with <strong>labeled</strong> data
-* View <b>label distribution statistics</b> of training data and labeled data
+* View the <b>label distribution statistics</b> of training data
 
 <a id="limitations"></a>
 ### ➖ Limitations
@@ -92,7 +91,7 @@ In its current form, PETGUI is limited to training and testing a model on data i
 * **VPN use:** You must have a working WireGuard VPN connection to the _Dieterich Lab_ server.
 * **File format and naming convention:** The provided training data must be a <span style="font-style: italic">tar.gz</span> file
                                 containing _train.csv_, _test.csv_ and _unlabeled.csv_ respectively.
-                                For labeling data, a <span style="font-style: italic">.csv</span> file is expected with the first column throughout the data lines empty.
+                                For labeling data, a comma separated <span style="font-style: italic">.txt</span> file is expected with the first column throughout the data lines empty.
 * **Verbalizer mapping:** The provided verbalizer has to map to a single input-id in the model vocalubalary (no real-time check).
 
 <a id="references"></a>  ​                     
@@ -101,15 +100,3 @@ In its current form, PETGUI is limited to training and testing a model on data i
     <li id="pet">Timo Schick and Hinrich Schütze. (2021). Exploiting Cloze Questions for Few-Shot Text Classification and Natural Language Inference. arXiv preprint arXiv:2001.07676. Retrieved from <a href="https://arxiv.org/abs/2001.07676">(https://arxiv.org/abs/2001.07676)</a></li>
 <li id="schick">Timo Schick. (2023). Pattern-Exploiting Training (PET) [GitHub repository]. Retrieved from <a href="https://github.com/timoschick/pet/">https://github.com/timoschick/pet/</a></li>
 </ol>
-
-<a id="todos"></a>
-### ❎ ToDo's         
-- [ ] **Add sample line of training data** for user to see according column numbers for data and labels
-- [x] If unlabeled data is not included in training data, **use training data in place of it**
-- [x] **Hint at user consistent language use** in training data and its parameter definitions
-- [ ] Implement **"Hide table"** for model performance statistics
-- [ ] **Display file guideline** for predictions on last page
-- [ ] **On unconventional shutdown** (no logout): 
-  * abort processes
-  * delete created user folder structure after some time  
-    
