@@ -1,4 +1,3 @@
-import asyncio
 import json
 import re
 import shutil
@@ -11,7 +10,6 @@ from webdriver_manager.chrome import ChromeDriverManager
 from app.controller import templating
 from app.petGui import app, get_session
 import pytest
-import pytest_asyncio
 from fastapi.responses import FileResponse, RedirectResponse
 from app.dto.session import SessionData
 import io

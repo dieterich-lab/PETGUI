@@ -1,0 +1,48 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+anyio = "*"
+cycler = "*"
+fastapi = "*"
+fastapi-sessions = "*"
+h11 = "*"
+idna = "*"
+itsdangerous = "*"
+jinja2 = "*"
+jsonpickle = "*"
+kiwisolver = "*"
+ldap3 = "*"
+markupsafe = "*"
+matplotlib = "*"
+numpy = "*"
+packaging = "*"
+pandas = "*"
+pydantic = "*"
+pyparsing = "*"
+python-dateutil = "*"
+python-multipart = "*"
+regex = "*"
+six = "*"
+sniffio = "*"
+starlette = "*"
+torch = "*"
+tqdm = "*"
+transformers = "*"
+typing-extensions = "*"
+urllib3 = "*"
+uvicorn = "*"
+exceptiongroup = "*"
+webdriver-manager = "*"
+pytest-mock = "*"
+
+[dev-packages]
+pytest = "*"
+httpx = "*"
+selenium = "*"
+webdriver_manager = "*"
+
+[requires]
+python_version = "3.11"
