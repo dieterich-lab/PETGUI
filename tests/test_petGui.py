@@ -1,5 +1,7 @@
+import asyncio
 import json
-import time
+import re
+import shutil
 from uuid import uuid4
 from fastapi import Request, Response
 from fastapi.testclient import TestClient
@@ -9,6 +11,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 from app.controller import templating
 from app.petGui import app, get_session
 import pytest
+import pytest_asyncio
 from fastapi.responses import FileResponse, RedirectResponse
 from app.dto.session import SessionData
 import io
@@ -36,6 +39,14 @@ class TestServer:
         job_id=None, event=None, job_status=None
     )
     data = {"username": "user", "password": "pass"}
+
+    @pytest.fixture
+    def teardown(self):
+        yield
+        # Code to clean up resources or state after the test
+        sessions = [i for i in os.listdir(".") if re.match("\d+", i)]
+        for session in sessions:
+            shutil.rmtree(session)
 
     @pytest.fixture
     def browser(self):
@@ -87,7 +98,7 @@ class TestServer:
 
     @pytest.fixture
     def mock_get_session_service(self):
-        yield self.session_data
+        return self.session_data
 
     @pytest.fixture
     def mock_session(self, mock_get_session_service, test_client):
@@ -99,12 +110,9 @@ class TestServer:
 
 
     @pytest.fixture
-    def helper_mock(self, mocker):
-        mocker.patch("app.services.session.create_session", return_value=self.mock_get_session_service)
-
-    @pytest.fixture
-    def mock_create_session(self):
+    def mock_create_session(self, mocker):
         os.environ[f"{hash(self.session_id)}"] = self.data["password"]
+        mocker.patch("app.services.session.create_session", return_value=self.mock_create_session)
 
     @pytest.fixture
     def mock_user_dn(self, mocker):
@@ -119,7 +127,7 @@ class TestServer:
         response = RedirectResponse(url=self.mock_request.url_for("homepage"), status_code=303)
         mocker.patch("app.controller.session.login", return_value=response)
 
-    def test_login_form(self, test_client, mock_user_dn, mock_bind, mock_create_session, mock_login, mock_backend_create):
+    def test_login_form(self, test_client, mock_create_session, mock_user_dn, mock_bind):
         print("Testing login..")
         response = self.client.post("/login", data=self.data)
         assert response.status_code == 200
@@ -301,7 +309,7 @@ class TestServer:
         assert response.status_code == 200
         assert response.json() == {"Status": "Cleaned"}
 
-    def test_logout(self, test_client, mock_session, mock_bash_cmd, mock_backend_update):
+    def test_logout(self, test_client, mock_session, mock_bash_cmd, mock_backend_update, teardown):
         print("Testing logout..")
         response = self.client.get("/logout")
         assert response.json() == {"Logout": "successful"}

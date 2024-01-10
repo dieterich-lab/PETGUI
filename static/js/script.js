@@ -10,7 +10,7 @@ function hideLoad() {
 function Logout() {
     fetch('/logout').then(response => {
         hideLoad();
-        window.location.href = '/login?logout=True';
+        window.location.href = '/login?logout_flag=True';
     });
 }
 
