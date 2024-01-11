@@ -39,7 +39,7 @@ To run **PETGUI** **locally** on your machine, you need:
 You may then proceed with the following steps:
 1. Clone this repository and change directory to it. Please make sure the ca-certificate file is in the same folder.
 2. Create and activate a Python3 virtual environment: `python3 -m venv venv` & `source venv/bin/activate`
-3. Install all madatory packages in requirements.txt: `pip install -r requirements.txt`
+3. Install all mandatory packages from the Pipfile: `pipenv install`
 
 <a id="start"></a>
 ### 🛫 Start PETGUI
@@ -92,7 +92,7 @@ In its current form, PETGUI is limited to training and testing a model on data i
 * **File format and naming convention:** The provided training data must be a <span style="font-style: italic">tar.gz</span> file
                                 containing _train.csv_, _test.csv_ and _unlabeled.csv_ respectively.
                                 For labeling data, a comma separated <span style="font-style: italic">.txt</span> file is expected with the first column throughout the data lines empty.
-* **Verbalizer mapping:** The provided verbalizer has to map to a single input-id in the model vocalubalary (no real-time check).
+* **Verbalizer mapping:** The provided verbalizer has to map to a single input-id in the model vocabulary (no real-time check).
 
 <a id="references"></a>  ​                     
 ### 🗃️ References
