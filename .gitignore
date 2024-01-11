@@ -3,5 +3,4 @@ venv/
 .idea
 *.egg-info
 pyproject.toml
-Pipfile
 
