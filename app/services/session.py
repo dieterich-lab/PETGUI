@@ -1,36 +1,65 @@
-from ..dto.session import SessionData, SessionCookie, SessionVerifier, CookieParameters, cookie, verifier, backend
-from fastapi import Depends
-from uuid import uuid4, UUID
+import os
+from ..dto.session import SessionData, cookie, backend
+import uuid
 
-class SessionService:
-    def __init__(self, session_data: SessionData = None, session_id: UUID = None):
-        self.session_data = None
-        self.session_id = None
 
-    async def create_session(self, user, response):
-        self.session_id = uuid4()
-        remote_loc = f"/home/{user}/{hash(self.session_id)}/"
-        remote_loc_pet = f"/home/{user}/{hash(self.session_id)}/pet/"
-        cluster_name = "cluster.dieterichlab.org"
-        log_file = f"{hash(self.session_id)}/logging.txt"
-        last_pos_file = f"{hash(self.session_id)}/last_pos.txt"
-        self.session_data = SessionData(username=user, remote_loc=remote_loc, remote_loc_pet=remote_loc_pet,
-                                        cluster_name=cluster_name, log_file=log_file, last_pos_file=last_pos_file)
-        self.create_cookie(response=response)
-        await self.create_backend()
-        return self
+async def create_session(user, response):
+    session_uuid = uuid.uuid4()
+    remote_loc = f"/home/{user}/{hash(session_uuid)}/"
+    remote_loc_pet = f"/home/{user}/{hash(session_uuid)}/pet/"
+    cluster_name = "cluster.dieterichlab.org"
+    log_file = f"{hash(session_uuid)}/logging.txt"
+    last_pos_file = f"{hash(session_uuid)}/last_pos.txt"
+    session_data = SessionData(username=user, id=session_uuid, remote_loc=remote_loc, remote_loc_pet=remote_loc_pet,
+                               cluster_name=cluster_name, log_file=log_file, last_pos_file=last_pos_file)
+    cookie.attach_to_response(response, session_uuid)
+    await backend.create(session_uuid, session_data)
+    os.makedirs(f"./{hash(session_uuid)}", exist_ok=True)  # If run with new conf
+    return session_uuid
 
-    async def create_backend(self):
-        return await backend.create(self.session_id, self.session_data)
+async def set_job_id(session_uuid: uuid.UUID, session_data: SessionData, job_id):
+    user = session_data.username
+    remote_loc = session_data.remote_loc
+    remote_loc_pet = session_data.remote_loc_pet
+    cluster_name = session_data.cluster_name
+    log_file = session_data.log_file
+    last_pos_file = session_data.last_pos_file
+    new_data = SessionData(username = user, id = session_uuid, remote_loc = remote_loc, remote_loc_pet = remote_loc_pet,
+                           cluster_name = cluster_name, log_file = log_file, last_pos_file = last_pos_file,
+                           job_id = job_id)
+    await backend.update(session_uuid, new_data)
+async def set_event(session_uuid: uuid.UUID, session_data: SessionData, event: bool):
+    user = session_data.username
+    remote_loc = session_data.remote_loc
+    remote_loc_pet = session_data.remote_loc_pet
+    cluster_name = session_data.cluster_name
+    log_file = session_data.log_file
+    last_pos_file = session_data.last_pos_file
+    job_id = session_data.job_id
+    new_data = SessionData(username = user, id=session_uuid, remote_loc = remote_loc, remote_loc_pet = remote_loc_pet,
+                           cluster_name = cluster_name, log_file = log_file, last_pos_file = last_pos_file,
+                           job_id = job_id, event = event)
+    await backend.update(session_uuid, new_data)
 
-    def create_cookie(self, response=None):
-        return cookie.attach_to_response(response, self.session_id)
 
-    def get_session(self):
-        return self.session_id, self.session_data
+async def set_job_status(session_uuid: uuid.UUID, session_data: SessionData, job_status, event: bool):
+    user = session_data.username
+    remote_loc = session_data.remote_loc
+    remote_loc_pet = session_data.remote_loc_pet
+    cluster_name = session_data.cluster_name
+    log_file = session_data.log_file
+    last_pos_file = session_data.last_pos_file
+    job_id = session_data.job_id
+    new_data = SessionData(username = user, id=session_uuid, remote_loc = remote_loc, remote_loc_pet = remote_loc_pet,
+                           cluster_name = cluster_name, log_file = log_file, last_pos_file = last_pos_file,
+                           job_id = job_id, event = event, job_status = job_status)
+    await backend.update(session_uuid, new_data)
 
-    def get_session_id(self):
-        return self.session_id
 
-    def get_session_data(self):
-        return self.session_data
+async def get_session(session_uuid):
+    session = await backend.read(session_uuid)
+    return session
+
+
+async def end_session(cookie, response):
+    cookie.delete_from_response(response)

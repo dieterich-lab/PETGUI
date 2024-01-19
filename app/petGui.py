@@ -1,7 +1,8 @@
+import asyncio
 import glob
 import pathlib
-import concurrent.futures
-from fastapi import FastAPI, Depends, UploadFile, File, Request, Response, Form
+from uuid import UUID
+from fastapi import FastAPI, Depends, UploadFile, File, Request
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -14,35 +15,34 @@ import subprocess
 from subprocess import PIPE
 import pandas as pd
 import matplotlib.pyplot as plt
-import random
-from uuid import UUID, uuid4
-import csv
 import numpy as np
-
 import shutil
-
-from app.controller import templating
-from app.controller import session
-from .services.session import SessionService
-from app.controller.session import User
-
-
+from app.controller import templating as templating_controller
+from app.controller import session as session_controller
+from .dto.session import backend
+from .services.session import set_event, set_job_status
 
 '''START APP'''
 app = FastAPI()
-'''Include routers'''
-app.include_router(templating.router)
-app.include_router(session.session_router)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
-local = False # If running app locally
+local = False  # If running app locally
 ssh = "sshpass"
 if local:
     ssh = "/opt/homebrew/bin/sshpass"
 
 
-def get_session_service(request: Request):
-    return request.app.state.session
+async def get_session(request: Request):
+    try:
+        session = await backend.read(UUID(request.cookies["session"]))
+    except KeyError:
+        return None
+    return session
+
+'''Include routers'''
+app.include_router(templating_controller.router, dependencies=[Depends(get_session)])
+app.include_router(session_controller.session_router, dependencies=[Depends(get_session)])
+
 
 @app.get("/", name="start")
 def main():
@@ -50,54 +50,61 @@ def main():
 
 
 @app.get("/whoami", name="whoami")
-def whoami(session: SessionService = Depends(get_session_service)):
-    try:
-        return session
-    except AttributeError as e:
-        print(str(e))
+async def whoami(session=Depends(get_session)):
+    return session
 
 
 @app.get("/steps", name="steps")
-def get_steps(session: SessionService = Depends(get_session_service)):
-    session_id = session.get_session_id()
-    with open(f"./{hash(session_id)}/data.json") as f:
+def get_steps(session=Depends(get_session)):
+    session_id = hash(session.id)
+    with open(f"./{(session_id)}/data.json") as f:
         data = json.load(f)
     count_tmp = len([tmp for tmp in data.keys() if "template_" in tmp])
     count_steps = 18 + (count_tmp-1) * 5
     return {"steps": count_steps}
 
 
-@app.get("/logging/start_train")
-async def run(request: Request, session: SessionService = Depends(get_session_service)):
+@app.get("/logging/start_train", name="start_train")
+async def run(request: Request, session=Depends(get_session)):
     """
     Kicks off PET by calling train method.
     """
     '''Start PET'''
     try:
-        request.app.state.job_id = await submit_job(session, False)
-        request.app.state.event = threading.Event()
-        request.app.state.thread = threading.Thread(target=check_job_status, args=(request, session, request.app.state.job_id, False))
-        request.app.state.thread.start()
-        return {"Training": "started"}
+        session_id = hash(session.id)
+        session.job_id = await submit_job(session, False)
+        await set_event(session.id, session, event=False)
+        # Check if event is set
+        t = threading.Thread(target=check_job, args=(session, session.job_id, False))
+        t.start()
+        print("Training started")
     except Exception as e:
-        return templating.logging(request, str(e))
+        print(str(e))
+        return templating_controller.logging(request, str(e))
 
+
+def check_job(session, job_id, predict):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    loop.run_until_complete(check_job_status(session, job_id, predict))
+    loop.close()
 
 
 @app.get("/abort_job")
-async def abort(request: Request, session: SessionService = Depends(get_session_service), final: bool = False):
+async def abort(session=Depends(get_session), final: bool = False):
+    session_id = hash(session.id)
     """
     Aborts current job.
     """
     try:
-        request.app.state.job_status = None
-        user = session.session_data.username
-        cluster_name = session.session_data.cluster_name
-        job_id = request.app.state.job_id
+        user = session.username
+        cluster_name = session.cluster_name
+        job_id = session.job_id
         print(f"Aborting job with id: {job_id}")
         ssh_cmd = ["sshpass", '-e', 'ssh', f'{user}@{cluster_name}',
                    f'scancel {job_id}']
-        outs, errs = bash_cmd(session, ssh_cmd, shell=True)
+        outs, errs = bash_cmd(session_id, ssh_cmd, shell=True)
         print(outs, errs)
     except Exception as e:
         print(str(e))
@@ -105,48 +112,52 @@ async def abort(request: Request, session: SessionService = Depends(get_session_
     if final:
         return
     else:
-        return await templating.clean(request, session, logout=False)
+        return await templating_controller.clean(session, False)
 
 
 @app.get("/final/start_prediction")
-async def label_prediction(request: Request, session: SessionService = Depends(get_session_service), check: bool = False):
-    '''Start Predicttion'''
+async def label_prediction(request: Request, session=Depends(get_session),
+                           check: bool = False):
+    session_id = hash(session.id)
+    # Start Prediction
     if check:
         try:
-            if request.app.state.job_status == "CD":
-                return {"status": "CD"}
-        except:
+            return {"status": session.job_status}
+        except KeyError:
             pass
     else:
         try:
-            request.app.state.job_id = await submit_job(session, True)
-            request.app.state.event = threading.Event()
-            request.app.state.thread = threading.Thread(target = check_job_status, args = (request, session, request.app.state.job_id, True))
-            request.app.state.thread.start()
+            session.job_id = await submit_job(session, True)
+            await set_event(session.id, session, event=False)
+            # Check if event is set
+            t = threading.Thread(target=check_job, args=(session, session.job_id, True))
+            t.start()
             return {"Prediction": "started"}
         except Exception as e:
-            error = "Something went wrong, please reload the page and try again"
-            return templating.get_final_template(request, error)
+            print(str(e))
+            return templating_controller.logging(request, str(e))
 
 
-async def submit_job(session: SessionService = Depends(get_session_service), predict: bool = False):
+@app.get("submit_job")
+async def submit_job(session=Depends(get_session), predict: bool = False):
     # Copy the SLURM script file to the remote cluster
     print("Submitting job..")
 
-    user = session.session_data.username
-    remote_loc = session.session_data.remote_loc
-    remote_loc_pet = session.session_data.remote_loc_pet
-    cluster_name = session.session_data.cluster_name
-    session_id = session.get_session_id()
+    user = session.username
+    remote_loc = session.remote_loc
+    remote_loc_pet = session.remote_loc_pet
+    cluster_name = session.cluster_name
+    session_id = hash(session.id)
 
     if predict:
         try:
-            scp_cmd = ["sshpass", '-e', 'scp', '-r', f'{str(hash(session_id))}/data_uploaded/unlabeled',
+            scp_cmd = ["sshpass", '-e', 'scp', '-r', f'{session_id}/data_uploaded/unlabeled',
                        f'{user}@{cluster_name}:{remote_loc_pet}data_uploaded/']
-            outs, errs = bash_cmd(session, scp_cmd)
+            print("here")
+            outs, errs = bash_cmd(session_id, scp_cmd)
             ssh_cmd = ["sshpass", '-e', 'ssh', f'{user}@{cluster_name}',
                        f'sbatch {remote_loc_pet}predict.sh {remote_loc.split("/")[-2]}']
-            outs, errs = bash_cmd(session, ssh_cmd)
+            outs, errs = bash_cmd(session_id, ssh_cmd)
             print("Prediction: ", outs)
             # Get the job ID from the output of the sbatch command
             job_id = outs.decode('utf-8').strip().split()[-1]
@@ -156,122 +167,128 @@ async def submit_job(session: SessionService = Depends(get_session_service), pre
 
     else:
         mkdir_cmd = ["sshpass", '-e', 'ssh', f'{user}@{cluster_name}', f'mkdir {remote_loc}']
-        outs, errs = bash_cmd(session, mkdir_cmd)
-        dir = hash(session_id)
+        outs, errs = bash_cmd(session_id, mkdir_cmd)
+        print(outs, errs)
         files = ["pet", "data.json", "train.sh", "data_uploaded", "predict.sh"]
-        files = [str(dir) + "/" + f if f == "data.json" or f == "data_uploaded" else f for f in files]
+        files = [str(session_id) + "/" + f if f == "data.json" or f == "data_uploaded" else f for f in files]
         print(files)
         for f in files:
             scp_cmd = ["sshpass", '-e', 'scp', '-r', f,
-                   f'{user}@{cluster_name}:{remote_loc}' if "pet" in f
-                   else f'{user}@{cluster_name}:{remote_loc_pet}']
-            outs, errs = bash_cmd(session, scp_cmd)
-            print(outs, errs)
+                       f'{user}@{cluster_name}:{remote_loc}' if "pet" in f
+                       else f'{user}@{cluster_name}:{remote_loc_pet}']
+            outs, errs = bash_cmd(session_id, scp_cmd)
+            print("Found here:", outs, errs)
 
         # Submit the SLURM job via SSH
         ssh_cmd = ["sshpass", '-e', 'ssh', f'{user}@{cluster_name}',
                    f'sbatch {remote_loc_pet}train.sh {remote_loc.split("/")[-2]}']
-        outs, errs = bash_cmd(session, ssh_cmd)
+        outs, errs = bash_cmd(session_id, ssh_cmd)
         # Get the job ID from the output of the sbatch command
         job_id = outs.decode('utf-8').strip().split()[-1]
         print(job_id)
         return job_id
 
 
-def bash_cmd(session: SessionService = Depends(get_session_service), cmd=None, shell: bool = False):
-    session_id = session.get_session_id()
-    proc = subprocess.Popen(" ".join(cmd) if shell else cmd, env={"SSHPASS": os.environ[f"{hash(session_id)}"]}, shell=shell,
+def bash_cmd(session_id: int, cmd=None, shell: bool = False):
+    proc = subprocess.Popen(" ".join(cmd) if shell else cmd, env={"SSHPASS": os.environ[f"{session_id}"]}, shell=shell,
                             stdout=subprocess.PIPE, stderr=PIPE)
     outs, errs = proc.communicate()
     return outs, errs
 
 
-def check_job_status(request: Request, session: SessionService = Depends(get_session_service), job_id: str = None, predict: bool = False):
-    user = session.session_data.username
-    remote_loc_pet = session.session_data.remote_loc_pet
-    cluster_name = session.session_data.cluster_name
-    log_file = session.session_data.log_file
-    session_id = session.get_session_id()
-    while request.app.state.event:
+@app.get("check_job_status", name="check_job_status")
+async def check_job_status(session=Depends(get_session), job_id: str = None, predict: bool = False):
+    global status
+    user = session.username
+    remote_loc_pet = session.remote_loc_pet
+    cluster_name = session.cluster_name
+    log_file = session.log_file
+    session_id = hash(session.id)
+    event = session.event
+    await set_event(session.id, session, event=False)
+    print(event)
+    while not event:
+        print(event)
         cmd = ["sshpass", '-e', 'ssh', f'{user}@{cluster_name}', f"squeue -j {job_id} -h -t all | awk '{{print $5}}'"]
-        outs, errs = bash_cmd(session, cmd)
+        outs, errs = bash_cmd(session_id, cmd)
         try:
             status = outs.decode("utf-8").strip().split()[-1]
             print(status, outs, errs)
         except IndexError:
             pass
         if status == "R":
-            request.app.state.job_status = "R"
+            await set_job_status(session.id, session, job_status="R", event=False)
             pass
         elif status == "CD":
-            request.app.state.job_status = "CD"
+            await set_job_status(session.id, session, job_status="CD", event=False)
             if predict:
                 scp_cmd = ["sshpass", '-e', 'ssh', f'{user}@{cluster_name}',
-                           f'cat {remote_loc_pet}predictions.csv', f'> {hash(session_id)}/output/predictions.csv']
-                outs, errs = bash_cmd(session, scp_cmd, shell=True)
+                           f'cat {remote_loc_pet}predictions.csv', f'> {(session_id)}/output/predictions.csv']
+                outs, errs = bash_cmd(session_id, scp_cmd, shell=True)
                 print(outs, errs)
                 return {"Prediction": "finished"}
             else:
-                with open(f'{hash(session_id)}/logging.txt', 'a') as file:
+                with open(f'{(session_id)}/logging.txt', 'a') as file:
                     file.write('Training Complete\n')
                 ssh_cmd = ["sshpass", '-e', 'ssh',
                            f'{user}@{cluster_name}', f'cd {remote_loc_pet} '
                                                      f'&& find . -name "results.json" -type f']
-                outs, errs = bash_cmd(session, ssh_cmd)
+                outs, errs = bash_cmd(session_id, ssh_cmd, )
                 print(outs, errs)
                 files = outs.decode("utf-8")
                 for f in files.rstrip().split("\n"):
                     f = f.lstrip("./")
-                    os.makedirs(f"{hash(session_id)}/{f.rstrip('results.json')}", exist_ok=True)
-                    while not os.path.exists(f"{hash(session_id)}/{f.rstrip('results.json')}"):
+                    os.makedirs(f"{(session_id)}/{f.rstrip('results.json')}", exist_ok=True)
+                    while not os.path.exists(f"{(session_id)}/{f.rstrip('results.json')}"):
                         time.sleep(1)
                     scp_cmd = ["sshpass", '-e', 'ssh', f'{user}@{cluster_name}',
-                               f'cat {remote_loc_pet}{f} > {hash(session_id)}/{f}']
-                    outs, errs = bash_cmd(session, scp_cmd, shell=True)
+                               f'cat {remote_loc_pet}{f} > {(session_id)}/{f}']
+                    outs, errs = bash_cmd(session_id, scp_cmd, shell=True)
                     print(outs, errs)
                 '''Call Results'''
-                results(session)
+                results(str(session_id))
                 return {"Training": "finished"}
         elif status == "CA":
-            request.app.state.job_status = "CA"
+            await set_job_status(session.id, session, job_status="CA", event=False)
             return
         elif status == "F":
-            request.app.state.job_status = "F"
+            await set_job_status(session.id, session, job_status="F", event=False)
             raise Exception("Job could not finish. Please make sure your parameters are correct.")
 
         time.sleep(5)
 
         ssh_cmd = ["sshpass", '-e', 'ssh', f'{user}@{cluster_name}',
                    f'cat /home/{user}/{log_file.split("/")[-1]}']
-        outs, errs = bash_cmd(session, ssh_cmd)
+        outs, errs = bash_cmd(session_id, ssh_cmd)
         log_contents = outs.decode('utf-8')
 
         # Update the log file on the local machine
         with open(f"{log_file}", 'w') as f:
             f.write(log_contents)
 
-def results(session: SessionService = Depends(get_session_service)):
+
+def results(session_id: str):
     """
     Saves results.json for each pattern-iteration pair of output/final directory in a dictionary.
     Returns:
         html page with results & homepage redirection buttons
     """
-    session_id = session.get_session_id()
-    dirs = next(os.walk(f"{hash(session_id)}/output/"))[1]
+    print(session_id)
+    dirs = next(os.walk(f"{session_id}/output/"))[1]
     scores = {}
     for d in dirs:
         final = ""
         if "final" in d:
             k = "Final"
             scores[k] = {"acc": "-", "pre-rec-f1-supp": []}
-            finals = next(os.walk(f"{hash(session_id)}/output/final/"))[1]
+            finals = next(os.walk(f"{session_id}/output/final/"))[1]
             assert len(finals) == 1
             final += f"/{finals[0]}"
         else:
             k = f"Pattern-{int(d[1]) + 1} Iteration 1"
             scores[k] = {"acc": "-", "pre-rec-f1-supp": []}
             final = ""
-        with open(f"{hash(session_id)}/output/{d}{final}/results.json") as f:
+        with open(f"{session_id}/output/{d}{final}/results.json") as f:
             json_scores = json.load(f)
             acc = round(json_scores["test_set_after_training"]["acc"], 2)
             pre, rec, f1, supp = json_scores["test_set_after_training"]["pre-rec-f1-supp"]
@@ -281,9 +298,30 @@ def results(session: SessionService = Depends(get_session_service)):
                                                     f"F1: {round(f1[l], 2)}, Supp: {supp[0]}")
             scores[k]["acc"] = acc
             # scores[k]["pre-rec-f1-supp"] = [round(float(scr), 2) for l in scores.values() for scr in l]
-
-    with open(f"{hash(session_id)}/results.json", "w") as res:
+    with open(f"{session_id}/results.json", "w") as res:
         json.dump(scores, res)
+    return
+
+
+@app.post("/label-change")
+async def label_change(session=Depends(get_session)):
+    session_id = hash(session.id)
+    with open(f'{(session_id)}/label_dict.json', 'r') as file:
+        label_mapping = json.load(file)
+
+    with open(f'{(session_id)}/results.json', 'r') as file:
+        json_data = json.load(file)
+
+    for key in json_data:
+        for i in range(len(json_data[key]["pre-rec-f1-supp"])):
+            label_number = json_data[key]["pre-rec-f1-supp"][i].split(':')[1].split()[0]
+            if label_number in label_mapping:
+                json_data[key]["pre-rec-f1-supp"][i] = json_data[key]["pre-rec-f1-supp"][i].replace(
+                    "Label: {}".format(label_number),
+                    "Label: {}".format(label_mapping[label_number]))
+    with open(f'{(session_id)}/results.json', 'w') as file:
+        json.dump(json_data, file, ensure_ascii=False)
+
 
 def detect_delimiter(filename):
     try:
@@ -295,40 +333,42 @@ def detect_delimiter(filename):
     except pd.errors.ParserError:
         raise Exception
 
+
 @app.post("/extract-file")
-async def extract_file(request: Request, file: UploadFile = File(...), session: SessionService = Depends(get_session_service)):
-    session_id = session.get_session_id()
-    upload_folder = f"{hash(session_id)}/data_uploaded/"
+async def extract_file(request: Request, file: UploadFile = File(...), session=Depends(get_session)):
+    session_id = hash(session.id)
+    upload_folder = f"{session_id}/data_uploaded/"
 
     if os.path.exists(upload_folder):
         shutil.rmtree(upload_folder)
     os.makedirs(upload_folder)
     try:
         file_upload = tarfile.open(fileobj=file.file, mode="r:gz", errors="ignore")
-        file_upload.extractall(f'{hash(session_id)}/data_uploaded')
+        file_upload.extractall(f'{(session_id)}/data_uploaded')
     except:
         return templates.TemplateResponse('index.html', {'request': request,
-                                                             'error': "Invalid File Type: Please upload your data as a zip file with the extension '.tar.gz'"})
+                                                         'error': "Invalid File Type: Please upload your data"
+                                                                  " as a zip file with the extension '.tar.gz'"})
     # Print the extracted file names
     extracted_files = [member.name for member in file_upload.getmembers()]
     print("Extracted files:", extracted_files)
 
     # Identify the extracted folder
     extracted_folder = None
-    for root, dirs, files in os.walk(f'{hash(session_id)}/data_uploaded'):
+    for root, dirs, files in os.walk(f'{(session_id)}/data_uploaded'):
         if len(dirs) == 1:  # Assuming only one subdirectory within the extracted files
             extracted_folder = dirs[0]
             break
         elif len(dirs) == 0:
-            extracted_folder = pathlib.Path(f'{hash(session_id)}/data_uploaded/{file.filename.split(".")[0]}')
+            extracted_folder = pathlib.Path(f'{(session_id)}/data_uploaded/{file.filename.split(".")[0]}')
             extracted_folder.mkdir(parents=True, exist_ok=True)
             for f in files:
                 try:
-                    shutil.move(f'{hash(session_id)}/data_uploaded/{f}', extracted_folder)
+                    shutil.move(f'{(session_id)}/data_uploaded/{f}', extracted_folder)
                 except FileNotFoundError as e:
                     print(os.curdir, str(e))
         if "unlabeled.csv" in files:
-            os.environ[f"{hash(session_id)}_unlabeled"] = "True"
+            os.environ[f"{(session_id)}_unlabeled"] = "True"
 
     print("Extracted folder:", extracted_folder)
 
@@ -336,34 +376,33 @@ async def extract_file(request: Request, file: UploadFile = File(...), session: 
     # Read the train and test data into dataframes
     columns = ["label", "text"]
 
-    filename = "".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/train.csv'))
+    filename = "".join(glob.glob(f'{(session_id)}/data_uploaded/*/train.csv'))
     delimiter = detect_delimiter(filename)
-    os.environ[f"{hash(session_id)}_delimiter"] = delimiter
+    os.environ[f"{(session_id)}_delimiter"] = delimiter
     print(delimiter)
 
-    train_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/train.csv')), sep=delimiter,
+    train_df = pd.read_csv("".join(glob.glob(f'{(session_id)}/data_uploaded/*/train.csv')), sep=delimiter,
                            names=columns)
-    test_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/test.csv')), sep=delimiter,
+    test_df = pd.read_csv("".join(glob.glob(f'{(session_id)}/data_uploaded/*/test.csv')), sep=delimiter,
                           names=columns)
 
     # Plot the distribution of labels for train and test data separately
-
 
     # Add text information about the label distribution to the chart
     train_label_counts = train_df["label"].value_counts()
     test_label_counts = test_df["label"].value_counts()
 
-    first_label = train_df.at[0,"label"]
+    first_label = train_df.at[0, "label"]
     print(first_label)
     # print(type(first_label))
     is_numeric_label = isinstance(first_label, int) or len(str(first_label)) == 1
-    #print(train_df["label"].unique())
+    # print(train_df["label"].unique())
 
     unique_labels = train_df["label"].unique()
 
-    label_dict = {index:str(label) for index, label in enumerate(unique_labels)}
+    label_dict = {index: str(label) for index, label in enumerate(unique_labels)}
 
-    json_file_path = f'{hash(session_id)}/label_dict.json'
+    json_file_path = f'{(session_id)}/label_dict.json'
     with open(json_file_path, "w") as json_file:
         json.dump(label_dict, json_file)
 
@@ -391,7 +430,6 @@ async def extract_file(request: Request, file: UploadFile = File(...), session: 
         ax2.set_ylabel("Label")
         ax2.set_yticks(np.arange(len(test_labels)))
         ax2.set_yticklabels(test_labels, rotation=0)
-        max_y = max(train_df["label"].value_counts().max(), test_df["label"].value_counts().max())
         ax1.set_ylim(-0.5, len(train_labels) - 0.5)
         ax2.set_ylim(-0.5, len(test_labels) - 0.5)
     else:
@@ -410,7 +448,6 @@ async def extract_file(request: Request, file: UploadFile = File(...), session: 
         ax1.set_ylim([0, max_y])
         ax2.set_ylim([0, max_y])
 
-
     # Save the chart to a file
     plt.savefig("static/chart.png", dpi=100)
 
@@ -418,24 +455,24 @@ async def extract_file(request: Request, file: UploadFile = File(...), session: 
 
 
 @app.get("/report-labels")
-def report(session: SessionService = Depends(get_session_service)):
-    session_id = session.get_session_id()
+def report(session=Depends(get_session)):
+    session_id = hash(session.id)
     columns = ["label", "text"]
 
-    filename = "".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/train.csv'))
+    filename = "".join(glob.glob(f'{(session_id)}/data_uploaded/*/train.csv'))
     delimiter = detect_delimiter(filename)
-    train_df = pd.read_csv("".join(glob.glob(f'{hash(session_id)}/data_uploaded/*/train.csv')), sep=delimiter,
-                               names=columns)
+    train_df = pd.read_csv("".join(glob.glob(f'{(session_id)}/data_uploaded/*/train.csv')), sep=delimiter,
+                           names=columns)
     labels = set(str(i) for i in train_df.label)
-    print(labels)
+    print("labels: ", labels)
     return {"list": labels}
 
 
 @app.post("/label-distribution")
-async def label_distribution(session: SessionService = Depends(get_session_service)):
-    session_id = session.get_session_id()
+async def label_distribution(session=Depends(get_session)):
     # Read the prediction data into a dataframe
-    df = pd.read_csv(f'{hash(session_id)}/output/predictions.csv')
+    session_id = hash(session.id)
+    df = pd.read_csv(f'{(session_id)}/output/predictions.csv')
 
     # Shorten the label to the first 10 characters
     df['short_label'] = df['label'].apply(lambda x: x[:10])
@@ -444,13 +481,11 @@ async def label_distribution(session: SessionService = Depends(get_session_servi
     label_counts = df['short_label'].value_counts()
     fig = plt.figure(figsize=(7, 7))
     ax = fig.add_subplot(211)
-    #label_counts.plot(kind='bar', width=0.3, ax=ax)
 
     # Get the labels and their corresponding counts
 
     labels = label_counts.index
     counts = label_counts.values
-
 
     # Set the height of bars with zero counts to zero, making them invisible
     invisible_heights = [0 if count == 0 else count for count in counts]
@@ -481,4 +516,3 @@ async def label_distribution(session: SessionService = Depends(get_session_servi
     plt.savefig("static/chart_prediction.png", dpi=100)
 
     return {"message": "Label distribution chart created successfully."}
-

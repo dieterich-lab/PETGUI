@@ -4,7 +4,8 @@ pipeline {
         stage('Prepare venv') {
             steps {
                 sh '''
-                    pip3 install pipenv
+                    python3 -m venv venv
+                    . ./venv/bin/activate
 		            pipenv install
                 '''
             }
@@ -13,7 +14,7 @@ pipeline {
         stage('Testing') {
             steps {
                 sh '''true
-                   pipenv shell
+                   . ./venv/bin/activate
                    export PYTHONPATH=$(pwd)
                    pytest --junitxml results.xml tests
                 '''
@@ -23,6 +24,7 @@ pipeline {
     post {
         always {
             junit 'results.xml'
+
         }
     }
 }

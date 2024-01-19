@@ -34,7 +34,6 @@ typing-extensions = "*"
 urllib3 = "*"
 uvicorn = "*"
 exceptiongroup = "*"
-webdriver-manager = "*"
 pytest-mock = "*"
 
 [dev-packages]

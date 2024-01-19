@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "PETGUI"
+requires-python = ">= 3.11"
+dynamic = ["version"]
+dependencies= [
+"anyio",
+"cycler",
+"fastapi",
+"fastapi-sessions",
+"h11",
+"idna",
+"itsdangerous",
+"jinja2",
+"jsonpickle",
+"kiwisolver",
+"ldap3",
+"markupsafe",
+"matplotlib",
+"numpy",
+"packaging",
+"pandas",
+"pydantic",
+"pyparsing",
+"python-dateutil",
+"python-multipart",
+"regex",
+"six",
+"sniffio",
+"starlette",
+"tqdm",
+"transformers",
+"typing-extensions",
+"urllib3",
+"uvicorn",
+"exceptiongroup",
+"webdriver-manager",
+"pytest-mock",
+"pytest",
+"httpx",
+"selenium",
+"webdriver_manager"]
+
+[project.urls]
+Repository = "https://github.com/dieterich-lab/PETGUI"
+
+[tool.setuptools]
+py-modules = []
