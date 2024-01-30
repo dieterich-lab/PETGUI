@@ -39,7 +39,8 @@ To run **PETGUI** **locally** on your machine, you need:
 You may then proceed with the following steps:
 1. Clone this repository and change directory to it. Please make sure the ca-certificate file is in the same folder.
 2. Create and activate a Python3 virtual environment: `python3 -m venv venv` & `source venv/bin/activate`
-3. Install all mandatory packages from the Pipfile: `pipenv install`
+3. Install pipenv: `pip install pipenv`
+4. Install all mandatory packages from the Pipfile: `pipenv install`
 
 <a id="start"></a>
 ### 🛫 Start PETGUI
