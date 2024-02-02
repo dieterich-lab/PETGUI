@@ -1,6 +1,6 @@
 # PETGUI
 
-We introduce **PETGUI**: A user-friendly interface for training and testing a language model through <b>P</b>attern <b>E</b>xploiting <b>T</b>raining (<span style="font-style: italic">PET</span>) <a href="#pet" role="doc-noteref">[Schick et al., 2021]</a>.<br>
+We present **PETGUI**: A user-friendly interface for training and testing a language model through <b>P</b>attern <b>E</b>xploiting <b>T</b>raining (<span style="font-style: italic">PET</span>) <a href="#pet" role="doc-noteref">[Schick et al., 2021]</a>.<br>
 
 
 ## 🔎 Contents
