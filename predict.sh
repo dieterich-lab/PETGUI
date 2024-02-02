@@ -1,6 +1,7 @@
 #!/bin/bash
 
 #SBATCH --partition=gpu
+#SBATCH --gres=gpu:ampere:1
 #SBATCH -n 1
 #SBATCH -N 1
 #SBATCH -c 2
