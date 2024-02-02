@@ -32,9 +32,9 @@ Secondly, an ensemble of these models annotates unlabeled training data <strong>
 <a id="requirements"></a>
 ### 🧰 PETGUI Requirements
 To run **PETGUI** **locally** on your machine, you need: 
-1. A **working VPN connection** to the *Dieterich Lab* server
-2. The *Dieterich Lab* **ca-certificate file**
-3. **Ldap credentials** for accessing the *Dieterich Lab* cluster at: *[username]@cluster.dieterichlab.org*.  
+1. A **working VPN connection** to an LDAP server
+2. The **ca-certificate file** for the defined server
+3. **Ldap credentials** for accessing the server cluster.
 
 You may then proceed with the following steps:
 1. Clone this repository and change directory to it. Please make sure the ca-certificate file is in the same folder.

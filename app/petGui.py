@@ -22,6 +22,7 @@ from app.controller import session as session_controller
 from .dto.session import backend
 from .services.session import set_event, set_job_status
 
+
 '''START APP'''
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
