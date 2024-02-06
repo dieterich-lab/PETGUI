@@ -1,4 +1,0 @@
-"LDAP_SERVER" : 'ldap://'
-"CA_FILE" : '.pem'
-"USER_BASE" : 'dc=…,dc=org'
-"LDAP_SEARCH_FILTER" : '({name_attribute}={name})'

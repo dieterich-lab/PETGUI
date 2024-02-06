@@ -61,7 +61,7 @@ INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:89 (Press CTRL+C to quit)
 ```
-2. Access it by right-clicking the address ``http://0.0.0.0:89` and opening it in a browser.
+2. Access it by right-clicking the address `http://0.0.0.0:89` and opening it in a browser.
 
 <a id="run"></a>
 ### 👟️ Run PETGUI
