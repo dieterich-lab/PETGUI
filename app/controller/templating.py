@@ -236,12 +236,16 @@ async def clean(session: SessionData = Depends(get_session), logout_flag: bool =
     paths = ["logging.txt", "last_pos.txt", "output", "results.json", "data.json", "data_uploaded", "static/chart.png",
              "static/chart_prediction.png", "label_dict.json"]
     paths = [f"{session_id}/" + path if "png" not in path else path for path in paths]
+
     for path in paths if not logout_flag else [f"{session_id}"]:
-        file_path = pathlib.Path(path)
-        if isfile(path):
-            file_path.unlink()
-        elif isdir(path):
-            shutil.rmtree(path)
+        try:
+            file_path = pathlib.Path(path)
+            if isfile(path):
+                file_path.unlink()
+            elif isdir(path):
+                shutil.rmtree(path)
+        except FileNotFoundError:
+            pass
     if job_id:
         rm_cmd = [ssh, '-e', 'ssh',
                   f'{user}@{cluster_name}', f'rm -r {remote_loc} /home/{user}/{log_file.split("/")[-1]}']
@@ -264,7 +268,7 @@ async def abort(session=Depends(get_session), final: bool = False):
         cluster_name = session.cluster_name
         job_id = session.job_id
         print(f"Aborting job with id: {job_id}")
-        ssh_cmd = ["sshpass", '-e', 'ssh', f'{user}@{cluster_name}',
+        ssh_cmd = ["sshpass", '-e', 'ssh', '-o', 'StrictHostKeyChecking=no', f'{user}@{cluster_name}',
                    f'scancel {job_id}']
         outs, errs = bash_cmd(session.id, ssh_cmd, shell=True)
         print(outs, errs)

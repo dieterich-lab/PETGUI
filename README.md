@@ -31,7 +31,7 @@ Secondly, an ensemble of these models annotates unlabeled training data <strong>
 
 <a id="requirements"></a>
 ### 🧰 PETGUI Requirements
-To run **PETGUI** **locally** on your machine, you need: 
+To run **PETGUI** **locally** on your machine, you need:
 1. A **working VPN connection** to an LDAP server
 2. The **ca-certificate file** for the defined server
 3. **Ldap credentials** for accessing the server cluster.
@@ -41,6 +41,7 @@ You may then proceed with the following steps:
 2. Create and activate a Python3 virtual environment: `python3 -m venv venv` & `source venv/bin/activate`
 3. Install pipenv: `pip install pipenv`
 4. Install all mandatory packages from the Pipfile: `pipenv install`
+5. Modify the LDAP server configuration file `conf.yaml` with your settings.
 
 <a id="start"></a>
 ### 🛫 Start PETGUI

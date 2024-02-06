@@ -103,7 +103,7 @@ async def abort(session=Depends(get_session), final: bool = False):
         cluster_name = session.cluster_name
         job_id = session.job_id
         print(f"Aborting job with id: {job_id}")
-        ssh_cmd = ["sshpass", '-e', 'ssh', f'{user}@{cluster_name}',
+        ssh_cmd = ["sshpass", '-e', 'ssh', '-o', 'StrictHostKeyChecking=no', f'{user}@{cluster_name}',
                    f'scancel {job_id}']
         outs, errs = bash_cmd(session_id, ssh_cmd, shell=True)
         print(outs, errs)
@@ -152,11 +152,11 @@ async def submit_job(session=Depends(get_session), predict: bool = False):
 
     if predict:
         try:
-            scp_cmd = ["sshpass", '-e', 'scp', '-r', f'{session_id}/data_uploaded/unlabeled',
+            scp_cmd = ["sshpass", '-e', 'scp', '-o', 'StrictHostKeyChecking=no', '-r', f'{session_id}/data_uploaded/unlabeled',
                        f'{user}@{cluster_name}:{remote_loc_pet}data_uploaded/']
             print("here")
             outs, errs = bash_cmd(session_id, scp_cmd)
-            ssh_cmd = ["sshpass", '-e', 'ssh', f'{user}@{cluster_name}',
+            ssh_cmd = ["sshpass", '-e', 'ssh', '-o', 'StrictHostKeyChecking=no', f'{user}@{cluster_name}',
                        f'sbatch {remote_loc_pet}predict.sh {remote_loc.split("/")[-2]}']
             outs, errs = bash_cmd(session_id, ssh_cmd)
             print("Prediction: ", outs)
@@ -167,21 +167,21 @@ async def submit_job(session=Depends(get_session), predict: bool = False):
             raise e
 
     else:
-        mkdir_cmd = ["sshpass", '-e', 'ssh', f'{user}@{cluster_name}', f'mkdir {remote_loc}']
+        mkdir_cmd = ["sshpass", '-e', 'ssh', '-o', 'StrictHostKeyChecking=no', f'{user}@{cluster_name}', f'mkdir {remote_loc}']
         outs, errs = bash_cmd(session_id, mkdir_cmd)
         print(outs, errs)
         files = ["pet", "data.json", "train.sh", "data_uploaded", "predict.sh"]
         files = [str(session_id) + "/" + f if f == "data.json" or f == "data_uploaded" else f for f in files]
         print(files)
         for f in files:
-            scp_cmd = ["sshpass", '-e', 'scp', '-r', f,
+            scp_cmd = ["sshpass", '-e', 'scp', '-o', 'StrictHostKeyChecking=no', '-r', f,
                        f'{user}@{cluster_name}:{remote_loc}' if "pet" in f
                        else f'{user}@{cluster_name}:{remote_loc_pet}']
             outs, errs = bash_cmd(session_id, scp_cmd)
             print("Found here:", outs, errs)
 
         # Submit the SLURM job via SSH
-        ssh_cmd = ["sshpass", '-e', 'ssh', f'{user}@{cluster_name}',
+        ssh_cmd = ["sshpass", '-e', 'ssh', '-o', 'StrictHostKeyChecking=no', f'{user}@{cluster_name}',
                    f'sbatch {remote_loc_pet}train.sh {remote_loc.split("/")[-2]}']
         outs, errs = bash_cmd(session_id, ssh_cmd)
         # Get the job ID from the output of the sbatch command
@@ -210,7 +210,7 @@ async def check_job_status(session=Depends(get_session), job_id: str = None, pre
     print(event)
     while not event:
         print(event)
-        cmd = ["sshpass", '-e', 'ssh', f'{user}@{cluster_name}', f"squeue -j {job_id} -h -t all | awk '{{print $5}}'"]
+        cmd = ["sshpass", '-e', 'ssh', '-o', 'StrictHostKeyChecking=no', f'{user}@{cluster_name}', f"squeue -j {job_id} -h -t all | awk '{{print $5}}'"]
         outs, errs = bash_cmd(session_id, cmd)
         try:
             status = outs.decode("utf-8").strip().split()[-1]
@@ -223,7 +223,7 @@ async def check_job_status(session=Depends(get_session), job_id: str = None, pre
         elif status == "CD":
             await set_job_status(session.id, session, job_status="CD", event=False)
             if predict:
-                scp_cmd = ["sshpass", '-e', 'ssh', f'{user}@{cluster_name}',
+                scp_cmd = ["sshpass", '-e', 'ssh', '-o', 'StrictHostKeyChecking=no', f'{user}@{cluster_name}',
                            f'cat {remote_loc_pet}predictions.csv', f'> {(session_id)}/output/predictions.csv']
                 outs, errs = bash_cmd(session_id, scp_cmd, shell=True)
                 print(outs, errs)
@@ -231,7 +231,7 @@ async def check_job_status(session=Depends(get_session), job_id: str = None, pre
             else:
                 with open(f'{(session_id)}/logging.txt', 'a') as file:
                     file.write('Training Complete\n')
-                ssh_cmd = ["sshpass", '-e', 'ssh',
+                ssh_cmd = ["sshpass", '-e', 'ssh', '-o', 'StrictHostKeyChecking=no',
                            f'{user}@{cluster_name}', f'cd {remote_loc_pet} '
                                                      f'&& find . -name "results.json" -type f']
                 outs, errs = bash_cmd(session_id, ssh_cmd, )
@@ -242,7 +242,7 @@ async def check_job_status(session=Depends(get_session), job_id: str = None, pre
                     os.makedirs(f"{(session_id)}/{f.rstrip('results.json')}", exist_ok=True)
                     while not os.path.exists(f"{(session_id)}/{f.rstrip('results.json')}"):
                         time.sleep(1)
-                    scp_cmd = ["sshpass", '-e', 'ssh', f'{user}@{cluster_name}',
+                    scp_cmd = ["sshpass", '-e', 'ssh', '-o', 'StrictHostKeyChecking=no', f'{user}@{cluster_name}',
                                f'cat {remote_loc_pet}{f} > {(session_id)}/{f}']
                     outs, errs = bash_cmd(session_id, scp_cmd, shell=True)
                     print(outs, errs)
@@ -258,7 +258,7 @@ async def check_job_status(session=Depends(get_session), job_id: str = None, pre
 
         time.sleep(5)
 
-        ssh_cmd = ["sshpass", '-e', 'ssh', f'{user}@{cluster_name}',
+        ssh_cmd = ["sshpass", '-e', 'ssh', '-o', 'StrictHostKeyChecking=no', f'{user}@{cluster_name}',
                    f'cat /home/{user}/{log_file.split("/")[-1]}']
         outs, errs = bash_cmd(session_id, ssh_cmd)
         log_contents = outs.decode('utf-8')

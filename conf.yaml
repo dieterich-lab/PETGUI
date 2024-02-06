@@ -1,4 +1,4 @@
-"LDAP_SERVER" : 'ldap://ldap2.dieterichlab.org'
-"CA_FILE" : 'DieterichLab_CA.pem'
-"USER_BASE" : 'dc=dieterichlab,dc=org'
+"LDAP_SERVER" : 'ldap://'
+"CA_FILE" : '.pem'
+"USER_BASE" : 'dc=…,dc=org'
 "LDAP_SEARCH_FILTER" : '({name_attribute}={name})'

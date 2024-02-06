@@ -3,7 +3,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse
 import os
 from app.services.session import create_session
-import app.services.ldap as ldap
+from app.services.ldap import LDAP
 from app.controller import templating
 
 session_router = APIRouter()
@@ -18,6 +18,7 @@ if local:
 @session_router.post("/login")
 async def login(request: Request, response: Response, username: str = Form(...), password: str = Form(...)):
     try:
+        ldap = LDAP()
         dn = ldap.get_dn_of_user(username)
         ldap.bind(dn, password)
         session_uuid = await create_session(username, response)

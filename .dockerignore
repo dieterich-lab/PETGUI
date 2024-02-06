@@ -1,0 +1,15 @@
+# Ignore everything
+**
+
+# ... except for dependencies and source
+!Pipfile
+!Pipfile.lock
+!app/
+!pet/
+!static/
+!templates/
+!LICENSE
+!start_prod.sh
+!predict.sh
+!train.sh
+!README.md

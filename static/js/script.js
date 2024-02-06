@@ -83,8 +83,8 @@ function addInput_new() {
         let lastInputField = inputFields[inputFields.length-1];
         let addButton = lastInputField.querySelector('.add-btn');
         if (addButton) {
-            addButton.textContent = "-";
-            addButton.setAttribute("onClick", "removeSpecificInput(this);");
+            addButton.textContent = counter;
+            addButton.disabled = true;
         }
 
 
@@ -127,6 +127,7 @@ function adjustLastInput() {
         let lastInputField = inputFields[inputFields.length-1];
         let addButton = lastInputField.querySelector('.add-btn');
         if (addButton) {
+            addButton.disabled = false;
             addButton.textContent = "+";
             addButton.className = "btn btn--radius-2 btn--blue add-btn add-remove-btn";
             addButton.setAttribute("onClick", "addInput_new();");
