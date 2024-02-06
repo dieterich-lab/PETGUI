@@ -6,8 +6,9 @@ We present **PETGUI**: A user-friendly interface for training and testing a lang
 ## 🔎 Contents
 - [*Pattern Exploiting Training*](#pet)
 - [🧰 PETGUI Requirements](#requirements)
+- [⚙️ PETGUI Setup](#setup)
 - [🛫 Start PETGUI](#start)
-- [⚙️ Run PETGUI](#run)
+- [👟 Run PETGUI](#run)
   * [🧾 Training Parameter Guidelines](#guidelines)
 - [➕ Features](#features)
 - [➖ Limitations](#limitations)
@@ -33,32 +34,37 @@ Secondly, an ensemble of these models annotates unlabeled training data <strong>
 ### 🧰 PETGUI Requirements
 To run **PETGUI** **locally** on your machine, you need:
 1. A **working VPN connection** to an LDAP server
-2. The **ca-certificate file** for the defined server
+2. The **ca-certificate file** for a defined server
 3. **Ldap credentials** for accessing the server cluster.
 
-You may then proceed with the following steps:
-1. Clone this repository and change directory to it. Please make sure the ca-certificate file is in the same folder.
-2. Create and activate a Python3 virtual environment: `python3 -m venv venv` & `source venv/bin/activate`
-3. Install pipenv: `pip install pipenv`
-4. Install all mandatory packages from the Pipfile: `pipenv install`
-5. Modify the LDAP server configuration file `conf.yaml` with your settings.
+<a id="setup"></a>
+### Setup PETGUI
+Please see the "example" folder as a guide on what the final configuration should look like.
+1. Open up a terminal
+2. Pull PETGUI docker image from the Dieterich Lab registry: `docker pull docker-readonly.dieterichlab.org/petgui`
+2. Create a directory named `conf/` and in it create a file  `conf.yaml` with the following contents (adapt to your settings accordingly):
+```
+"LDAP_SERVER" : 'ldap://SERVER'
+"CA_FILE" : 'NAME.pem'
+"USER_BASE" : 'dc=XXX,dc=XXX'
+"LDAP_SEARCH_FILTER" : '({name_attribute}={name})'
+```
+2. Lastly, move the CA_FILE with .pem extension into your `conf/` directory.
 
 <a id="start"></a>
 ### 🛫 Start PETGUI
-To start **PETGUI locally** on your machine, open you terminal in the repository folder */PETGUI* and input the bash command: `uvicorn app.petGui:app`.  
-This will open the application in a new browser tab under your localhost address. Simply click the link to your localhost in the response body: 
-
+1. Now from where you are, simply input `docker run --name new -p 89:89 --mount type=bind,source=./conf,target=/home/appuser/conf petgui` in the command line. 
+This starts the app under your localhost address, e.g.:
 ```
-(venv) ~/PETGUI$ uvicorn app.petGui:app
-
-INFO:     Started server process [22919]
+INFO:     Started server process [1]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
-INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-
+INFO:     Uvicorn running on http://0.0.0.0:89 (Press CTRL+C to quit)
 ```
+2. Access it by right-clicking the address ``http://0.0.0.0:89` and opening it in a browser.
+
 <a id="run"></a>
-### ⚙️ Run PETGUI
+### 👟️ Run PETGUI
 
 Upon starting **PETGUI**, you will automatically be redirected to the Start page, where you can proceed to login.  
 Whilst following the below steps, please follow the [guidelines](#training-parameter-guidelines) 
