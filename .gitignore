@@ -4,3 +4,4 @@ venv/
 logs.txt
 *.egg-info
 pyproject.toml
+data/train.tar.gz
