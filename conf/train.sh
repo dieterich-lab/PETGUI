@@ -13,7 +13,7 @@
 #SBATCH --output=logging.txt
 
 pwd
-. "$1"/petgui/bin/activate
+. petgui/bin/activate
 pip install -r "$1"/pet/requirements.txt
 cd "$1"/pet/
 python3 run.py

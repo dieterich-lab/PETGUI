@@ -13,7 +13,7 @@
 #SBATCH --output=logging.txt
 
 pwd
-. "$1"/petgui/bin/activate
+. petgui/bin/activate
 cd "$1"/pet/
 python3 predict.py
 
