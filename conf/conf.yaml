@@ -1,3 +1,5 @@
+"CLUSTER_NAME" : "cluster.dieterichlab.org"
+
 "LDAP_SERVER" : 'ldap://ldap2.dieterichlab.org'
 "CA_FILE" : 'DieterichLab_CA.pem'
 "USER_BASE" : 'dc=dieterichlab,dc=org'

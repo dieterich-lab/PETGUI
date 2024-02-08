@@ -59,7 +59,7 @@ To run **PETGUI** **locally** on your machine, you need:
 "USER_BASE" : 'dc=XXX,dc=XXX'
 "LDAP_SEARCH_FILTER" : '({name_attribute}={name})'
 ```
-Please see the [example](/conf/example) as a guide on what the final `conf/` should look like.
+Please see the [example conf.yaml](/conf/conf.yaml) as a guide.
 3. Move the certificate file of the server (_.pem file_) into your `conf/` directory.
 4. Finally, build the docker image: `docker build . -t petgui`.
 
