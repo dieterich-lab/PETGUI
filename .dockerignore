@@ -10,6 +10,5 @@
 !templates/
 !LICENSE
 !start_prod.sh
-!conf/predict.sh
-!conf/train.sh
+!conf/
 !README.md
