@@ -32,35 +32,50 @@ Secondly, an ensemble of these models annotates unlabeled training data <strong>
 
 <a id="requirements"></a>
 ### 🧰 PETGUI Requirements
+* Docker: `sudo apt-get install docker=1.5-2`
+* Python=3.11
+* torch=2.1.1 (on the server cluster)
+
 To run **PETGUI** **locally** on your machine, you need:
-1. A **working VPN connection** to an LDAP server
-2. The **ca-certificate file** for a defined server
-3. **Ldap credentials** for accessing the server cluster.
+1. A **working VPN connection** to an LDAP server.
+2. **Ldap credentials** for accessing the server cluster.
+3. `/home/<<user>>` directory in the server cluster.
+4. The **ca-certificate file** for the server.
+
 
 <a id="setup"></a>
 ### Setup PETGUI
-Please see the "example" folder as a guide on what the final configuration should look like.
-1. In a terminal, execute this command to pull PETGUI docker image from the Dieterich Lab registry: `docker pull docker-readonly.dieterichlab.org/petgui`
-2. Create a directory named `conf/` and in it a file  `conf.yaml` with the following contents (please adapt to your settings accordingly):
+#### Environment
+1. In a terminal, `git clone` the repo and change directory to it.
+2. Next, create a venv: `python3.11 -m venv venv`
+3. Install pipenv: `pip install pipenv`
+4. Install requirements from Pipfile.lock: `pipenv install .`
+#### Configuration
+1. Adjust "train.sh" and "predict.sh" in [conf](/conf/train.sh) to your server's needs.
+2. Now, inside `conf/`, create a file `conf.yaml` with the following contents (please adapt with your settings):
 ```
 "LDAP_SERVER" : 'ldap://SERVER'
 "CA_FILE" : 'NAME.pem'
 "USER_BASE" : 'dc=XXX,dc=XXX'
 "LDAP_SEARCH_FILTER" : '({name_attribute}={name})'
 ```
-2. Lastly, move the certificate file of the server (above "CA_FILE") with .pem extension into your `conf/` directory.
+Please see the [example](/conf/example) as a guide on what the final `conf/` should look like.
+3. Move the certificate file of the server (_.pem file_) into your `conf/` directory.
+4. Finally, build the docker image: `docker build . -t petgui`.
 
 <a id="start"></a>
 ### 🛫 Start PETGUI
-1. Again in your current terminal, simply input `docker run --name new -p 89:89 --mount type=bind,source=./conf,target=/home/appuser/conf petgui` in the command line. 
-This starts the app under your localhost address, e.g.:
+First, make sure you are in the `PETGUI` repository directory.
+1. Run the docker container: `docker run --name petgui -p 89:89 --mount type=bind,source=./conf,target=/home/appuser/conf petgui`.  
+**For Windows, replace `./conf` with `\.conf`**  
+This will start the app: 
 ```
 INFO:     Started server process [1]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:89 (Press CTRL+C to quit)
 ```
-2. Access it by opening the address `http://0.0.0.0:89` in a browser.
+2. Access it by opening localhost, e.g.: `http://127.0.0.1:89` in a browser.
 
 <a id="run"></a>
 ### 👟️ Run PETGUI
@@ -68,19 +83,19 @@ INFO:     Uvicorn running on http://0.0.0.0:89 (Press CTRL+C to quit)
 Upon starting **PETGUI**, you will automatically be redirected to the Start page, where you can proceed to login.  
 Whilst following the below steps, please follow the [guidelines](#training-parameter-guidelines) 
 
-| Steps                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | What you will see                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **1.** Login with your ldap credentials for the *Dieterich Lab* server:                                                                                                                                                                                                                                                                                                                                                                                                                                                    | ![img_1.png](static/img_1.png)                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| **2.** If successful, you will be redirected. Here you can input [training parameters](static/img_3.png) (you may use the german few-shot training  [data](/data/GE-yelp_review_polarity_csv.tar.gz) and test [data](/data/predict.txt) available) By clicking `View Data`, you will have a preview of the data statistics of label distribution.                                                                                                                                                                          | ![img_3.png](static/img_3.png)                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| **3.** Click `Submit` to proceed with your defined training parameters. `Start Training` will initiate the training process. You can `Abort` the process, which will stop the training and navigate you to step **2.**                                                                                                                                                                                                                                                                                                     | ![img_4.png](static/img_4.png)                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| **4.** Upon completion of the training, you may select `Show Results` to view the PET results. The results will display accuracy per pattern, as well as precision, recall, f1-measure, and support per label for each pattern. The final scores are also included as "Final":                                                                                                                                                                                                                                             | ![img_5.png](static/img_5.png)                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| **5.** Next, you have the option to either re-train with new parameters (`Run with new configuration`) or use your trained model to label new data (`Annotate unseen data`).                                                                                                                                                                                                                                                                                                                                               | ![img_6.png](static/img_6.png)                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| **6.** You may use the sample file in [data](data/unlabeled.csv) to annotate unlabeled data. First `Upload unlabeled data as a csv file` and make sure, that the first column in your dataset contains nothing throughout your data lines. `Predict Labels Using PET Model` will start the prediction process. Upon completion, you may download the generated prediction file with `Download Predicted Data`. `Show Chart` will display the label distribution of the annotated file, along with some sample annotations: | ![img_7.png](static/img_7.png)|
+| Steps                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | What you will see             |
+|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------|
+| **1.** Login with your ldap credentials for your server:                                                                                                                                                                                                                                                                                                                                                                                                                                              | ![img_1.png](static/img_1.png) |
+| **2.** Input training parameters: <br/> >> SAMPLE: **1**, LABEL: **0**<br/>>> TEMPLATE: **Es war _ .**<br/>>> VERBALIZER: 1 **schlecht**, 2 **gut**<br/> You may use the german few-shot training  [data](/data/GE-yelp_review_polarity_csv.tar.gz) and test [data](/data/predict.txt) available.<br/> By clicking `View Data`, you will have a preview of the data statistics of label distribution.                                                                                                 | ![img_3.png](static/img_3.png) |                               |
+| **3.** Click `Submit` to proceed with your defined training parameters. `Start Training` will initiate the training process. You can `Abort` the process, which will stop the training and navigate you to step **2.**                                                                                                                                                                                                                                                                                | ![img_4.png](static/img_4.png) |
+| **4.** `Show Results` to view the PET results. The results will display accuracy per pattern, as well as precision, recall, f1-measure, and support per label for each pattern. See "Final" for the final scores.                                                                                                                                                                                                                                                                                     | ![img_5.png](static/img_5.png) |
+| **5.** Next, either re-train with new parameters (`Run with new configuration`) or use your trained model to label new data (`Annotate unseen data`).                                                                                                                                                                                                                                                                                                                                                 | ![img_6.png](static/img_6.png) |
+| **6.** To annotate unlabeled data, use the sample file in [data](data/unlabeled.csv). First `Upload unlabeled data as a csv file` and make sure, that the first column in your dataset contains nothing throughout your data lines. `Predict Labels Using PET Model` will start the prediction process. When complete, download the generated prediction file: `Download Predicted Data`. | ![img_7.png](static/img_7.png) |
 
 <a id="guidelines"></a>
 #### 🧾 Training Parameter Guidelines
- * Make sure to include the underscore character: "_" when defining your templates, such that it acts as a placeholder, for example: "Es war \_ ." will become "Es war [verbalizer1]." and "Es war [verbalizer2].", with the verbalizers denoting textualized labels, e.g. bad & good. 
- * You may add more templates and verbalizers by clicking `+` and removing with `-`.  
+ * Include the underscore character: "_" in your templates, such that it acts as a placeholder, e.g.: "Es war \_ ." will become "Es war [verbalizer1]." and "Es war [verbalizer2].", with the verbalizers "gut" & "schlecht". 
+ * Click `+` to add more verbalizers.  
 
 <a id="features"></a>
 ### ➕ Features

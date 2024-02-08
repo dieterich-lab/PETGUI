@@ -1,17 +1,21 @@
 import os
+
+import yaml
+
 from ..dto.session import SessionData, cookie, backend
 import uuid
 
+with open("conf/conf.yaml", "r") as yaml_file:
+    data = yaml.load(yaml_file, Loader=yaml.FullLoader)
 
 async def create_session(user, response):
     session_uuid = uuid.uuid4()
     remote_loc = f"/home/{user}/{hash(session_uuid)}/"
     remote_loc_pet = f"/home/{user}/{hash(session_uuid)}/pet/"
-    cluster_name = "cluster.dieterichlab.org"
     log_file = f"{hash(session_uuid)}/logging.txt"
     last_pos_file = f"{hash(session_uuid)}/last_pos.txt"
     session_data = SessionData(username=user, id=session_uuid, remote_loc=remote_loc, remote_loc_pet=remote_loc_pet,
-                               cluster_name=cluster_name, log_file=log_file, last_pos_file=last_pos_file)
+                               cluster_name=data["CLUSTER_NAME"], log_file=log_file, last_pos_file=last_pos_file)
     cookie.attach_to_response(response, session_uuid)
     await backend.create(session_uuid, session_data)
     os.makedirs(f"./{hash(session_uuid)}", exist_ok=True)  # If run with new conf
