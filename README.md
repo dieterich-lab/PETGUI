@@ -45,11 +45,9 @@ To run **PETGUI** **locally** on your machine, you need:
 
 <a id="setup"></a>
 ### Setup PETGUI
-#### Environment
-1. In a terminal, `git clone` the repo and change directory to it.
-2. Next, create a venv: `python3.11 -m venv venv`
-3. Install pipenv: `pip install pipenv`
-4. Install requirements from Pipfile.lock: `pipenv install .`
+
+First, in a terminal, `git clone` the repo and change directory to it.
+
 #### Configuration
 1. Adjust "train.sh" and "predict.sh" in [conf](/conf/train.sh) to your server's needs.
 2. Now, inside `conf/`, create a file `conf.yaml` with the following contents (please adapt with your settings):
@@ -59,9 +57,9 @@ To run **PETGUI** **locally** on your machine, you need:
 "USER_BASE" : 'dc=XXX,dc=XXX'
 "LDAP_SEARCH_FILTER" : '({name_attribute}={name})'
 ```
-Please see the [example conf.yaml](/conf/conf.yaml) as a guide.
-3. Move the certificate file of the server (_.pem file_) into your `conf/` directory.
-4. Finally, build the docker image: `docker build . -t petgui`.
+Please see the [example conf.yaml](/conf/conf.yaml) as a guide.  
+3. Move the certificate file of the server (_.pem file_) into your `conf/` directory.  
+4. Finally, build the docker image: `docker build . -t petgui`.  
 
 <a id="start"></a>
 ### 🛫 Start PETGUI
