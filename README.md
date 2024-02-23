@@ -1,9 +1,10 @@
 # PETGUI
 
-We present **PETGUI**: A user-friendly interface for training and testing a language model through <b>P</b>attern <b>E</b>xploiting <b>T</b>raining (<span style="font-style: italic">PET</span>) <a href="#pet" role="doc-noteref">[Schick et al., 2021]</a>.<br>
+We present **PETGUI**: A user-friendly interface for training and testing a language model on <b>P</b>attern <b>E</b>xploiting <b>T</b>raining (<span style="font-style: italic">PET</span>) <a href="#pet" role="doc-noteref">[Schick et al., 2021]</a>.<br>
 
 
 ## 🔎 Contents
+- [Files](#files)
 - [*Pattern Exploiting Training*](#pet)
 - [🧰 PETGUI Requirements](#requirements)
 - [⚙️ PETGUI Setup](#setup)
@@ -13,6 +14,11 @@ We present **PETGUI**: A user-friendly interface for training and testing a lang
 - [➕ Features](#features)
 - [➖ Limitations](#limitations)
 - [🗃️ References](#references)
+
+<a id="files"></a>
+### Files
+1. [PETGUI User evaluation form](/PETGUI_user-evaluation-form.odt)
+2. [PETGUI](PETGUI_eval-results.png)
 
 <a id="pet"></a>
 ### *Pattern Exploiting Training*
