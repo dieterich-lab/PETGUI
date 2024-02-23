@@ -32,8 +32,9 @@ Secondly, an ensemble of these models annotates unlabeled training data <strong>
 
 <a id="requirements"></a>
 ### 🧰 PETGUI Requirements
+<<<<<<< HEAD
 * Host system: Of Linux distribution
-* Docker: `sudo apt-get install docker=1.5-2`
+* Docker=1.5-2
 * Python=3.11
 * torch=2.1.1 (on the server cluster)
 
