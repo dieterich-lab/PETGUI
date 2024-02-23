@@ -18,7 +18,7 @@ We present **PETGUI**: A user-friendly interface for training and testing a lang
 <a id="files"></a>
 ### Files
 1. [PETGUI User evaluation form](/PETGUI_user-evaluation-form.odt)
-2. [PETGUI](PETGUI_eval-results.png)
+2. [PETGUI Evaluation results](PETGUI_eval-results.png)
 
 <a id="pet"></a>
 ### *Pattern Exploiting Training*
@@ -38,7 +38,6 @@ Secondly, an ensemble of these models annotates unlabeled training data <strong>
 
 <a id="requirements"></a>
 ### 🧰 PETGUI Requirements
-<<<<<<< HEAD
 * Host system: Of Linux distribution
 * Docker=1.5-2
 * Python=3.11
