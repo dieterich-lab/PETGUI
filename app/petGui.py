@@ -72,7 +72,6 @@ async def run(request: Request, session=Depends(get_session)):
     """
     '''Start PET'''
     try:
-        session_id = hash(session.id)
         session.job_id = await submit_job(session, False)
         await set_event(session.id, session, event=False)
         # Check if event is set

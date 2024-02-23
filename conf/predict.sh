@@ -10,7 +10,7 @@
 #SBATCH --job-name=petgui
 
 #<<< DON'T CHANGE THE FOLLOWING
-#SBATCH --output=logging.txt
+#SBATCH --output=petgui_logging.txt
 
 pwd
 . petgui/bin/activate

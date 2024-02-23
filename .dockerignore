@@ -10,6 +10,6 @@
 !templates/
 !LICENSE
 !start_prod.sh
-!conf/
+!conf/*.sh
 !requirements.txt
 !README.md

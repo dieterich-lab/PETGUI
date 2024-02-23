@@ -13,7 +13,7 @@ from os.path import isdir, isfile
 import pathlib
 import shutil
 from ..dto.session import backend, cookie, SessionData
-from ..services.session import set_job_id, set_event, end_session
+from ..services.session import set_job_id, set_event, end_session, update_home
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -60,6 +60,15 @@ async def get_form(request: Request, sample: str = Form(...),
     session_id = hash(session.id)
     last_pos_file = session.last_pos_file
     log_file = session.log_file
+    user = session.username
+    cluster_name = session.cluster_name
+
+    cmd = [ssh, '-e', 'ssh', f'{user}@{cluster_name}', 'echo ~']
+    proc = subprocess.Popen(cmd, env={"SSHPASS": os.environ[f"{session_id}"]}, shell=False, stdout=PIPE,
+                            stderr=PIPE)
+    outs, errs = proc.communicate()
+    remote_loc = str(outs.decode().strip())+f"/{hash(session_id)}/"
+    await update_home(session.id, session, remote_loc)
     try:
         # Initialize last_pos to the value stored in last_pos.txt, or 0 if the file does not exist
         if os.path.exists(last_pos_file):
@@ -233,7 +242,7 @@ async def clean(session: SessionData = Depends(get_session), logout_flag: bool =
     job_id = session.job_id
     session_id = hash(session.id)
 
-    paths = ["logging.txt", "last_pos.txt", "output", "results.json", "data.json", "data_uploaded", "static/chart.png",
+    paths = ["petgui_logging.txt", "last_pos.txt", "output", "results.json", "data.json", "data_uploaded", "static/chart.png",
              "static/chart_prediction.png", "label_dict.json"]
     paths = [f"{session_id}/" + path if "png" not in path else path for path in paths]
 

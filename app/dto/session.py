@@ -13,8 +13,8 @@ class SessionData(BaseModel):
     model_config["protected_namespaces"] = ()
     username: str
     id: UUID
-    remote_loc: str
-    remote_loc_pet: str
+    remote_loc: Any = None
+    remote_loc_pet: Any = None
     cluster_name: str
     last_pos_file: str
     log_file: str

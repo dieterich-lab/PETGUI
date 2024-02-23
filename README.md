@@ -32,6 +32,7 @@ Secondly, an ensemble of these models annotates unlabeled training data <strong>
 
 <a id="requirements"></a>
 ### 🧰 PETGUI Requirements
+* Host system: Of Linux distribution
 * Docker: `sudo apt-get install docker=1.5-2`
 * Python=3.11
 * torch=2.1.1 (on the server cluster)
@@ -39,9 +40,7 @@ Secondly, an ensemble of these models annotates unlabeled training data <strong>
 To run **PETGUI** **locally** on your machine, you need:
 1. A **working VPN connection** to an LDAP server.
 2. **Ldap credentials** for accessing the server cluster.
-3. `/home/<<user>>` directory in the server cluster.
-4. The **ca-certificate file** for the server.
-
+3. The **ca-certificate file** for the server.
 
 <a id="setup"></a>
 ### Setup PETGUI
@@ -49,24 +48,22 @@ To run **PETGUI** **locally** on your machine, you need:
 First, in a terminal, `git clone` the repo and change directory to it.
 
 #### Configuration
-1. Adjust "train.sh" and "predict.sh" in [conf](/conf/train.sh) to your server's needs.
-2. Now, inside `conf/`, create a file `conf.yaml` with the following contents (please adapt with your settings):
+1. Modify Slurm configuration SBATCH lines of [train.sh](/conf/train.sh) and [predict.sh](/conf/predict.sh) to server's needs.
+2. Inside `conf/`, create file `conf.yaml` with the following contents (please adapt with your settings):
 ```
 "LDAP_SERVER" : 'ldap://SERVER'
 "CA_FILE" : 'NAME.pem'
 "USER_BASE" : 'dc=XXX,dc=XXX'
 "LDAP_SEARCH_FILTER" : '({name_attribute}={name})'
 ```
-Please see the [example conf.yaml](/conf/conf.yaml) as a guide.  
-3. Move the certificate file of the server (_.pem file_) into your `conf/` directory.  
+[Example conf file](/conf/example/conf.yaml) as a guide.  
+3. Move the certificate file of the server (_.pem file_) into the `conf/` directory.  
 4. Finally, build the docker image: `docker build . -t petgui`.  
 
 <a id="start"></a>
 ### 🛫 Start PETGUI
 First, make sure you are in the `PETGUI` repository directory.
-1. Run the docker container: `docker run --name petgui -p 89:89 --mount type=bind,source=./conf,target=/home/appuser/conf petgui`.  
-**For Windows, replace `./conf` with `\.conf`**  
-This will start the app: 
+1. Run the docker container: `docker run --name petgui -p 89:89 --mount type=bind,source=./conf,target=/home/appuser/conf petgui`.
 ```
 INFO:     Started server process [1]
 INFO:     Waiting for application startup.
@@ -112,7 +109,8 @@ In its current form, PETGUI is limited to training and testing a model on data i
 * **File format and naming convention:** The provided training data must be a <span style="font-style: italic">tar.gz</span> file
                                 containing _train.csv_, _test.csv_ and _unlabeled.csv_ respectively.
                                 For labeling data, a comma separated <span style="font-style: italic">.txt</span> file is expected with the first column throughout the data lines empty.
-* **Verbalizer mapping:** The provided verbalizer has to map to a single input-id in the model vocabulary (no real-time check).
+* **Verbalizer mapping:** The tokenizer splits words into smaller sub-words, e.g.: "Langeswort" becomes "Langes" and "#wort".  
+The provided verbalizer has to map to a single input-id, hence the user must provide a sub-word from the model vocabulary. There is no real-time check.
 
 <a id="references"></a>  ​                     
 ### 🗃️ References
