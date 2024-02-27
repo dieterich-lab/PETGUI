@@ -1,5 +1,5 @@
 '''LDAP'''
-from ldap3 import Server, Connection, ALL, Tls, AUTO_BIND_TLS_BEFORE_BIND, core
+from ldap3 import Server, Connection, ALL, Tls, AUTO_BIND_TLS_BEFORE_BIND, core, SUBTREE, ALL_ATTRIBUTES
 from ssl import PROTOCOL_TLS_CLIENT
 import yaml
 
@@ -31,6 +31,16 @@ class LDAP:
             print("Exception in get_dn", str(e))
             raise Exception
 
+    def get_home_dir(self, username: str):
+        try:
+            self.conn.bind()
+            self.conn.search(self.data["USER_BASE"], self.data["LDAP_SEARCH_FILTER"].format(name_attribute="uid", name=username), search_scope=SUBTREE, attributes=ALL_ATTRIBUTES)
+            if self.conn.entries:
+                self.home_dir = self.conn.entries[0].homeDirectory.value
+                return self.home_dir
+        except Exception as e:
+            print("Exception in get_home_dir", str(e))
+            raise Exception
 
     def bind(self, dn: str, password: str):
         try:

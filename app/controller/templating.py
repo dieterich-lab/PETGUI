@@ -13,6 +13,7 @@ from os.path import isdir, isfile
 import pathlib
 import shutil
 from ..dto.session import backend, cookie, SessionData
+from ..services.ldap import LDAP
 from ..services.session import set_job_id, set_event, end_session, update_home
 
 router = APIRouter()
@@ -61,13 +62,10 @@ async def get_form(request: Request, sample: str = Form(...),
     last_pos_file = session.last_pos_file
     log_file = session.log_file
     user = session.username
-    cluster_name = session.cluster_name
-
-    cmd = [ssh, '-e', 'ssh', f'{user}@{cluster_name}', 'echo ~']
-    proc = subprocess.Popen(cmd, env={"SSHPASS": os.environ[f"{session_id}"]}, shell=False, stdout=PIPE,
-                            stderr=PIPE)
-    outs, errs = proc.communicate()
-    remote_loc = str(outs.decode().strip())+f"/{hash(session_id)}/"
+    ldap = LDAP()
+    home_dir = ldap.get_home_dir(user)
+    remote_loc = str(home_dir.strip())+f"/{hash(session_id)}/"
+    print(remote_loc)
     await update_home(session.id, session, remote_loc)
     try:
         # Initialize last_pos to the value stored in last_pos.txt, or 0 if the file does not exist

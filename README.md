@@ -32,7 +32,6 @@ Secondly, an ensemble of these models annotates unlabeled training data <strong>
 
 <a id="requirements"></a>
 ### 🧰 PETGUI Requirements
-<<<<<<< HEAD
 * Host system: Of Linux distribution
 * Docker=1.5-2
 * Python=3.11
@@ -44,53 +43,49 @@ To run **PETGUI** **locally** on your machine, you need:
 3. The **ca-certificate file** for the server.
 
 <a id="setup"></a>
-### Setup PETGUI
+### Install PETGUI
 
-First, in a terminal, `git clone` the repo and change directory to it.
-
-#### Configuration
+1. In a terminal, `git clone` the repo and change directory to it.
 1. Modify Slurm configuration SBATCH lines of [train.sh](/conf/train.sh) and [predict.sh](/conf/predict.sh) to server's needs.
-2. Inside `conf/`, create file `conf.yaml` with the following contents (please adapt with your settings):
+2. Create file `conf.yaml` inside `conf/` with the following contents (please adapt to your settings - [example conf file](/conf/example/conf.yaml)):
 ```
 "LDAP_SERVER" : 'ldap://SERVER'
 "CA_FILE" : 'NAME.pem'
 "USER_BASE" : 'dc=XXX,dc=XXX'
 "LDAP_SEARCH_FILTER" : '({name_attribute}={name})'
 ```
-[Example conf file](/conf/example/conf.yaml) as a guide.  
-3. Move the certificate file of the server (_.pem file_) into the `conf/` directory.  
-4. Finally, build the docker image: `docker build . -t petgui`.  
+3. Move your certificate file of the server (_.pem file_) to `conf/` directory.  
+4. Build docker image: `docker build . -t petgui`.  
 
 <a id="start"></a>
 ### 🛫 Start PETGUI
-First, make sure you are in the `PETGUI` repository directory.
-1. Run the docker container: `docker run --name petgui -p 89:89 --mount type=bind,source=./conf,target=/home/appuser/conf petgui`.
-```
-INFO:     Started server process [1]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     Uvicorn running on http://0.0.0.0:89 (Press CTRL+C to quit)
-```
-2. Access it by opening localhost, e.g.: `http://127.0.0.1:89` in a browser.
+1. Change directory to repository: `cd /PETGUI`
+1. Run the docker container: `docker run --name petgui -p 89:89 --mount type=bind,source=./conf,target=/home/appuser/conf petgui` 
+>INFO:     Started server process [1]  
+>INFO:     Waiting for application startup.  
+>INFO:     Application startup complete.  
+>INFO:     Uvicorn running on http://0.0.0.0:89 (Press CTRL+C to quit)  
+
+3. Open localhost, e.g.: `http://127.0.0.1:89` in a browser.
 
 <a id="run"></a>
 ### 👟️ Run PETGUI
 
-Upon starting **PETGUI**, you will automatically be redirected to the Start page, where you can proceed to login.  
+You successfully started **PETGUI**!  
 Whilst following the below steps, please follow the [guidelines](#training-parameter-guidelines) 
 
-| Steps                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | What you will see             |
-|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------|
-| **1.** Login with your ldap credentials for your server:                                                                                                                                                                                                                                                                                                                                                                                                                                              | ![img_1.png](static/img_1.png) |
-| **2.** Input training parameters: <br/> >> SAMPLE: **1**, LABEL: **0**<br/>>> TEMPLATE: **Es war _ .**<br/>>> VERBALIZER: 1 **schlecht**, 2 **gut**<br/> You may use the german few-shot training  [data](/data/GE-yelp_review_polarity_csv.tar.gz) and test [data](/data/predict.txt) available.<br/> By clicking `View Data`, you will have a preview of the data statistics of label distribution.                                                                                                 | ![img_3.png](static/img_3.png) |                               |
-| **3.** Click `Submit` to proceed with your defined training parameters. `Start Training` will initiate the training process. You can `Abort` the process, which will stop the training and navigate you to step **2.**                                                                                                                                                                                                                                                                                | ![img_4.png](static/img_4.png) |
-| **4.** `Show Results` to view the PET results. The results will display accuracy per pattern, as well as precision, recall, f1-measure, and support per label for each pattern. See "Final" for the final scores.                                                                                                                                                                                                                                                                                     | ![img_5.png](static/img_5.png) |
-| **5.** Next, either re-train with new parameters (`Run with new configuration`) or use your trained model to label new data (`Annotate unseen data`).                                                                                                                                                                                                                                                                                                                                                 | ![img_6.png](static/img_6.png) |
-| **6.** To annotate unlabeled data, use the sample file in [data](data/unlabeled.csv). First `Upload unlabeled data as a csv file` and make sure, that the first column in your dataset contains nothing throughout your data lines. `Predict Labels Using PET Model` will start the prediction process. When complete, download the generated prediction file: `Download Predicted Data`. | ![img_7.png](static/img_7.png) |
+| Steps                                                                                                                                                                                                                                                                                                                                                        | What you will see             |
+|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------|
+| **1.** Login with ldap credentials for your server:                                                                                                                                                                                                                                                                                                          | ![img_1.png](static/img_1.png) |
+| **2.** Input training parameters, e.g. for the german few-shot sample [data](/data/GE-yelp_review_polarity_csv.tar.gz): <br/> SAMPLE: **1**, LABEL: **0**<br/> TEMPLATE: **Es war _ .**<br/> VERBALIZER: 1 **schlecht**, 2 **gut**<br/> Click `View Data` to get a statistics on your data as label distribution plots.                                      | ![img_3.png](static/img_3.png) |                               |
+| **3.** Click `Submit` to proceed. `Start Training` to start the model training. You may `Abort` the process, which will terminate training and navigate you to step **2.**                                                                                                                                                                                   | ![img_4.png](static/img_4.png) |
+| **4.** `Show Results` to view model results, displaying accuracy per pattern, as well as precision, recall, f1-measure, and support per label.                                                                                                                                                                                                               | ![img_5.png](static/img_5.png) |
+| **5.** Choose to either re-train with new parameters (`Run with new configuration`) or continue wit trained model for labeling unseen data (`Annotate unseen data`).                                                                                                                                                                                         | ![img_6.png](static/img_6.png) |
+| **6.**  Annotate unlabeled data, e.g. sample [data](/data/predict.txt): `Upload unlabeled data as a csv file` and make sure, that the first column in your dataset contains nothing throughout your data lines. `Predict Labels Using PET Model` starts prediction process. When complete, `Download Predicted Data`.                                        | ![img_7.png](static/img_7.png) |
 
 <a id="guidelines"></a>
 #### 🧾 Training Parameter Guidelines
- * Include the underscore character: "_" in your templates, such that it acts as a placeholder, e.g.: "Es war \_ ." will become "Es war [verbalizer1]." and "Es war [verbalizer2].", with the verbalizers "gut" & "schlecht". 
+ * Include the underscore character: "_" in your templates, for it acts as a placeholder, e.g.: "Es war \_ ." will become "Es war [verbalizer1]." and "Es war [verbalizer2].", with the verbalizers "gut" & "schlecht". 
  * Click `+` to add more verbalizers.  
 
 <a id="features"></a>

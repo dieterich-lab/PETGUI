@@ -11,5 +11,6 @@
 !LICENSE
 !start_prod.sh
 !conf/*.sh
+!conf/*/.yaml
 !requirements.txt
 !README.md
