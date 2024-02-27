@@ -78,7 +78,7 @@ To run **PETGUI** **locally** on your machine, you need:
 ### 👟️ Run PETGUI
 
 You successfully started **PETGUI**!  
-Whilst following the below steps, please follow the [guidelines](#training-parameter-guidelines) 
+Whilst following the below steps, please follow the [guidelines](#guidelines) 
 
 | Steps                                                                                                                                                                                                                                                                                                                                                        | What you will see             |
 |--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------|
@@ -93,6 +93,18 @@ Whilst following the below steps, please follow the [guidelines](#training-param
 #### 🧾 Training Parameter Guidelines
  * Include the underscore character: "_" in your templates, for it acts as a placeholder, e.g.: "Es war \_ ." will become "Es war [verbalizer1]." and "Es war [verbalizer2].", with the verbalizers "gut" & "schlecht". 
  * Click `+` to add more verbalizers.  
+
+### Stop PETGUI
+* Ctrl + C to stop the running `uvicorn` process:
+>^CINFO:     Shutting down  
+>INFO:     Waiting for application shutdown.  
+>INFO:     Application shutdown complete.  
+>INFO:     Finished server process [1]
+* To start PETGUI anew:
+1. `docker stop petgui`
+2. `docker rm petgui`
+3. `docker run...` from [2.](#-start-petgui)
+
 
 <a id="features"></a>
 ### ➕ Features
