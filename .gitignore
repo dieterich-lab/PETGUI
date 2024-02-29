@@ -6,5 +6,5 @@ logs.txt
 *.egg-info
 pyproject.toml
 data/train.tar.gz
-conf/conf.yaml
+conf/example/conf.yaml
 conf/example/DieterichLab_CA.pem

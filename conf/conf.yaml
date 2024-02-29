@@ -1,0 +1,6 @@
+"CLUSTER_NAME" : "cluster.ORGANISATION-NAME.org"
+
+"LDAP_SERVER" : 'ldap://ldap2.ORGANISATION-NAME.org'
+"CA_FILE" : 'ORGANISATION-NAME_CA.pem'
+"USER_BASE" : 'dc=ORGANISATION-NAME,dc=org'
+"LDAP_SEARCH_FILTER" : '({name_attribute}={name})'
