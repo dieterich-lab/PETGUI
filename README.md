@@ -1,6 +1,6 @@
 # PETGUI
 
-We present PETGUI, a user-friendly graphical user interface for training,
+We present PETGUI (Pattern-Exploiting Training GUI), a user-friendly graphical user interface for training,
 testing and labeling with pre-trained masked language models using Pattern-Exploiting Training, a state-of-the-art machine learning framework for text classification tasks using few-shot learning and prompting. Concretely, PETGUI facilitates
 a multistep pipeline of training and testing on labeled data, followed by annotating
 on unlabeled data in a comprehensible and intuitive way. PETGUI also provides
