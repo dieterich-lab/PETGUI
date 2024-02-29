@@ -88,45 +88,46 @@
                     {% endif %}
                 </div>
                 <div class="card-body">
-                    <h4 class="mb-4"> We introduce <span style="color: purple; font-weight: bold;">PETGUI</span>: A user-friendly interface for training and testing a language model through <b>P</b>attern <b>E</b>xploiting <b>T</b>raining (PET).<br>
+                    <h4 class="mb-4"> We introduce <span style="color: purple; font-weight: bold;">PETGUI</span> (Pattern-Exploiting Training GUI): An intuitive user interface for training and testing a pre-trained language model using Pattern-Exploiting Training (PET).<br>
                     </h4>
-                    <h4 class="mb-4" style="font-style: italic; background: rgb(86, 106, 238, 0.2);" align="center">Pattern Exploiting Training</h4>
-                    <p style="font-size: 15px;"><span style="font-style: italic">PET</span> is introduced as a <strong>semi-supervised training strategy for language models</strong>.
-                        By reformulating input examples as cloze-style phrases, <span style="font-style: italic">PET</span> is shown to significantly outperform standard supervised training.
+                    <h4 class="mb-4" style="font-style: italic; background: rgb(86, 106, 238, 0.2);" align="center">Pattern-Exploiting Training</h4>
+                    <p style="font-size: 15px;">PET (Pattern-Exploiting Training) is introduced as a semi-supervised training strategy for pre-trained masked language models <a href="#pet"> (Schick et al., 2021)</a>.
+                        By reformulating input examples as cloze-style phrases, PET is shown to significantly outperform standard supervised training <a href="#pet"> (Schick et al., 2021)</a>, especially valuable for low-resource settings, such as the German clinical domain <a href="#mie"> (Richter-Pechanski et al., 2023)</a>.
                    <section class="container" style="margin-top: 15px;">
                     <div id="col-1">
                         <figure>
                       <img src="static/pet.png" width="125%">
-                        <figcaption style="font-size: 12px"><a href="#schick">Fig.1 - Schick et al., 2021</a></figcaption>
+                        <figcaption style="font-size: 12px">Fig.1 - Illustration of the PET workflow, see <a href="#pet">Schick et al., 2021</a></figcaption>
                             </figure>
                     </div>
                     <div id="col-2">
                       <p> In this illustration, the pattern <span style="font-style: italic">"It was ___ ."</span> is a cloze-style phrase, textually explaining to the model what the task is about,
-                          in this case: <span style="font-style: italic;"> sentiment classification</span>. <br> For this, <span style="font-style: italic">PET</span> works in the following way: A <b>P</b>retrained <b>L</b>anguage <b>M</b>odel is first trained on each of such patterns <strong>(1)</strong>. <br>
+                          in this case: <span style="font-style: italic;"> sentiment classification</span>. <br> For this, PET works in the following way: A pre-trained masked language model is first trained on each of such patterns <strong>(1)</strong>. <br>
                       Secondly, an ensemble of these models annotates unlabeled training data <strong>(2)</strong>. <br> Finally, a classifier is trained on the resulting soft-labeled dataset. <strong>(3)</strong>.</p>
                     </div>
                     </section>
 
                     <h3 class="mb-4" style="margin-top: 3rem; background: rgb(86, 106, 238, 0.2);">Features</h3>
-                    <p style="font-size: 15px;"> This GUI offers a step-by-step approach to training and deploying a language model on <span style="font-style: italic">PET</span>.
-                        More concretely, with <span style="color: purple; font-weight: bold;">PETGUI</span> you can choose to: </p>
+                    <p style="font-size: 15px;"> This GUI provides an intuitive GUI for the PET workflow.
+                        Concretely, with <span style="color: purple; font-weight: bold;">PETGUI</span> you can: </p>
                         <ul style="margin-left: 17px; font-size: 15px;">
-                            <li><strong>Train</strong> either <span style="font-style: italic">bert-base-cased</span> or <span style="font-style: italic">medbert-512</span> on a labeled dataset</li>
-                            <li><strong>Label</strong> data using the trained model</li>
-                            <li>View statistics on <b>model performance</b> during training
-                            <li> Download the <strong>labeled</strong> data</li>
-                            <li>View <b>label distribution statistics</b> of the training data</li>
+                            <li>Display statistics on <b>label distribution</b> of the training data
+                            <li><strong>Train</strong> either <span style="font-style: italic">bert-base-cased</span> or <span style="font-style: italic">medbert-512</span> on a labeled dataset
+                            <li>Display statistics on the <b>model performance</b>
+                            <li><strong>Test</strong> the trained model to generate predictions on unseen data
+                            <li>Download the <b>labeled file</b>
                         </ul>
                     <h3 class="mb-4" style="margin-top: 3rem; background: rgb(86, 106, 238, 0.2);">Getting Started</h3>
-                    <p style="font-size: 15px;">To begin using <span style="color: purple; font-weight: bold;">PETGUI</span>, please make sure you have a <strong>working WireGuard VPN connection</strong> to the <span style="font-style: italic">DieterichLab</span> infrastructure.
-                        To <a href="/login"><strong>log in</strong></a>, please use your LDAP credentials for the <span style="font-style: italic">DieterichLab</span> server.
+                    <p style="font-size: 15px;">To begin using <span style="color: purple; font-weight: bold;">PETGUI</span>, please make sure you have a <strong>working connection</strong> to your remote Slurm cluster.
+                        To <a href="/login"><strong>log in</strong></a>, please use your LDAP credentials for your remote Slurm cluster.
                         </p>
                     <h4 class="mb-4" style="margin-top: 3rem;"> Thank you for visiting <span style="color: purple; font-weight: bold;">PETGUI</span>, and we hope you have a productive and enjoyable experience.</h4>
 
                     <h3 class="mb-4" style="margin-top: 3rem; background: rgb(86, 106, 238, 0.2);">References</h3>
                     <ul style="margin-left: 17px; font-size: 15px;">
-                        <li id="schick">Schick et al., 2021. Pattern-Exploiting Training (PET). <span style="font-style: italic">https://github.com/timoschick/pet/</span></li>
+                        <li id="pet">Schick et al., 2021. Pattern-Exploiting Training (PET). <span style="font-style: italic">https://github.com/timoschick/pet/</span></li>
                         <li>Schick et al., 2021. Exploiting Cloze Questions for Few-Shot Text Classification and Natural Language Inference. <span style="font-style: italic">https://arxiv.org/abs/2001.07676</span></li>
+                       <li id="mie">Richter-Pechanski P, Wiesenbach P, Schwab DM, Kiriakou C, He M, Geis NA, Frank A, Dieterich C. Few-Shot and Prompt Training for Text Classification in German Doctor's Letters. Stud Health Technol Inform. 2023 May 18;302:819-820. doi: 10.3233/SHTI230275. PMID: 37203504.</li>
                     </ul>
 
 

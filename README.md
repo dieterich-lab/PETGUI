@@ -22,12 +22,12 @@ without domain specific knowledge, in our case by physicians from clinical routi
 <a id="pet"></a>
 ### *Pattern Exploiting Training*
 <p style="font-size: 15px;">PET (Pattern-Exploiting Training) is a semi-supervised training strategy for language models.
-                        By reformulating input examples as cloze-style phrases, it has been shown to significantly outperform standard supervised training<a href="#schick"> (Schick et al., 2021)</a>, especially valuable for low-resource settings, such as the German clinical domain <a href="#mie"> (Richter-Pechanski et al., 2023)</a>.
+                        By reformulating input examples as cloze-style phrases, it has been shown to significantly outperform standard supervised training<a href="#pet"> (Schick et al., 2021)</a>, especially valuable for low-resource settings, such as the German clinical domain <a href="#mie"> (Richter-Pechanski et al., 2023)</a>.
 
 
 <figure>
   <img src="static/pet.png" width="50%">
-    <figcaption style="font-size: 12px">Fig.1 - Illustration of the PET workflow, see <a href="#schick">Schick et al., 2021</a></figcaption>
+    <figcaption style="font-size: 12px">Fig.1 - Illustration of the PET workflow, see <a href="#pet">Schick et al., 2021</a></figcaption>
 </figure>
 
 In this illustration, the pattern <span style="font-style: italic">"It was ___ ."</span> is a cloze-style phrase, textually explaining to the model what the task is about,
