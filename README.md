@@ -102,7 +102,7 @@ You successfully started **PETGUI**! To run PETGUI, please see the below steps.
 
 
 ### Stop PETGUI
-In the terminal: `Ctrl + C to stop the running "uvicorn" process:
+In the terminal: `Ctrl + C` to stop the running "uvicorn" process:
 >^CINFO:     Shutting down  
 >INFO:     Waiting for application shutdown.  
 >INFO:     Application shutdown complete.  
