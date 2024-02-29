@@ -7,4 +7,4 @@ logs.txt
 pyproject.toml
 data/train.tar.gz
 conf/conf.yaml
-conf/DieterichLab_CA.pem
+conf/example/DieterichLab_CA.pem
