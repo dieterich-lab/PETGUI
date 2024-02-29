@@ -72,7 +72,7 @@ To run **PETGUI** on your machine, you need:
 "LDAP_SEARCH_FILTER" : '({name_attribute}={name})'
 
 ```
-3. Move your certificate file of the server ([sample file](/conf/ORGANISATION-NAME_CA.pem)) to `conf/` directory.  
+3. Move your certificate file of the server ([sample file](/conf/example/ORGANISATION-NAME_CA.pem)) to `conf/` directory.  
 4. Build docker image: `docker build . -t petgui`.  
 
 <a id="start"></a>

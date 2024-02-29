@@ -1,4 +1,0 @@
-"LDAP_SERVER" : 'ldap://ldap2.dieterichlab.org'
-"CA_FILE" : 'ORGANISATION-NAME_CA.pem'
-"USER_BASE" : 'dc=dieterichlab,dc=org'
-"LDAP_SEARCH_FILTER" : '({name_attribute}={name})'
