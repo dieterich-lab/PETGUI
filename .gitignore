@@ -8,3 +8,4 @@ pyproject.toml
 data/train.tar.gz
 conf/example/conf.yaml
 conf/example/DieterichLab_CA.pem
+start_prod.sh
