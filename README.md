@@ -5,7 +5,7 @@ testing and labeling with pre-trained masked language models using Pattern-Explo
 a multistep pipeline of training and testing on labeled data, followed by annotating
 on unlabeled data in a comprehensible and intuitive way. PETGUI also provides
 valuable insights into various aspects of the training, with statistics for label distribution and model performance. We envision our app as a pivotal use-case of a
-simple Machine Learning application, that is accessible and manageable by users
+simple machine learning application, that is accessible and manageable by users
 without domain specific knowledge, in our case by physicians from clinical routine.
 
 
