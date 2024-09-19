@@ -2,12 +2,14 @@
 
 ## 📰 News
 We are excited to share that we presented and published our [**PETGUI poster**](static/PETGUI_gmds.png) this year at the <a href="https://www.egms.de/static/en/meetings/gmds2024/24gmds176.shtml">69th "Deutschen Gesellschaft für Medizinische Informatik, Biometrie und Epidemiologie" (GMDS)" annual conference in Dresden, Germany</a>:  
-<figure>
+
+  <figure>
+    <div align="center">
   <img src="static/PETGUI_gmds.png" width="50%">
-    <figcaption style="font-size: 12px">Fig.1 - Our PETGUI poster at this year's <a href="#gmds">69th annual GMDS conference.</a></figcaption>
-</figure>  
-
-
+  </div>
+      <figcaption style="font-size: 12px">Fig.1 - Our PETGUI poster at this year's <a href="#gmds">69th annual GMDS conference.</a></figcaption>
+  </figure>  
+  <hr>
 We present PETGUI (Pattern-Exploiting Training GUI), a user-friendly graphical user interface for training,
 testing and labeling with pre-trained masked language models using Pattern-Exploiting Training, a state-of-the-art machine learning framework for text classification tasks using few-shot learning and prompting. Concretely, PETGUI facilitates
 a multistep pipeline of training and testing on labeled data, followed by annotating
@@ -37,8 +39,7 @@ without domain specific knowledge, in our case by physicians from clinical routi
   <img src="static/pet.png" width="50%">
     <figcaption style="font-size: 12px">Fig.2 - Illustration of the PET workflow, see <a href="#pet">Schick et al., 2021</a></figcaption>
 </figure>  
-
-
+<hr>
 In this illustration, the pattern <span style="font-style: italic">"It was ___ ."</span> is a cloze-style phrase, textually explaining to the model what the task is about,
 in this case: <span style="font-style: italic;"> sentiment classification</span>. <br> For this, PET works in the following way: A pretrained language model is first trained on each of such patterns <strong>(1)</strong>. <br>
 Secondly, an ensemble of these models annotates unlabeled training data <strong>(2)</strong>. <br> Finally, a classifier is trained on the resulting soft-labeled dataset <strong>(3)</strong>.</p>
