@@ -5,7 +5,7 @@ We are excited to share that we presented and published our [**PETGUI poster**](
 
   <figure>
     <div align="center">
-  <img src="static/PETGUI_gmds.png" width="50%">
+  <img src="static/PETGUI_gmds.png">
   </div>
       <figcaption style="font-size: 12px">Fig.1 - Our PETGUI poster at this year's <a href="#gmds">69th annual GMDS conference.</a></figcaption>
   </figure>  
