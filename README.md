@@ -1,5 +1,12 @@
 # PETGUI
 
+## 🤩 News
+We are excited to share that we presented and published our [**PETGUI poster**](static/poster_gmds.png) this year at the <a href="https://www.egms.de/static/en/meetings/gmds2024/24gmds176.shtml">69th "Deutschen Gesellschaft für Medizinische Informatik, Biometrie und Epidemiologie" (GMDS)" annual conference in Dresden, Germany</a>.  
+<figure>
+  <img src="static/poster_gmds.png" width="50%">
+    <figcaption style="font-size: 12px">Fig.1 - Our PETGUI poster at this year's <a href="#gmds">69th annual GMDS conference.</a></figcaption>
+</figure>
+
 We present PETGUI (Pattern-Exploiting Training GUI), a user-friendly graphical user interface for training,
 testing and labeling with pre-trained masked language models using Pattern-Exploiting Training, a state-of-the-art machine learning framework for text classification tasks using few-shot learning and prompting. Concretely, PETGUI facilitates
 a multistep pipeline of training and testing on labeled data, followed by annotating
@@ -27,7 +34,7 @@ without domain specific knowledge, in our case by physicians from clinical routi
 
 <figure>
   <img src="static/pet.png" width="50%">
-    <figcaption style="font-size: 12px">Fig.1 - Illustration of the PET workflow, see <a href="#pet">Schick et al., 2021</a></figcaption>
+    <figcaption style="font-size: 12px">Fig.2 - Illustration of the PET workflow, see <a href="#pet">Schick et al., 2021</a></figcaption>
 </figure>
 
 In this illustration, the pattern <span style="font-style: italic">"It was ___ ."</span> is a cloze-style phrase, textually explaining to the model what the task is about,
@@ -140,5 +147,8 @@ The provided verbalizer has to map to a single input-id, hence the user must pro
 <ol style="margin-left: 17px; font-size: 15px;">
     <li id="pet">Timo Schick and Hinrich Schütze. (2021). Exploiting Cloze Questions for Few-Shot Text Classification and Natural Language Inference. arXiv preprint arXiv:2001.07676.</a></li>
     <li id="schick">Timo Schick. (2023). Pattern-Exploiting Training (PET) <a href="https://github.com/timoschick/pet/">GitHub repository</a></li>
-    <li id="mie">Richter-Pechanski P, Wiesenbach P, Schwab DM, Kiriakou C, He M, Geis NA, Frank A, Dieterich C. Few-Shot and Prompt Training for Text Classification in German Doctor's Letters. Stud Health Technol Inform. 2023 May 18;302:819-820. doi: 10.3233/SHTI230275. PMID: 37203504.
+    <li id="mie">Richter-Pechanski P, Wiesenbach P, Schwab DM, Kiriakou C, He M, Geis NA, Frank A, Dieterich C. Few-Shot and Prompt Training for Text Classification in German Doctor's Letters. Stud Health Technol Inform. 2023 May 18;302:819-820.
+    doi: 10.3233/SHTI230275. PMID: 37203504.
+    <li id="gmds"><a href="https://www.egms.de/static/en/meetings/gmds2024/24gmds176.shtml">Gesundheit – gemeinsam. Kooperationstagung der Deutschen Gesellschaft für Medizinische Informatik, Biometrie und Epidemiologie (GMDS), Deutschen Gesellschaft für Sozialmedizin und Prävention (DGSMP), Deutschen Gesellschaft für Epidemiologie (DGEpi), Deutschen Gesellschaft für Medizinische Soziologie (DGMS) und der Deutschen Gesellschaft für Public Health (DGPH)
+08.09. - 13.09.2024, Dresden</a>
 </ol>
