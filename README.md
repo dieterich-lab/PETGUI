@@ -1,7 +1,7 @@
 # PETGUI
 
 ## 🤩 News
-We are excited to share that we presented and published our [**PETGUI poster**](static/poster_gmds.png) this year at the <a href="https://www.egms.de/static/en/meetings/gmds2024/24gmds176.shtml">69th "Deutschen Gesellschaft für Medizinische Informatik, Biometrie und Epidemiologie" (GMDS)" annual conference in Dresden, Germany</a>.  
+We are excited to share that we presented and published our [**PETGUI poster**](static/PETGUI_gmds.pdf) this year at the <a href="https://www.egms.de/static/en/meetings/gmds2024/24gmds176.shtml">69th "Deutschen Gesellschaft für Medizinische Informatik, Biometrie und Epidemiologie" (GMDS)" annual conference in Dresden, Germany</a>.  
 <figure>
   <img src="static/poster_gmds.png" width="50%">
     <figcaption style="font-size: 12px">Fig.1 - Our PETGUI poster at this year's <a href="#gmds">69th annual GMDS conference.</a></figcaption>
